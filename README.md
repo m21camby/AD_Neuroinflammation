@@ -1,8 +1,11 @@
 # DroNc_AD
 
-The project aims for identifying single nucleus sequencing of AD mouse
+The project aims for identifying interactions in single cell scale of AD mouse
 
 ### 1. fastQC
+
+Test fastqc
+{: .alert .alert-info}
 
 ### 2. Drop-seq pipeline
 
@@ -12,5 +15,9 @@ The project aims for identifying single nucleus sequencing of AD mouse
 
 ### 5. Biological Analysis
 
-
+<style>
+.alert-info {
+  color: rgb(49,112,143) !important;
+}
+</style>
  
