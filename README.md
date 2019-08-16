@@ -7,9 +7,7 @@
 </style>
 
 
-<span style="background-color:green">
-The project aims for identifying interactions in single cell scale of AD mouse
-</span>
+<span style="background-color:green">The project aims for identifying interactions in single cell scale of AD mouse</span>
 
 
 ### 1. fastQC
@@ -17,7 +15,9 @@ The project aims for identifying interactions in single cell scale of AD mouse
 Test fastqc
 {: .alert .alert-info}
 
-### 2. Drop-seq pipeline
+### 2. DroNc-seq pipeline
+
+`Test DroNc-seq`
 
 ### 3. QC scRNA-seq 
 
