@@ -1,19 +1,14 @@
 # DroNc_AD
 
-<style>
-.alert-info {
-  color: rgb(49,112,143) !important;
-}
-</style>
 
 
-<span style="background-color:green">The project aims for identifying interactions in single cell scale of AD mouse</span>
+`The project aims for identifying interactions in single cell scale of AD mouse`
 
 
 ### 1. fastQC
 
-Test fastqc
-{: .alert .alert-info}
+`Test fastqc`
+
 
 ### 2. DroNc-seq pipeline
 
