@@ -13,7 +13,7 @@ Ref: https://github.com/mdozmorov/scRNA-seq_notes/blob/master/README.md
 
 `conos` - joint analysis of scRNA-seq datasets through inter-sample mapping **(mutual nearest-neighbor mapping)** and constructing a joint graph
 
-'MNN` - **mutual nearest neighbors method** for single-cell batch correction. Assumptions: MNN exist between batches, batch is orthogonal to the biology. Cosine normalization, Euclidean distance, a pair-specific barch-correction vector as a vector difference between the expression profiles of the paired cells using selected genes of interest and hypervariable genes.
+`MNN` - **mutual nearest neighbors method** for single-cell batch correction. Assumptions: MNN exist between batches, batch is orthogonal to the biology. Cosine normalization, Euclidean distance, a pair-specific barch-correction vector as a vector difference between the expression profiles of the paired cells using selected genes of interest and hypervariable genes.
 
 
 ## Clustering
