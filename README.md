@@ -8,11 +8,12 @@ The project aims for identifying molecular interactions in single cell scale fro
 
 ### 1. Cell types in AD mice model
 
-`Test fastqc`
+<img src="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_whole_UMAP.png" width="300" height="300" \>
+
 
 
 ### 2. Oligodendrocytes recued
-Amyloid-β-dependent loss of oligodendrocytes is rescued upon deletion of IL-12/IL-23 signaling in the aged murine hippocampus
+Amyloid-β-dependent loss of `oligodendrocytes is rescued` upon deletion of IL-12/IL-23 signaling in the aged murine hippocampus
 
 
 
