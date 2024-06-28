@@ -1,0 +1,407 @@
+---
+title: "OL 2nd analysis"
+author: "Skim"
+date: '2020 3 24 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+In this report, I checked myelination genes in Oligodendrocytes cluster
+
+conclusion:
+
+1) heatmap showed heterogeneity of myelination genes in each experiment
+
+2) small number of DE genes in myelination genes
+
+3) there are no specific cluster about myelination
+
+I assumed there is less differences of myelination in oligodendrocytes in AD vs Ctrl or AD vs ADp40KO. I have to check other aspects of oligodendrocytes
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(gplots)
+library(xlsx)
+library(RColorBrewer)
+library(ggrepel)
+library(viridis)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned_OL.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6))
+
+```
+
+## 1. GO_0042552 myelination
+
+In here, I checked GO_0042552 myelination [ref](http://www.informatics.jax.org/go/term/GO:0042552) and genes belong to term. 
+
+```{r warning=FALSE, message=FALSE}
+# load subset of GO data (1st and 2nd column)
+GO_myelination <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination_sub.txt", sep = "\t")
+
+# remove overlap genes 
+myelination_genes <- as.vector(as.character(unique(GO_myelination$Symbol)))
+
+# remove myelination genes not in the list
+myelination_genes <- myelination_genes[myelination_genes %in% data9set_cleaned_OL.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_myelination_excel <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.xlsx", 1, header=TRUE)
+
+```
+
+### 1. create z-score data frame of myelination gene list
+
+```{r warning=FALSE, message=FALSE}
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OL_1.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "1")
+data9set_cleaned_OL_2.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "2")
+data9set_cleaned_OL_3.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "3")
+data9set_cleaned_OL_4.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "4")
+data9set_cleaned_OL_5.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "5")
+data9set_cleaned_OL_6.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "6")
+data9set_cleaned_OL_7.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "7")
+data9set_cleaned_OL_8.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "8")
+data9set_cleaned_OL_9.SO <- subset(data9set_cleaned_OL.SO, subset = gemgroup %in% "9")
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+OL1.df <- z_score_from_gene_list(data9set_cleaned_OL_1.SO, myelination_genes)
+colnames(OL1.df) <- c("Ctrl_1", "gene")
+OL2.df <- z_score_from_gene_list(data9set_cleaned_OL_2.SO, myelination_genes)
+colnames(OL2.df) <- c("ADp40KO_1", "gene")
+OL3.df <- z_score_from_gene_list(data9set_cleaned_OL_3.SO, myelination_genes)
+colnames(OL3.df) <- c("AD_1", "gene")
+OL4.df <- z_score_from_gene_list(data9set_cleaned_OL_4.SO, myelination_genes)
+colnames(OL4.df) <- c("Ctrl_2", "gene")
+OL5.df <- z_score_from_gene_list(data9set_cleaned_OL_5.SO, myelination_genes)
+colnames(OL5.df) <- c("ADp40KO_2", "gene")
+OL6.df <- z_score_from_gene_list(data9set_cleaned_OL_6.SO, myelination_genes)
+colnames(OL6.df) <- c("AD_2", "gene")
+OL7.df <- z_score_from_gene_list(data9set_cleaned_OL_7.SO, myelination_genes)
+colnames(OL7.df) <- c("Ctrl_3", "gene")
+OL8.df <- z_score_from_gene_list(data9set_cleaned_OL_8.SO, myelination_genes)
+colnames(OL8.df) <- c("ADp40KO_3", "gene")
+OL9.df <- z_score_from_gene_list(data9set_cleaned_OL_9.SO, myelination_genes)
+colnames(OL9.df) <- c("AD_3", "gene")
+
+# merge all data frame
+OL.df <- merge(OL1.df, c(OL2.df, OL3.df, OL4.df, OL5.df, OL6.df, OL7.df, OL8.df, OL9.df), by = "gene")
+OL.df <- OL.df[,c(1,2,3,4, 6,8, 10, 12,14,16)]
+rownames(OL.df) <- OL.df$gene
+OL.df$gene <- NULL
+
+# remove if all counts is zero
+OL.df <- OL.df[Matrix::rowSums(OL.df) != 0, ]
+
+# calculate z-score
+OL_zs.df <- apply(OL.df, 1, function(x) (x - mean(x)) / sd(x))
+OL_zs_final.df <- data.frame(t(OL_zs.df))
+```
+
+### 2. heatmap of GO:0042552 146 genes
+
+Below results show no specific gene clusters of myelination
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 10}
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+
+heatmap.2(as.matrix(OL_zs_final.df), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="GO:0042552 myelination 146 genes",
+          scale="row", lhei=c(1.5, 10), lwid = c(2,10), cexCol=0.8)
+```
+
+#### 2-1. check GO:0042552 146 genes by annotate term 
+
+some of 146 genes overlap annotate terms
+
+```{r warning=FALSE, message=FALSE}
+GO_myelination_excel_sub <- GO_myelination_excel[GO_myelination_excel$Symbol %in% myelination_genes, ]
+
+table(GO_myelination_excel_sub$Annotated.Term)
+
+```
+
+#### 2-2. GO:0032289 central nervous system myelin formation 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelin formation",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelin formation",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+```
+
+#### 2-3. GO:0022010 central nervous system myelination 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 5}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+```
+
+#### 2-4. GO:0043217 myelin maintenance 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelin maintenance",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="myelin maintenance",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+```
+
+#### 2-5. GO:0022011 myelination in peripheral nervous system
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelination in peripheral nervous system",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="myelination in peripheral nervous system",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+```
+
+#### 2-6. GO:0030913 paranodal junction assembly 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "paranodal junction assembly",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="paranodal junction assembly",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+```
+
+#### 2-7. GO:0032287 peripheral nervous system myelin maintenance
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 5}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "peripheral nervous system myelin maintenance",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="peripheral nervous system myelin maintenance",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 0.2)
+```
+
+#### 2-8. GO:0031641 regulation of myelination
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="regulation of myelination",
+          scale="row", lhei=c(2.5, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 0.2)
+```
+
+#### 2-9. GO:0032286 central nervous system myelin maintenance
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelin maintenance",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelin maintenance",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 0.2)
+```
+
+#### 2-10. GO:0032288 myelin assembly
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelin assembly",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="myelin assembly",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 0.2)
+```
+
+#### 2-11. GO:0042552 myelination
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 8}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="myelination",
+          scale="row", lhei=c(1.5, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+#### 2-12. GO:0031642 negative regulation of myelination
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 5}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="negative regulation of myelination",
+          scale="row", lhei=c(3, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+#### 2-13. GO:0032290 peripheral nervous system myelin formation
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 4}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "peripheral nervous system myelin formation",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="peripheral nervous system myelin formation",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+#### 2-14. GO:0031643 positive regulation of myelination
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(2.5, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+## 2. DE of myelination genes
+
+``````{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+OL_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_Ctrl.csv", row.names = 1)
+
+OL_DE_AD_Ctrl.df$gene <- rownames(OL_DE_AD_Ctrl.df)
+OL_DE_AD_Ctrl.df <- OL_DE_AD_Ctrl.df[OL_DE_AD_Ctrl.df$gene %in% myelination_genes, ]
+
+
+# log2FC > 1 or padj > 50
+OL_DE_AD_Ctrl_plus.df <- OL_DE_AD_Ctrl.df[which(OL_DE_AD_Ctrl.df$avg_logFC > 0 & OL_DE_AD_Ctrl.df$p_val_adj < 0.01),]
+#OL_DE_AD_Ctrl_minus.df <- OL_DE_AD_Ctrl.df[which(OL_DE_AD_Ctrl.df$avg_logFC < 0 & OL_DE_AD_Ctrl.df$p_val_adj < 0.01),]
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=5.5}
+g1 <- ggplot(OL_DE_AD_Ctrl.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = OL_DE_AD_Ctrl_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("myelination genes in AD versus Ctrl of Oligo") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,20)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = OL_DE_AD_Ctrl_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = OL_DE_AD_Ctrl_plus.df$gene, force = 10) 
+
+```
+
+``````{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+OL_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv", row.names = 1)
+
+OL_DE_AD_ADp40KO.df$gene <- rownames(OL_DE_AD_ADp40KO.df)
+OL_DE_AD_ADp40KO.df <- OL_DE_AD_ADp40KO.df[OL_DE_AD_ADp40KO.df$gene %in% myelination_genes, ]
+
+
+# log2FC > 1 or padj > 50
+OL_DE_AD_ADp40KO_plus.df <- OL_DE_AD_ADp40KO.df[which(OL_DE_AD_ADp40KO.df$avg_logFC > 0 & OL_DE_AD_ADp40KO.df$p_val_adj < 0.01),]
+#OL_DE_AD_Ctrl_minus.df <- OL_DE_AD_Ctrl.df[which(OL_DE_AD_Ctrl.df$avg_logFC < 0 & OL_DE_AD_Ctrl.df$p_val_adj < 0.01),]
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=5.5}
+g2 <- ggplot(OL_DE_AD_ADp40KO.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = OL_DE_AD_ADp40KO_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("myelination genes in AD versus ADp40KO of Oligo") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,5)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = OL_DE_AD_ADp40KO_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = OL_DE_AD_ADp40KO_plus.df$gene, force = 10) 
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=11}
+grid.arrange(g1, g2, ncol = 2)
+```
+
+## 3. cluster specific of myelination genes
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=11}
+# load cluster marker genes
+markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker.csv", row.names = 1)
+
+# extract Oligo marker genes
+OL_markers <- markers[markers$cluster %in% c("1", "5", "6"), ]
+
+# extract myelination marker genes
+OL_markers <- OL_markers[OL_markers$gene %in% myelination_genes, ]
+
+# extract genes avg_logFC > 1 & pct2 < 0.3
+OL_markers <- OL_markers[which(OL_markers$avg_logFC > 1  & OL_markers$pct.1 > 0.5 & OL_markers$pct.2 < 0.3), ]
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+
+DimPlot(object = data9set_cleaned_OL.SO, reduction = "umap", group.by = "seurat_clusters") + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-5, 10))
+```
+
+### cluster 6 specific myelination genes
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=10}
+f1 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Ugt8a"), pt.size = 1) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-5, 10)) + ggtitle("Ugt8a gene") + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2) 
+
+f2 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Fa2h"), pt.size = 1) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-5, 10)) + ggtitle("Fa2h gene") + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2) 
+
+f3 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Mag"), pt.size = 1) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-5, 10)) + ggtitle("Mag gene") + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2) 
+
+f4 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Bcas1"), pt.size = 1) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-5, 10)) + ggtitle("Bcas1 gene") + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2) 
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+sessionInfo()
+```
+

@@ -1,0 +1,476 @@
+---
+title: "10X_9sets"
+author: "Skim"
+date: "12/29/2019"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+TODO: 
+1. clustering / identify marker genes (Shirin)  
+2. QC low quality cell (doublets)  
+3. reproducibility / cell type composition (organoids paper, gini coefficient, KL divergence)    
+4. DE / GO / GSEA (both bulk and scRNA)  
+5. cell-cell interaction (cellphoneDB, NicheNet)
+
+```{r warning=FALSE, message=FALSE}
+Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All/outs/filtered_feature_bc_matrix/")
+```
+
+### 1. QC plots
+
+The number in here shows the median of each sample
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+data9set.SO <- CreateSeuratObject(counts =  data9set,  min.cells = 3, min.features = 200, project = "ADp40KO")
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set.SO@meta.data), split="-"), "[[", 2)
+data9set.SO <- AddMetaData(object=data9set.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set.SO@meta.data)))
+
+# calculate MT genes
+data9set.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set.SO, pattern = "^mt-")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set.SO, features = c("nFeature_RNA"), group.by = "gemgroup", pt.size = 0.2)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set.SO, features = c("percent.mt"), group.by = "gemgroup", pt.size = 0.2)
+
+```
+
+### 2. visualization
+
+I filtered out nUMIs **more than 60,000** and **less than 200** and **mitochondria genes more than 10%**. 
+
+parameters: nFeatures = 2000, PCs = 40, clustering resolution = 1, 
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height= 5}
+
+#FeatureScatter(data9set.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+
+data9set.SO <- subset(x = data9set.SO, subset = nCount_RNA < 30000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+data9set.SO <- NormalizeData(object = data9set.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+data9set.SO <- FindVariableFeatures(object = data9set.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+data9set.SO <- ScaleData(object = data9set.SO, vars.to.regress = c("percent.mt", "nCount_RNA", "gemgroup"))
+
+# PCA
+data9set.SO <- RunPCA(data9set.SO, features = VariableFeatures(object = data9set.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(JK_0123.SO, ndims = 50)
+
+data9set.SO <- FindNeighbors(object = data9set.SO, reduction = "pca", dims = 1:40)
+data9set.SO <- FindClusters(object = data9set.SO, resolution = 0.8, verbose = FALSE)
+
+data9set.SO <- RunTSNE(object = data9set.SO, dims = 1:40, nthreads = 8, perplexity = 30)
+#d1 <- DimPlot(object = data9set.SO, reduction = "tsne")
+
+data9set.SO <- RunUMAP(object = data9set.SO, dims = 1:40, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+#d2 <- DimPlot(object = data9set.SO, reduction = "umap")
+
+DimPlot(object = data9set.SO, reduction = "umap")
+
+#grid.arrange(d1, d2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=5}
+FeaturePlot(data9set.SO, features = c("nCount_RNA", "Siglech"), by.col = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=6}
+DimPlot(object = data9set.SO, group.by = "gemgroup", pt.size = 0.05)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=6}
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+#table(data9set.SO$sample)
+
+DimPlot(object = data9set.SO, group.by = "sample", pt.size = 0.05, cols = c("#003333", "#FF6600", "#FFFF00"))
+```
+
+```{r warning=FALSE, message=FALSE}
+#data9set.markers <- FindAllMarkers(data9set.SO, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#data9set.markers_top10 <- data9set.markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_logFC)
+#datatable(data9set.markers_top10, options = list(pageLength = 10, dom = 'tip'))
+#write.csv(data9set.markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_data9set_marker.csv")
+#write.csv(data9set.markers_top10, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_data9set_marker_top20.csv")
+data9set.markers_top10 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_data9set_marker_top20.csv")
+datatable(data9set.markers_top10, options = list(pageLength = 10, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=6}
+dot_genes <- c("Hexb", "Siglech", "P2ry12",
+               "Olig1", "Pdgfra",
+               "Mbp", "Mag", "Neat1",
+               "Sned1", "Alcam",
+               "Cldn5", "Flt1", "Rgs5",
+               "Gja1", "Cst3",
+               "Snap25", "Cnr1",
+               "Gad1", "Cit",
+               "Cdh18",
+               "Man1a", "Brd9",
+               "Tshz2", "Gria4",
+               "Adam11", "Rnf112",
+               "Trpc6")
+
+
+
+DotPlot(data9set.SO, features = dot_genes, cols = c("lightgrey", "blue"),  group.by = "seurat_clusters") + 
+  theme(axis.text.y = element_text(size = 10), 
+        axis.title.x = element_blank(),
+        legend.title = element_text(size =10),
+        legend.text = element_text(size = 10)) + 
+  coord_flip()
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# Save Seurat object
+# ref: https://satijalab.org/seurat/seurat_clustering_tutorial_part1.html
+save(data9set.SO, file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets_Seurat_object_res0.8.Robj")
+# load Seurat object
+# ref: https://satijalab.org/seurat/seurat_clustering_tutorial_part2.html
+```
+
+## whole DE analysis
+
+```{r warning=FALSE, message=FALSE}
+AD_vs_Ctrl <- FindMarkers(data9set.SO, ident.1 =  "AD", ident.2 = "Ctrl", group.by = "sample", test.use = "wilcox", logfc.threshold = 0.1)
+AD_vs_Ctrl$gene <- rownames(AD_vs_Ctrl)
+
+ADp40KO_vs_AD <- FindMarkers(data9set.SO, ident.1 =  "ADp40KO", ident.2 = "AD", group.by = "sample", test.use = "wilcox", logfc.threshold = 0.1)
+ADp40KO_vs_AD$gene <- rownames(ADp40KO_vs_AD)
+
+ADp40KO_vs_Ctrl <- FindMarkers(data9set.SO, ident.1 =  "ADp40KO", ident.2 = "Ctrl", group.by = "sample", test.use = "wilcox", logfc.threshold = 0.1)
+ADp40KO_vs_Ctrl$gene <- rownames(ADp40KO_vs_Ctrl)
+
+AD_vs_Ctrl_1 <- AD_vs_Ctrl[,c(2,6)]
+ADp40KO_vs_AD_1 <- ADp40KO_vs_AD[,c(2,6)]
+ADp40KO_vs_Ctrl_1 <- ADp40KO_vs_Ctrl[,c(2,6)]
+
+AD_vs_Ctrl_ADp40KO <- Reduce(function(x,y) merge(x,y, by="gene",all=TRUE) ,list(AD_vs_Ctrl_1,ADp40KO_vs_AD_1,ADp40KO_vs_Ctrl_1))
+colnames(AD_vs_Ctrl_ADp40KO) <- c("gene", "lfc_AD_vs_Ctrl", "lfc_ADp40KO_vs_AD", "lfc_ADp40KO_vs_Ctrl")
+
+datatable(AD_vs_Ctrl_ADp40KO, options = list(pageLength = 10, dom = 'tip'))
+```
+
+
+## Microglia cluster DE analysis
+
+cluster 5, 8, 30
+
+```{r warning=FALSE, message=FALSE}
+
+data9set.SO_cluster5_8_30 <- subset(data9set.SO, subset = seurat_clusters == c(5,8,30))
+
+#data9set.SO_cluster5_8_30@meta.data
+
+# AD vs Ctrl
+AD_Ctrl_5_8_30 <- FindMarkers(data9set.SO_cluster5_8_30, ident.1 =  "AD", ident.2 = "Ctrl", 
+                             group.by = "sample", test.use = "wilcox")
+
+ADp40_AD_5_8_30 <- FindMarkers(data9set.SO_cluster5_8_30, ident.1 =  "ADp40KO", ident.2 = "AD", 
+                             group.by = "sample", test.use = "wilcox")
+
+ADp40_Ctrl_5_8_30 <- FindMarkers(data9set.SO_cluster5_8_30, ident.1 =  "ADp40KO", ident.2 = "Ctrl", 
+                             group.by = "sample", test.use = "wilcox")
+datatable(AD_Ctrl_5_8_30, options = list(pageLength = 5, dom = 'tip'))
+datatable(ADp40_AD_5_8_30, options = list(pageLength = 5, dom = 'tip'))
+datatable(ADp40_Ctrl_5_8_30, options = list(pageLength = 5, dom = 'tip'))
+```
+
+[Myo1e ref](https://molecularneurodegeneration.biomedcentral.com/articles/10.1186/s13024-018-0266-4)  
+[Myo1e ref2](https://molecularneurodegeneration.biomedcentral.com/articles/10.1186/s13024-018-0254-8)
+Ttr upregulated ADp40KO which preventing amyloid fibril formation   
+[Ttr ref](https://www.ncbi.nlm.nih.gov/pubmed/8938268)
+[Ttr ref2](https://www.jneurosci.org/content/31/35/12483)
+
+## Cell population cluters
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+##################
+# per experiment
+##################
+exp <- c("Ctrl", "AD", "ADp40KO")
+# Create new data frame
+exp_cell.df <- data.frame(ident = as.character(), cluster = as.numeric(), cells = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in exp){
+  for(j in c(0:42)){
+    if(i == "Ctrl"){
+      k <- j
+    }
+    if(i == "AD"){
+      k <- j + 43
+    }
+    if(i =="ADp40KO"){
+      k <- j + 86
+    }
+    exp_cell.df[k+1, 1] <- i
+    exp_cell.df[k+1, 2] <- j
+    exp_cell.df[k+1, 3] <- table(data9set.SO@meta.data$sample == i & data9set.SO@meta.data$seurat_clusters == j)[2]
+    #exp_cell.df[is.na(exp_cell.df)] <- 0
+  }
+}
+
+#sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells)
+
+# calculate percentage
+exp_cell.df$total <- ifelse(exp_cell.df$ident == "Ctrl", sum(exp_cell.df[exp_cell.df$ident == "Ctrl", ]$cells), 
+                            ifelse(exp_cell.df$ident == "AD", sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells),
+                                   sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells)))
+exp_cell.df$percentage <- round(100*(exp_cell.df$cells/exp_cell.df$total),2)
+
+ggplot(exp_cell.df, aes(x = ident, y = cells, fill = factor(cluster)))+
+  geom_bar(position="fill", stat="identity")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+#############
+# per sample 
+#############
+#data9set.SO$gemgroup
+
+sample <- c(1, 2, 3, 4, 5, 6, 7, 8 ,9)
+exp_cell.df2 <- data.frame(sample = as.character(), cluster = as.numeric(), cells = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in sample){
+  for(j in c(0:42)){
+    if(i == 1){
+      k <- j
+    }
+    if(i == 2){
+      k <- j + 43
+    }
+    if(i ==3){
+      k <- j + 86
+    }
+    if(i ==4){
+      k <- j + 129
+    }
+    if(i ==5){
+      k <- j + 172
+    }
+    if(i ==6){
+      k <- j + 215
+    }
+    if(i ==7){
+      k <- j + 258
+    }
+    if(i ==8){
+      k <- j + 301
+    }
+    if(i ==9){
+      k <- j + 344
+    }
+    exp_cell.df2[k+1, 1] <- i
+    exp_cell.df2[k+1, 2] <- j
+    exp_cell.df2[k+1, 3] <- table(data9set.SO@meta.data$gemgroup == i & data9set.SO@meta.data$seurat_clusters == j)[2]
+    exp_cell.df2[is.na(exp_cell.df2)] <- 0
+  }
+}
+
+# calculate percentage
+exp_cell.df2$total <- ifelse(exp_cell.df2$sample == 1, sum(exp_cell.df2[exp_cell.df2$sample == 1, ]$cells), 
+                            ifelse(exp_cell.df2$sample == 2, sum(exp_cell.df2[exp_cell.df2$sample == 2, ]$cells),
+                                   ifelse(exp_cell.df2$sample == 3, sum(exp_cell.df2[exp_cell.df2$sample == 3, ]$cells),
+                                          ifelse(exp_cell.df2$sample == 4, sum(exp_cell.df2[exp_cell.df2$sample == 4, ]$cells),
+                                                 ifelse(exp_cell.df2$sample == 5, sum(exp_cell.df2[exp_cell.df2$sample == 5, ]$cells),
+                                                        ifelse(exp_cell.df2$sample == 6, sum(exp_cell.df2[exp_cell.df2$sample == 6, ]$cells),
+                                                               ifelse(exp_cell.df2$sample == 7, sum(exp_cell.df2[exp_cell.df2$sample == 7, ]$cells),
+                                                                      ifelse(exp_cell.df2$sample == 8, sum(exp_cell.df2[exp_cell.df2$sample == 8, ]$cells), sum(exp_cell.df2[exp_cell.df2$sample == 9, ]$cells)))))))))
+
+exp_cell.df2$percentage <- round(100*(exp_cell.df2$cells/exp_cell.df2$total),2)
+
+exp_cell.df2$sample <- factor(exp_cell.df2$sample, levels = c(1,4,7,2,5,8,3,6,9))
+
+ggplot(exp_cell.df2, aes(x = sample, y = cells, fill = factor(cluster)))+
+  geom_bar(position="fill", stat="identity")
+
+```
+
+
+
+## reproducibility (organoids)
+
+**ICC**: To compare variability in cell-type proportion between data sets, intraclass correlation was computed by creating a table of cell-type proportions across each individual organoid, and using the ICC command in the irr R package v0.84, with model = “twoway”, type = “agreement”, and unit = “single”. 
+
+**MI**: investigate the degree of variation whether the reproducibility of cell types generated was similar to that between brains. We calculated mutual information (MI) scores between cluster assignments and sample identity in each dataset. a lower MI score and lower z-score indicate higher reproducibility between individuals.
+
+Mutual information was calculated between cluster assignments and individuals with the mpmi R package. z-scores were calculated by creating background distributions for each dataset, by permuting cluster assignments and re-calculating the mutual information score 1,000 times.
+
+## NicheNet
+ref: https://github.com/saeyslab/nichenetr/blob/master/vignettes/seurat_wrapper.md
+ref: https://github.com/saeyslab/nichenetr
+
+```{r warning=FALSE, message=FALSE}
+# Read in NicheNet’s ligand-target prior model, ligand-receptor network and weighted integrated networks
+
+ligand_target_matrix = readRDS(url("https://zenodo.org/record/3260758/files/ligand_target_matrix.rds"))
+lr_network = readRDS(url("https://zenodo.org/record/3260758/files/lr_network.rds"))
+weighted_networks = readRDS(url("https://zenodo.org/record/3260758/files/weighted_networks.rds"))
+weighted_networks_lr = weighted_networks$lr_sig %>% inner_join(lr_network %>% distinct(from,to), by = c("from","to"))
+
+# Convert to human to mouse data
+
+lr_network = lr_network %>% mutate(from = convert_human_to_mouse_symbols(from), to = convert_human_to_mouse_symbols(to)) %>% drop_na()
+colnames(ligand_target_matrix) = ligand_target_matrix %>% colnames() %>% convert_human_to_mouse_symbols()
+rownames(ligand_target_matrix) = ligand_target_matrix %>% rownames() %>% convert_human_to_mouse_symbols()
+
+ligand_target_matrix = ligand_target_matrix %>% .[!is.na(rownames(ligand_target_matrix)), !is.na(colnames(ligand_target_matrix))]
+
+weighted_networks_lr = weighted_networks_lr %>% mutate(from = convert_human_to_mouse_symbols(from), to = convert_human_to_mouse_symbols(to)) %>% drop_na()
+```
+
+#### Define a “sender/niche” cell population and a “receiver/target” cell
+
+```{r warning=FALSE, message=FALSE}
+## receiver
+receiver = c(0, 1, 2, 3, 4, 6)
+expressed_genes_receiver = get_expressed_genes(receiver, data9set.SO, pct = 0.10)
+
+background_expressed_genes = expressed_genes_receiver %>% .[. %in% rownames(ligand_target_matrix)]
+
+## sender
+
+sender_celltypes = c(5, 8, 30)
+list_expressed_genes_sender = sender_celltypes %>% unique() %>% lapply(get_expressed_genes, data9set.SO, 0.10) # lapply to get the expressed genes of every sender cell type separately here
+expressed_genes_sender = list_expressed_genes_sender %>% unlist() %>% unique()
+```
+
+#### Define a gene set of interest
+
+```{r warning=FALSE, message=FALSE}
+seurat_obj_receiver= subset(data9set.SO, idents = receiver)
+seurat_obj_receiver = SetIdent(data9set.SO, value = seurat_obj_receiver[["sample"]])
+
+condition_oi = "AD"
+condition_reference = "Ctrl" 
+
+DE_table_receiver = FindMarkers(object = seurat_obj_receiver, ident.1 = condition_oi, ident.2 = condition_reference, group.by = "sample", min.pct = 0.10) %>% rownames_to_column("gene")
+
+geneset_oi = DE_table_receiver %>% filter(p_val_adj <= 0.05 & abs(avg_logFC) >= 0.25) %>% pull(gene)
+geneset_oi = geneset_oi %>% .[. %in% rownames(ligand_target_matrix)]
+```
+
+
+#### Define a set of potential ligands
+
+```{r warning=FALSE, message=FALSE}
+ligands = lr_network %>% pull(from) %>% unique()
+receptors = lr_network %>% pull(to) %>% unique()
+
+expressed_ligands = intersect(ligands,expressed_genes_sender)
+expressed_receptors = intersect(receptors,expressed_genes_receiver)
+
+potential_ligands = lr_network %>% filter(from %in% expressed_ligands & to %in% expressed_receptors) %>% pull(from) %>% unique()
+
+```
+
+#### Perform NicheNet ligand activity analysis
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+ligand_activities = predict_ligand_activities(geneset = geneset_oi, background_expressed_genes = background_expressed_genes, ligand_target_matrix = ligand_target_matrix, potential_ligands = potential_ligands)
+
+ligand_activities = ligand_activities %>% arrange(-pearson) %>% mutate(rank = rank(desc(pearson)))
+
+
+best_upstream_ligands = ligand_activities %>% top_n(20, pearson) %>% arrange(-pearson) %>% pull(test_ligand) %>% unique()
+
+
+DotPlot(data9set.SO, features = best_upstream_ligands %>% rev(), cols = "RdYlBu") + RotatedAxis() + coord_flip()
+```
+
+#### Infer receptors and top-predicted target genes of ligands
+
+#### Active target gene inference
+
+```{r warning=FALSE, message=FALSE}
+active_ligand_target_links_df = best_upstream_ligands %>% lapply(get_weighted_ligand_target_links, geneset = geneset_oi, ligand_target_matrix = ligand_target_matrix, n = 200) %>% bind_rows() %>% drop_na()
+
+#################################################################################
+get_weighted_ligand_target_links
+top_n_score = ligand_target_matrix[, best_upstream_ligands] %>% sort(decreasing = T) %>% head(500) %>% min()
+top_n_score
+
+intersect(colnames(ligand_target_matrix), best_upstream_ligands)
+
+
+targets = intersect(ligand_target_matrix[, best_upstream_ligands] %>% .[. >= top_n_score] %>% names(), geneset_oi)
+
+targets
+##################################################################################
+#active_ligand_target_links = prepare_ligand_target_visualization(ligand_target_df = active_ligand_target_links_df, ligand_target_matrix = ligand_target_matrix, cutoff = 0.33)
+
+#order_ligands = intersect(best_upstream_ligands, colnames(active_ligand_target_links)) %>% rev() %>% make.names()
+#order_targets = active_ligand_target_links_df$target %>% unique() %>% intersect(rownames(active_ligand_target_links)) %>% make.names()
+#rownames(active_ligand_target_links) = rownames(active_ligand_target_links) %>% make.names() # make.names() for heatmap visualization of genes like H2-T23
+#colnames(active_ligand_target_links) = colnames(active_ligand_target_links) %>% make.names() # make.names() for heatmap visualization of genes like H2-T23
+
+#vis_ligand_target = active_ligand_target_links[order_targets,order_ligands] %>% t()
+
+
+#p_ligand_target_network = vis_ligand_target %>% make_heatmap_ggplot("Prioritized ligands","Predicted target genes", color = "purple",legend_position = "top", x_axis_position = "top",legend_title = "Regulatory potential") + 
+#  theme(axis.text.x = element_text(face = "italic")) + 
+#  scale_fill_gradient2(low = "whitesmoke",  high = "purple", breaks = c(0,0.006,0.012))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# combined heatmap: overlay ligand activities with target genes
+ligand_pearson_matrix = ligand_activities %>% tidygraph::select(pearson) %>% as.matrix() %>% magrittr::set_rownames(ligand_activities$test_ligand)
+
+
+rownames(ligand_pearson_matrix) = rownames(ligand_pearson_matrix) %>% make.names()
+colnames(ligand_pearson_matrix) = colnames(ligand_pearson_matrix) %>% make.names()
+
+vis_ligand_pearson = ligand_pearson_matrix[order_ligands, ] %>% as.matrix(ncol = 1) %>% magrittr::set_colnames("Pearson")
+p_ligand_pearson = vis_ligand_pearson %>% make_heatmap_ggplot("Prioritized ligands","Ligand activity", color = "darkorange",legend_position = "top", x_axis_position = "top", legend_title = "Pearson correlation coefficient\ntarget gene prediction ability)") + theme(legend.text = element_text(size = 9))
+
+figures_without_legend = cowplot::plot_grid(p_ligand_pearson + theme(legend.position = "none", axis.ticks = element_blank()) + theme(axis.title.x = element_text()),
+    p_ligand_target_network + theme(legend.position = "none", axis.ticks = element_blank()) + ylab(""),
+    align = "hv",
+    nrow = 1,
+    rel_widths = c(ncol(vis_ligand_pearson)+10, ncol(vis_ligand_target)))
+
+legends = cowplot::plot_grid(
+    ggpubr::as_ggplot(ggpubr::get_legend(p_ligand_pearson)),
+    ggpubr::as_ggplot(ggpubr::get_legend(p_ligand_target_network)),
+    nrow = 1,
+    align = "h")
+
+```
+
+## Bigscale
+
+[ref](https://github.com/iaconogi/bigSCale2)
+
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```

@@ -1,0 +1,55 @@
+---
+title: "miRNA target genes"
+author: "Skim"
+date: '2020 4 3 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+### 1. miRNA
+
+miRNAs are short, approximately 22 nucleotide-long, non-coding RNAs that regulate gene expression by stimulating either mRNA degradation or their translational repression by binding to the 3′-untranslated region of target mRNAs
+
+### 2. miRNA in scRNA-seq
+
+Using 10X, Mature microRNA (miRNA) transcripts lack a **polyA tail** and will therefore not be captured by either the Single Cell 3' or 5' gene expression assays. **A subset of (pre)-miRNAs** or **long precursor pri-miRNAs** may have a 5' cap and 3' poly-A tail. Although these (pre)-miRNA transcripts may be reverse transcribed during the 10x workflow, the distance of the pre-miRNA hairpin structure from the 5' and 3' ends of these transcripts can be extensive. miRNA genes are filtered out of our pre-built reference packages, so if you would like to include these genes in your analysis, **a custom reference** will need. 
+
+### 3. miR-155 and T-Cell Responses in AD
+
+Several studies report that the expression of miR-155, mediated by Toll-like receptors, increases in monocytic cell lines during lipopolysaccharide (LPS)-induced inflammation. In addition, inflammatory cytokines such as IFN-α, γ, and TNF-α also strongly stimulate miR-155 expression. Interestingly, miR-155-null mice exhibit reduced IL-2 and IFN-γ production, indicating that it is necessary for T-cell responses. [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4415416/)
+
+Another evidence is strong upregulation of miR-155 levels was observed in the brain of **12-month-old 3xTg AD** animals. This event occurred simultaneously with an increase of microglia and astrocyte activation. MiR-155 is considered a pro-inflammatory miRNA and has been shown to play a central role in the regulation of the innate immune response, through modulation of cytokine and chemokine production. As we and others have previously reported, **SOCS-1** is a molecular target of miR-155 and its expression is decreased upon miR-155 upregulation [ref](https://academic.oup.com/hmg/article/23/23/6286/2900902)
+
+### 4. other miRNAs involved in AD and neuroinflammation
+
+NF-κB, a pro-inflammatory transcription factor, could be activated by Aβ, and the activation of NF-κB could lead to the upregulated of six inducible miRNAs: **miR-7**, miR-9, miR-34a, miR-125b, miR-146a, and miR-155 [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6405631/) [ref2](https://link.springer.com/article/10.1007/s12035-019-1500-y). Another paper mentions To confirm these results in a model more similar to AD, Lukiw treated primary culture HNG cells with a neurotoxic combination of IL-1β, and Aβ42 and detected significant up-regulation of NF-κB and miR-146a as compared to untreated controls [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5924516/)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

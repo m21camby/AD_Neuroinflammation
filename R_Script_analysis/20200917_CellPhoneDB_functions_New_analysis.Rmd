@@ -1,0 +1,496 @@
+---
+title: "cellphonedb"
+author: "Skim"
+date: '2020 9 17 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(viridis)
+library(igraph)
+
+source("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New.R")
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# test <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+# 
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+pvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+# Ctrl_CB <- sigmeanvalue_Ctrl.df
+# # sigmeanvalue modification
+# Ctrl_CB[is.na(Ctrl_CB)] <- 0
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# 
+# Ctrl_CB <- data.frame(Ctrl_CB[, c(2, 13:373)])
+# 
+# Ctrl_CB <- Ctrl_CB %>% distinct()
+# 
+# rownames(Ctrl_CB) <- Ctrl_CB$interacting_pair
+# Ctrl_CB <- Ctrl_CB[, -c(1)]
+# 
+# colnames(Ctrl_CB)
+# 
+# ```
+# 
+# 
+# ```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# library(biomaRt)
+# 
+# convertHumanGeneList <- function(x){
+#  
+# require("biomaRt")
+# human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# mouse = useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+#  
+# genesV2 = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+#  
+# return(genesV2)
+# }
+# 
+# sigmeanvalue_Ctrl_celltype.df$complex <- str_count(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_")
+# sigmeanvalue_Ctrl_celltype.df$gene_a1 <- str_extract(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "[^_]+")
+# sigmeanvalue_Ctrl_celltype.df$gene_a2 <- ifelse(sigmeanvalue_Ctrl_celltype.df$complex %in% 2, qdapRegex::ex_between(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_", "_"), " ") %>% unlist
+# 
+# 
+# sigmeanvalue_Ctrl_celltype.df$gene_b1 <- sub(".*_", "", sigmeanvalue_Ctrl_celltype.df$interacting_pair)
+# 
+# genes_a1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a1)
+# colnames(genes_a1) <- c("gene_a1", "mouse_gene_a1")
+# 
+# genes_a2 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a2)
+# 
+# genes_b1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_b1)
+# colnames(genes_b1) <- c("gene_b1", "mouse_gene_b1")
+# 
+# 
+# # last
+# sub(".*_", "", Ctrl_CB$interacting_pair[200:210]) 
+# # first and second
+# sub('_[^_]*$', '', Ctrl_CB$interacting_pair[200:210])
+# # first
+# str_extract(Ctrl_CB$interacting_pair[200:210], "[^_]+") 
+# 
+# str_match("BMPR1B_BMPR2_BMPR1A", "^_\\s*(.*?)\\s_*")
+# 
+# genes <- convertHumanGeneList(sub(".*_", "", Ctrl_CB$interacting_pair))
+# 
+# grepl("_", Ctrl_CB$interacting_pair[200:210]) 
+# 
+# str_count(Ctrl_CB$interacting_pair[200:210], "_")
+# 
+# qdapRegex::ex_between(Ctrl_CB$interacting_pair[200:210], "_", "_")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_a1, by = "gene_a1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_b1, by = "gene_b1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1), ]
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1), ]
+cellphonedb_plot <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("Ctrl", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=Sender_receiver,
+                     colour=sigmeanvalue,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+} 
+
+cellphonedb_plot2 <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("WT", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=interacting_cells,
+                     colour=means,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+}  
+```
+
+### 1. Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+#sigmeanvalue_Ctrl.df <- read.table(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_", "Ctrl", "_cell_type/significant_means.txt"), sep = "\t", header = TRUE, check.names = FALSE)
+
+
+
+list1 <- "Astrocytes"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MFOL", "Inhibitory_Neurons", "Microglia", "OPC", "MOL", "NFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_Ctrl.csv", row.names = 1)
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+
+cellphone <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_Astrocytes.csv", row.names = 1)
+
+
+
+cellphone1 <- cellphone[cellphone$interacting_pair %in% "Bdnf_Ntrk2", ]
+
+cellphonedb_plot(cellphone1) + ggtitle("Bdnf-Ntrk2 pathway")
+
+
+#data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+
+#VlnPlot(data9set_sub.SO, features = "Ntrk2", group.by = "sample", pt.size = 0)
+```
+
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+BDNF_NTRK2_Ctrl <- sigmeanvalue_Ctrl.df[sigmeanvalue_Ctrl.df$interacting_pair	== "BDNF_NTRK2", c(13:373)] %>% t %>% as.data.frame
+colnames(BDNF_NTRK2_Ctrl) <- "WT_means"
+BDNF_NTRK2_Ctrl$interacting_cells <- rownames(BDNF_NTRK2_Ctrl)
+
+BDNF_NTRK2_AD <- sigmeanvalue_AD.df[sigmeanvalue_AD.df$interacting_pair	== "BDNF_NTRK2", c(13:373)] %>% t %>% as.data.frame
+colnames(BDNF_NTRK2_AD) <- "AD_means"
+BDNF_NTRK2_AD$interacting_cells <- rownames(BDNF_NTRK2_AD)
+
+BDNF_NTRK2_ADp40KO <- sigmeanvalue_ADp40KO.df[sigmeanvalue_ADp40KO.df$interacting_pair	== "BDNF_NTRK2", c(13:373)] %>% t %>% as.data.frame
+colnames(BDNF_NTRK2_ADp40KO) <- "ADp40KO_means"
+BDNF_NTRK2_ADp40KO$interacting_cells <- rownames(BDNF_NTRK2_ADp40KO)
+
+BDNF_NTRK2 <- inner_join(BDNF_NTRK2_Ctrl, BDNF_NTRK2_AD, by = "interacting_cells")
+
+BDNF_NTRK2 <- inner_join(BDNF_NTRK2, BDNF_NTRK2_ADp40KO, by = "interacting_cells")
+
+# subset Astrocytes
+BDNF_NTRK2 <- BDNF_NTRK2[grepl("Astrocytes", BDNF_NTRK2$interacting_cells), ]
+
+rownames(BDNF_NTRK2) <- BDNF_NTRK2$interacting_cells
+BDNF_NTRK2$interacting_cells <- NULL
+
+BDNF_NTRK2[is.na(BDNF_NTRK2)] <- 0
+
+BDNF_NTRK2 <- BDNF_NTRK2[rowSums(BDNF_NTRK2) != 0, ]
+
+BDNF_NTRK2$interacting_cells <- rownames(BDNF_NTRK2)
+
+BDNF_NTRK2 <- BDNF_NTRK2 %>% gather(exp, means, "WT_means":"ADp40KO_means")
+
+#rownames(BDNF_NTRK2) <- BDNF_NTRK2$interacting_cells
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+P_BDNF_NTRK2_Ctrl <- pvalue_Ctrl.df[pvalue_Ctrl.df$interacting_pair	== "BDNF_NTRK2", c(12:372)] %>% t %>% as.data.frame
+colnames(P_BDNF_NTRK2_Ctrl) <- "WT_pvalue"
+P_BDNF_NTRK2_Ctrl$interacting_cells <- rownames(P_BDNF_NTRK2_Ctrl)
+
+P_BDNF_NTRK2_AD <- pvalue_AD.df[pvalue_AD.df$interacting_pair	== "BDNF_NTRK2", c(12:372)] %>% t %>% as.data.frame
+colnames(P_BDNF_NTRK2_AD) <- "AD_pvalue"
+P_BDNF_NTRK2_AD$interacting_cells <- rownames(P_BDNF_NTRK2_AD)
+
+P_BDNF_NTRK2_ADp40KO <- pvalue_ADp40KO.df[pvalue_ADp40KO.df$interacting_pair	== "BDNF_NTRK2", c(12:372)] %>% t %>% as.data.frame
+colnames(P_BDNF_NTRK2_ADp40KO) <- "ADp40KO_pvalue"
+P_BDNF_NTRK2_ADp40KO$interacting_cells <- rownames(P_BDNF_NTRK2_ADp40KO)
+
+P_BDNF_NTRK2 <- inner_join(P_BDNF_NTRK2_Ctrl, P_BDNF_NTRK2_AD, by = "interacting_cells")
+
+P_BDNF_NTRK2 <- inner_join(P_BDNF_NTRK2, P_BDNF_NTRK2_ADp40KO, by = "interacting_cells")
+
+# subset Astrocytes
+P_BDNF_NTRK2 <- P_BDNF_NTRK2[grepl("Astrocytes", P_BDNF_NTRK2$interacting_cells), ]
+
+rownames(P_BDNF_NTRK2) <- P_BDNF_NTRK2$interacting_cells
+P_BDNF_NTRK2$interacting_cells <- NULL
+
+P_BDNF_NTRK2[is.na(P_BDNF_NTRK2)] <- 0
+
+P_BDNF_NTRK2 <- P_BDNF_NTRK2[rownames(P_BDNF_NTRK2) %in% BDNF_NTRK2$interacting_cells, ]
+
+P_BDNF_NTRK2$interacting_cells <- rownames(P_BDNF_NTRK2)
+
+P_BDNF_NTRK2 <- P_BDNF_NTRK2 %>% gather(exp, pvalue, "WT_pvalue":"ADp40KO_pvalue")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+BDNF_NTRK2_final <- cbind(BDNF_NTRK2, P_BDNF_NTRK2)
+BDNF_NTRK2_final$exp <- str_sub(BDNF_NTRK2_final$exp, end = -7)
+
+BDNF_NTRK2_final <- BDNF_NTRK2_final[, c(1,2,3,6)]
+BDNF_NTRK2_final$logpvalue <- -log10(BDNF_NTRK2_final$pvalue)
+
+BDNF_NTRK2_final[sapply(BDNF_NTRK2_final, is.infinite)] <- 3
+
+cellphonedb_plot2(BDNF_NTRK2_final)  + ggtitle("Bdnf-Ntrk2 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,8))
+```
+
+
+
+### 2. MOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+list1 <- "MOL"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MFOL", "Inhibitory_Neurons", "Microglia", "OPC", "Astrocytes", "NFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+# test[4]out
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_Ctrl.csv", row.names = 1)
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1)
+
+
+```
+
+
+### 3. MFOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+list1 <- "MFOL"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MOL", "Inhibitory_Neurons", "Microglia", "OPC", "Astrocytes", "NFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+
+# test[4] out
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 4. NFOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+list1 <- "NFOL"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MOL", "Inhibitory_Neurons", "Microglia", "OPC", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 5. OPC
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+list1 <- "OPC"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MOL", "Inhibitory_Neurons", "Microglia", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 6. Microglia
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "Microglia"
+list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "MOL", "Inhibitory_Neurons", "OPC", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 7. Dentate_Gyrus
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "Dentate_Gyrus"
+list2 <- c("Microglia", "CA1", "CA2_3", "MOL", "Inhibitory_Neurons", "OPC", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 8. CA1
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "CA1"
+list2 <- c("Microglia", "Dentate_Gyrus", "CA2_3", "MOL", "Inhibitory_Neurons", "OPC", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_Ctrl.csv", row.names = 1)
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_ADp40KO.csv", row.names = 1)
+```
+
+
+### 9. CA2_3
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "CA2_3"
+list2 <- c("Microglia", "Dentate_Gyrus", "CA1", "MOL", "Inhibitory_Neurons", "OPC", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 10. Inhibitory_Neurons
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "Inhibitory_Neurons"
+list2 <- c("Microglia", "Dentate_Gyrus", "CA1", "MOL", "CA2_3", "OPC", "NFOL", "Astrocytes", "MFOL", "Unidentified_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 11. Unidentified_Neurons
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "Unidentified_Neurons"
+list2 <- c("Microglia", "Dentate_Gyrus", "CA1", "MOL", "CA2_3", "OPC", "NFOL", "Astrocytes", "MFOL", "Inhibitory_Neurons", "subiculum")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+### 12. subiculum
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+list1 <- "subiculum"
+list2 <- c("Microglia", "Dentate_Gyrus", "CA1", "MOL", "CA2_3", "OPC", "NFOL", "Astrocytes", "MFOL", "Inhibitory_Neurons", "Unidentified_Neurons")
+
+# test <- cellphonedb_multiplot(list1, list2)
+# 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_Ctrl.csv", row.names = 1)
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1)
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("subiculum"))
+
+VlnPlot(data9set_sub.SO, features = "Ntrk2", group.by = "sample", pt.size = 0)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+sessionInfo()
+
+```

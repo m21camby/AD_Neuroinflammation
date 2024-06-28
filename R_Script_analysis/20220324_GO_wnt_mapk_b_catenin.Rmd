@@ -1,0 +1,185 @@
+---
+title: "WNT/MAPK/B-Catenin"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat, lib.loc = "/data/rajewsky/home/skim/R/")
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(readxl)
+library(xlsx)
+library(cowplot)
+library(DT)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO <- function(cell_type = "MOL"){
+  
+  UP <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/",cell_type, "_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+  UP$group <- "AD vs ADp40KO UP"
+
+  DOWN <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/",cell_type, "_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+  DOWN$group <- "AD vs ADp40KO DOWN"
+
+  UP_DOWN <- rbind(UP, DOWN)
+  
+  DT::datatable(UP_DOWN[which(grepl("lip", UP_DOWN$Term) | 
+                      grepl("caten", UP_DOWN$Term) |
+                      grepl("cadhe", UP_DOWN$Term) |
+                      grepl("MAP", UP_DOWN$Term) |
+                      grepl("Erk", UP_DOWN$Term)|
+                      grepl("Wnt", UP_DOWN$Term)), ])
+  
+}
+
+```
+
+### 1. MOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO(cell_type = "MOL")
+
+```
+
+### 2. MFOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO(cell_type = "MFOL")
+
+```
+
+### 3. OPC
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO(cell_type = "OPC")
+
+```
+
+### 4. Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO(cell_type = "Astrocytes")
+
+```
+
+### 5. Microglia
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+subset_GO(cell_type = "Microglia")
+
+```
+
+### 6. Dentate_Gyrus
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+subset_GO(cell_type = "Dentate_Gyrus")
+
+```
+
+### 7. CA1
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+subset_GO(cell_type = "CA1")
+
+```
+
+### 8. CA2/3
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+subset_GO(cell_type = "CA2_3")
+
+```
+
+### 9. subiculum
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+subset_GO(cell_type = "subiculum")
+
+```
+
+### 10. Inhibitory_Neurons
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+subset_GO(cell_type = "Inhibitory_Neurons")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+MOL_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1)
+
+OPC_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_ADp40KO.csv", row.names = 1)
+
+OPC_AD_ADp40KO <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/","OPC", "_AD_ADp40KO.csv_GO.csv"))
+
+SB_AD_ADp40KO <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/","subiculum", "_AD_ADp40KO.csv_GO.csv"))
+
+SB_AD_ADp40KO2 <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/","subiculum", "_AD_ADp40KO.csv_GO.csv"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+MFOL_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+
+MFOL_AD_WT_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_Ctrl.csv", row.names = 1)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+AS_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+
+MG_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv", row.names = 1)
+
+
+MG_AD_WT_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv", row.names = 1)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

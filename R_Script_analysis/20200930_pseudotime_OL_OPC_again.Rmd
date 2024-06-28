@@ -1,0 +1,1265 @@
+---
+title: "OL and OPC trajectory analysis"
+author: "Skim"
+date: '2020 9 30 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(tradeSeq)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(slingshot)
+library(monocle)
+library(mclust, quietly = TRUE)
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+require(mgcv, quietly = TRUE)
+library(gridExtra)
+library(readxl)
+library(xlsx)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo", "OPC"))
+
+data9set_sub.meta <- data9set_sub.SO@meta.data %>% as.data.frame
+
+data9set_sub.meta$cell_barcode <- rownames(data9set_sub.meta)
+
+data9set_sub.meta <- data9set_sub.meta %>% mutate(cell_type_precise = case_when(seurat_clusters %in% 6 ~ "MOL",
+                                                                                            seurat_clusters %in% c(1,5) ~ "MFOL",
+                                                                                            seurat_clusters %in% 12 ~ "OPC",
+                                                                                            seurat_clusters %in% 38 ~ "NFOL"))
+
+
+rownames(data9set_sub.meta) <- data9set_sub.meta$cell_barcode
+
+
+traj <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_trajectory.rda")
+
+traj.df <- traj$time %>% as.data.frame
+colnames(traj.df) <- "pseudotime"
+
+traj.df <- cbind(traj.df, data9set_sub.meta)
+
+traj.df <- traj.df[, c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise")]
+
+expression.df <- as.data.frame(data9set_sub.SO@assays$RNA@data)
+
+pseudograph <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph2 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph3 <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.43, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph4 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.43, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+```
+
+## marker genes
+
+### OPC markers (Cdo1, Pdgfra, Rlbp1)
+
+[OL_OPC genes](https://www.jneurosci.org/content/34/36/11929)
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+
+pseudo_graph <- pseudograph(gene = "Cdo1")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Cdo1 gene gam") + coord_cartesian(ylim = c(0,1)) 
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Cdo1 gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Pdgfra")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Pdgfra gene gam") + coord_cartesian(ylim = c(0,2))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Pdgfra gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Rlbp1")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Rlbp1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Rlbp1 gene loess") + coord_cartesian(ylim = c(0,1))
+
+
+pseudo_graph <- pseudograph2(gene = c("Cdo1", "Pdgfra", "Rlbp1"))
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Cdo1,Pdgfra,Rlbp1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Cdo1,Pdgfra,Rlbp1 gene loess") + coord_cartesian(ylim = c(0,1))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 2)
+```
+
+### NFOL
+
+NFOL marker genes: Fyn, Enpp6, Tmem163
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = "Fyn")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Fyn gene gam")  + coord_cartesian(ylim = c(0,2))
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Fyn gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Enpp6")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Enpp6 gene gam") + coord_cartesian(ylim = c(0,1))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Enpp6 gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Tmem163")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Tmem163 gene gam") + coord_cartesian(ylim = c(0,2))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Tmem163 gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph2(gene = c("Fyn", "Enpp6", "Tmem163"))
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Fyn,Enpp6,Tmem163 gene gam") + coord_cartesian(ylim = c(0,2))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Fyn,Enpp6,Tmem163 gene loess") + coord_cartesian(ylim = c(0,2))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 2)
+
+
+```
+
+### MOL
+
+markers: Mbp, Ndrg1, Opalin
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = "Mbp")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Mbp gene gam") + coord_cartesian(ylim = c(0,4))
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Mbp gene loess") + coord_cartesian(ylim = c(0,4))
+
+pseudo_graph <- pseudograph(gene = "Ndrg1")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Ndrg1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Ndrg1 gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Opalin")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Opalin gene gam") + coord_cartesian(ylim = c(0,2))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Opalin gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph2(gene = c("Mbp", "Ndrg1", "Opalin"))
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Mbp,Ndrg1,Opalin gene gam") + coord_cartesian(ylim = c(0,2))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Mbp,Ndrg1,Opalin gene loess") + coord_cartesian(ylim = c(0,2))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 2)
+
+```
+
+### MOL 2nd
+
+markers: Mal, Mog, Ppp1r14a
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = "Mal")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Mal gene gam") + coord_cartesian(ylim = c(0,2))
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Mal gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Mog")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Mog gene gam") + coord_cartesian(ylim = c(0,3))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Mog gene loess") + coord_cartesian(ylim = c(0,3))
+
+pseudo_graph <- pseudograph(gene = "Ppp1r14a")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Ppp1r14a gene gam") + coord_cartesian(ylim = c(0,1))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Ppp1r14a gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph2(gene = c("Mal", "Mog", "Ppp1r14a"))
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Mal,Mog,Ppp1r14a gene gam") + coord_cartesian(ylim = c(0,2))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Mal,Mog,Ppp1r14a gene loess") + coord_cartesian(ylim = c(0,2))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 2)
+
+```
+
+### MOL
+
+markers: Apod, Trf, Cryab
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+
+pseudo_graph <- pseudograph(gene = "Apod")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Apod gene gam") + coord_cartesian(ylim = c(0,2))
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Apod gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Trf")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Trf gene gam") + coord_cartesian(ylim = c(0,3))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Trf gene loess") + coord_cartesian(ylim = c(0,3))
+
+pseudo_graph <- pseudograph(gene = "Cryab")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Cryab gene gam") + coord_cartesian(ylim = c(0,1))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Cryab gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph2(gene = c("Apod", "Trf", "Cryab"))
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Apod,Trf,Cryab gene gam") + coord_cartesian(ylim = c(0,2))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Apod,Trf,Cryab gene loess") + coord_cartesian(ylim = c(0,2))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 2)
+
+```
+
+### housekeeping genes
+
+[Housekeeping gene1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3856806/)
+
+[Housekeeping gene2](https://link.springer.com/article/10.1007%2Fs12031-008-9128-9)
+
+
+```{r warning=FALSE, message=FALSE, fig.height=20, fig.width=12}
+pseudo_graph <- pseudograph(gene = "Hsp90ab1")
+
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Hsp90ab1 gene gam") + coord_cartesian(ylim = c(0,2))
+
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Hsp90ab1 gene loess") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Pgk1")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Pgk1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Pgk1 gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "B2m")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Actb gene gam") + coord_cartesian(ylim = c(0,1))
+
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Actb gene loess") + coord_cartesian(ylim = c(0,1))
+
+
+pseudo_graph <- pseudograph(gene = "Gapdh")
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Gapdh gene gam") + coord_cartesian(ylim = c(0,1))
+
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Gapdh gene loess") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph2(gene = c("Gapdh","Hsp90ab1", "Pgk1", "Actb"))
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Hsp90ab1,Pgk1,Actb gene gam") + coord_cartesian(ylim = c(0,1))
+
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("Hsp90ab1,Pgk1,Actb gene loess") + coord_cartesian(ylim = c(0,1))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, ncol = 2)
+
+```
+
+## GO analysis
+
+[ref](http://www.informatics.jax.org/vocab/gene_ontology/GO:0048709)
+
+### negative regulation of oligodendrocyte differentiation
+
+Any process that stops, prevents, or reduces the frequency, rate or extent of oligodendrocyte differentiation.
+
+[ref](http://www.informatics.jax.org/go/term/GO:0048715)
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+
+negative <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210819_092742.xlsx")
+# write.csv(negative, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210819_092742.csv")
+
+genes <- c("Bmp4", "Ctnnb1","Daam2","Dlx1","Dlx2","Drd3","Dusp10","Hes1","Id2","Id4","Lingo1","Nf1","Notch1","Sirt2","Tmem98") %>% unique
+
+
+
+pseudo_graph <- pseudograph(gene = "Bmp4")
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Bmp4 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Ctnnb1")
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Ctnnb1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Daam2")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Daam2 gene gam") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Dlx1")
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Dlx1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Dlx2")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Dlx2 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Drd3")
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Drd3 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Dusp10")
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Dusp10 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Hes1")
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Hes1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Id2")
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Id2 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Id4")
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Id4 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Lingo1")
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Lingo1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Nf1")
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Nf1 gene gam") + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = "Notch1")
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Notch1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Sirt2")
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Sirt2 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Tmem98")
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Tmem98 gene gam") + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+#genes <- c("Bmp4", "Ctnnb1","Daam2","Dusp10","Hes1","Id2","Lingo1","Nf1","Notch1","Sirt2","Tmem98") %>% unique
+genes <- c("Bmp4","Ctnnb1","Daam2","Dusp10","Nf1","Notch1","Sirt2","Tmem98") %>% unique
+
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("negative regulation of oligodendrocyte differentiation genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.8))
+```
+
+### oligodendrocyte cell fate commitment
+
+The process in which the developmental fate of a cell becomes restricted such that it will develop into an oligodendrocyte.
+
+[ref](http://www.informatics.jax.org/go/term/GO:0021779)
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=12}
+
+genes <- c("Ascl1", "Nkx2-2", "Olig2", "Pax6", "Sox6")
+
+pseudo_graph <- pseudograph(gene = "Ascl1")
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Ascl1 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Nkx2-2")
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Nkx2-2 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Olig2")
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Olig2 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Pax6")
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Pax6 gene gam") + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Sox6")
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Sox6 gene gam") + coord_cartesian(ylim = c(0,3))
+
+grid.arrange(g1, g2, g3, g4, g5, ncol = 3)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c("Ascl1", "Nkx2-2", "Olig2", "Sox6") %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("oligodendrocyte cell fate commitment genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+```
+
+### oligodendrocyte development
+
+The process aimed at the progression of an oligodendrocyte over time, from initial commitment of the cell to a specific fate, to the fully functional differentiated cell. An oligodendrocyte is a type of glial cell involved in myelinating the axons in the central nervous system.
+
+[ref](http://www.informatics.jax.org/go/term/GO:0014003)
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+
+genes.df <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200930_GO_term_GO_0014003.xlsx")
+
+genes <- genes.df$Symbol %>% unique
+
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+#colSums(gene.df != 0) / 19716
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[9])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[9], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[10])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[10], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[11])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[11], " gene gam")) + coord_cartesian(ylim = c(0,1))
+ 
+pseudo_graph <- pseudograph(gene = genes[12])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[12], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[13])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[13], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[14])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[14], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[15])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[15], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = genes[16])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[16], " gene gam"))  + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[17])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[17], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[18])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[18], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[19])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[19], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[20])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[20], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[21])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[21], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[22])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[22], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[23])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[23], " gene gam")) + coord_cartesian(ylim = c(0,2.5))
+
+pseudo_graph <- pseudograph(gene = genes[24])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[24], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[25])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[25], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[26])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[26], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[27])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[27], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[28])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[28], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[29])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[29], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[30])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[30], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = genes[31])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[31], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[32])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[32], " gene gam")) + coord_cartesian(ylim = c(0,4))
+
+pseudo_graph <- pseudograph(gene = genes[33])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[33], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[34])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[34], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[35])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[35], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[36])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[36], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[37])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[37], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[38])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[38], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[39])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[39], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[40])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[40], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[41])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[41], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[42])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[42], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[43])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[43], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[44])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[44], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+# pseudo_graph <- pseudograph(gene = genes[30])
+# g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[30], " gene gam"))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c("9630013A20Rik", "Abca2","Ascl1","B4galt5","B4galt6","Ckap5","Clu","Cntn2", "Eif2b4","Fa2h","Hdac11","Hes5","Kcnj10","Mag","Med12","Myrf","Ncstn","Nkx2-2","Nkx6-2",
+           "Olig1","Omg","Plp1","Pten","Sox10", "Tcf7l2", "Tenm4","Tppp","Ulk4","Wasf3","Zfp488") %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(" oligodendrocyte development genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.8))
+```
+
+
+### positive regulation of oligodendrocyte differentiation
+
+Any process that activates or increases the frequency, rate or extent of oligodendrocyte differentiation.
+
+[ref](http://www.informatics.jax.org/go/term/GO:0048714)
+
+```{r warning=FALSE, message=FALSE, fig.height=12, fig.width=12}
+
+genes.df <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/20200930_GO_term_GO_0048714.xlsx")
+# write.csv(genes.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/20200930_GO_term_GO_0048714.csv")
+# genes.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/20200930_GO_term_GO_0048714.csv", row.names = 1)
+
+genes <- genes.df$Symbol %>% unique
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,2.5))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam"))+ coord_cartesian(ylim = c(0,3))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[9])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[9], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+#pseudo_graph <- pseudograph(gene = genes[10])
+#g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = #"gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[10], " gene gam"))
+
+# pseudo_graph <- pseudograph(gene = genes[11])
+# g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[11], " gene gam"))
+
+# pseudo_graph <- pseudograph(gene = genes[12])
+# g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[12], " gene gam"))
+
+pseudo_graph <- pseudograph(gene = genes[13])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[13], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[14])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[14], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[15])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[15], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+
+
+# pseudo_graph <- pseudograph2(gene = c("Hsp90ab1", "Pgk1", "Actb"))
+# g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Hsp90ab1,Pgk1,Actb gene gam")
+
+
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=16, fig.width=12}
+pseudo_graph <- pseudograph(gene = genes[16])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[16], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[17])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[17], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[18])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[18], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[19])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[19], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[20])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[20], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[21])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[21], " gene gam")) + coord_cartesian(ylim = c(0,3.5))
+
+pseudo_graph <- pseudograph(gene = genes[22])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[22], " gene gam")) + coord_cartesian(ylim = c(0,4))
+
+pseudo_graph <- pseudograph(gene = genes[23])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[23], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[24])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[24], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[25])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[25], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[26])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[26], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[27])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[27], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[28])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[28], " gene gam")) + coord_cartesian(ylim = c(0,1))
+ 
+pseudo_graph <- pseudograph(gene = genes[29])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[29], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[30])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[30], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c("Aspa","Cxcr4","Dag1","Enpp2","Hdac1","Hdac2","Mtor","Nkx2-2","Nkx2-2os","Olig2","Pparg","Ptn","Ptpra","Ptprz1","Qk","Rheb","Tenm4","Zfp365","Zfp488") %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(" positive regulation of oligodendrocyte differentiation genes gam") + ylim(c(-1, 2))
+
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.8))
+```
+
+## Myelination
+
+### negative regulation of myelination
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=10}
+GO_myelination <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination_sub.txt", sep = "\t")
+
+# remove overlap genes 
+myelination_genes <- as.vector(as.character(unique(GO_myelination$Symbol)))
+
+# remove myelination genes not in the list
+myelination_genes <- myelination_genes[myelination_genes %in% data9set_cleaned.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_myelination_excel <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.xlsx", 1, header=TRUE)
+# write.csv(GO_myelination_excel, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.csv")
+
+GO_myelination_excel_sub <- GO_myelination_excel[GO_myelination_excel$Symbol %in% myelination_genes, ]
+
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[9])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[9], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[10])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[10], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = "Epha4")
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0("Epha4", " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[2], genes[3], genes[4], genes[6], genes[7], genes[8], genes[10]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("negative regulation of myelination genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05,  xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.5))
+```
+
+### positive regulation of myelination
+
+```{r warning=FALSE, message=FALSE, fig.height=14, fig.width=10}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+ 
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[9])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[9], " gene gam")) + coord_cartesian(ylim = c(0,2.5))
+
+pseudo_graph <- pseudograph(gene = genes[10])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[10], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[11])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[11], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[12])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[12], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[13])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[13], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[14])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[14], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[15])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[15], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=12}
+pseudo_graph <- pseudograph(gene = genes[16])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[16], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[17])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[17], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[18])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[18], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[19])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[19], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[20])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[20], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[21])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[21], " gene gam")) + coord_cartesian(ylim = c(0,2.5))
+
+pseudo_graph <- pseudograph(gene = genes[22])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[22], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[23])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[23], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[3], genes[4], genes[9], genes[10], genes[13], genes[14], genes[15], genes[16], genes[17], genes[18], 
+           genes[20], genes[21], genes[22], genes[23]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("positive regulation of myelination genes gam") + ylim(c(-1, 2))
+
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.8))
+```
+
+### central nervous system myelin formation
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=10}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelin formation",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[1], genes[2], genes[3]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("central nervous system myelin formation genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.5))
+```
+
+### central nervous system myelination
+
+```{r warning=FALSE, message=FALSE, fig.height=19, fig.width=10}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelination",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1.5))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[9])
+g9 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[9], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[10])
+g10 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[10], " gene gam")) + coord_cartesian(ylim = c(0,2.5))
+
+pseudo_graph <- pseudograph(gene = genes[11])
+g11 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[11], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[12])
+g12 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[12], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[13])
+g13 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[13], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[14])
+g14 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[14], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[15])
+g15 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[15], " gene gam")) + coord_cartesian(ylim = c(0,4))
+
+pseudo_graph <- pseudograph(gene = genes[16])
+g16 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[16], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+pseudo_graph <- pseudograph(gene = genes[17])
+g17 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[17], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, g16, g17, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[1], genes[2], genes[3],genes[4], genes[7], genes[9], genes[10], genes[11], genes[12], genes[13], genes[14],
+           genes[15], genes[16], genes[17]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("central nervous system myelination gam") + ylim(c(-1, 2))
+
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.8))
+```
+
+### myelin maintenance
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelin maintenance",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,2))
+
+
+grid.arrange(g1, g2, g3, g4, g5, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[3],genes[4],genes[5]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("myelin maintenance genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.6))
+```
+
+### myelin assembly
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelin assembly",]$Symbol))
+
+pseudo_graph <- pseudograph(gene = genes[1])
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[1], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[2])
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[2], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[3])
+g3 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[3], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[4])
+g4 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[4], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[5])
+g5 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[5], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[6])
+g6 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[6], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[7])
+g7 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[7], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+pseudo_graph <- pseudograph(gene = genes[8])
+g8 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle(paste0(genes[8], " gene gam")) + coord_cartesian(ylim = c(0,1))
+
+
+grid.arrange(g1, g2, g3, g4, g5, g6, g7, g8, ncol = 3)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+gene.df <- expression.df[rownames(expression.df) %in% genes, ] %>% t 
+
+genes <- c(genes[1],genes[2], genes[3],genes[4],genes[5], genes[6],genes[7],genes[8]) %>% unique
+
+genes
+
+gene.df <- gene.df[, colnames(gene.df) %in% genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("myelin assembly genes gam") + ylim(c(-1, 2))
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.5))
+```
+
+## temporal patterns of gene expression seen during OL differentiation
+
+Genes induced immediately after PDGF/NT3 withdrawal and T3 exposure are highlighted in color (OSP, MBP, UGT8, CNP1, PLP), with late-induced myelin-related genes shown in gray. B, Genes whose induction is delayed after PDGF/NT3 withdrawal and T3 exposure are highlighted in color (Tm4sf11, Tspan2, MOG, MAG, ASPA, MOBP, MAL).
+
+[ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6674672/)
+
+ubima```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+sessionInfo()
+```

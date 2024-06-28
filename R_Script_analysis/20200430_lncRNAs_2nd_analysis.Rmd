@@ -1,0 +1,689 @@
+---
+title: "lncRNA_2nd analysis"
+author: "Skim"
+date: '2020 4 30 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for lncRNAs final analysis. 
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+```
+
+### 1. Biotypes
+
+```{r warning=FALSE, message=FALSE}
+#load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+#data9set_cleaned_Ctrl.SO <- subset(data9set_cleaned.SO, subset = sample %in% "Ctrl")
+#data9set_cleaned_AD.SO <- subset(data9set_cleaned.SO, subset = sample %in% "AD")
+#data9set_cleaned_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample %in% "ADp40KO")
+
+# load biotype
+seurat_mouse_genes <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200312_Bulk_Correlation_mouse_genes_bio_type_biomaRt.txt")
+
+# narrow down biotype
+seurat_mouse_genes$gene_biotype_global <- ifelse(seurat_mouse_genes$gene_biotype %in% c("IG_V_gene", "IG_C_gene"), "IG_gene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("pseudogene",
+                                                                                               "unprocessed_pseudogene",
+                                                                                               "processed_pseudogene",
+                                                                                               "transcribed_unprocessed_pseudogene",
+                                                                                               "transcribed_processed_pseudogene",
+                                                                                               "unitary_pseudogene", 
+                                                                                               "transcribed_unitary_pseudogene",
+                                                                                               "polymorphic_pseudogene", 
+                                                                                               "TR_V_pseudogene"), "pseudogene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("TR_V_gene", "TR_C_gene"), "TR_gene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("protein_coding"), "protein_coding",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("TEC"), "TEC",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("lncRNA"), "lncRNA", "ncRNA"))))))
+
+
+# bulk data load
+DGEm <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200311_Bulk_Analysis_Modified_Final_DF.csv", row.names =1, sep = ",", check.names = FALSE)
+```
+
+In here, I named based on ensembl & gencode from following link [ref](https://www.ensembl.org/info/genome/genebuild/biotypes.html), [ref2](https://www.gencodegenes.org/pages/biotypes.html)
+
+```{r warning=FALSE, message=FALSE}
+seurat_mouse_genes_stat.df <- as.data.frame(table(seurat_mouse_genes$gene_biotype_global))
+
+seurat_mouse_genes_stat.df$Var1 <- factor(seurat_mouse_genes_stat.df$Var1, levels = c("IG_gene", "TR_gene", "ncRNA", "TEC", "pseudogene", "lncRNA", "protein_coding"))
+```
+
+Here is explanations of each biotype: **IG gene**: Immunoglobulin gene, T-cell receptor (TcR) genes, **Pseudogene**: A gene that has homology to known protein-coding genes but contain a frameshift and/or stop codon(s) which disrupts the ORF. Thought to have arisen through duplication followed by loss of function. **TEC** (To be Experimentally Confirmed): Regions with EST clusters that have polyA features that could indicate the presence of protein coding genes. **Processed transcript**: Gene/transcript that doesn't contain an open reading frame (ORF)
+
+Below show **composition by biotype for detected genes in scRNA-seq data**. We sorted the mapped reads into the following biotypes and most of them are protein coding genes. However, lots of lncRNAs were also detected in our data sets. 
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+ggplot(seurat_mouse_genes_stat.df, aes(x = Var1, y = Freq)) +
+    geom_col(stat="identity", fill = "#003366") + theme_classic() + coord_flip() + scale_y_log10(expand = c(0,0)) + xlab("biotypes") + ylab("Total number of detected genes") +
+  theme(axis.text = element_text(size = 12, color = "black"), axis.title = element_text(size = 15, color = "black")) +
+  geom_text(aes(x = Var1, y = Freq, label = Freq),
+    position = position_dodge(width = 0), hjust = 1.5, size = 5, color = "white")
+```
+
+```{r warning=FALSE, message=FALSE}
+#########################
+# separate by experiment
+#########################
+
+# In here, I calculate per experiment of scRNA-seq and merge them by one data frame
+# 
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_Ctrl_Robj")
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_AD_Robj")
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_ADp40KO_Robj")
+# 
+# # calculate all sum of three samples
+data9set_cleaned_Ctrl_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_Ctrl.SO, slot = 'counts')))
+data9set_cleaned_AD_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_AD.SO, slot = 'counts')))
+data9set_cleaned_ADp40KO_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_ADp40KO.SO, slot = 'counts')))
+
+# merge into one DF
+data9set_cleaned_sum.df <- cbind(data9set_cleaned_Ctrl_sum.df, data9set_cleaned_AD_sum.df, data9set_cleaned_ADp40KO_sum.df)
+colnames(data9set_cleaned_sum.df) <- c("Ctrl_counts_sum", "AD_counts_sum", "ADp40KO_counts_sum")
+
+data9set_cleaned_sum.df$mgi_symbol <- rownames(data9set_cleaned_sum.df)
+
+# Join to biotypes
+data9set_cleaned_sum.df <- inner_join(data9set_cleaned_sum.df, seurat_mouse_genes, by = "mgi_symbol")
+data9set_cleaned_sum.df$sums <- rowSums(data9set_cleaned_sum.df[,c(1:3)])
+# 
+# # Calculate percent
+# data9set_cleaned_sum.df_summary <- data9set_cleaned_sum.df %>% dplyr::select(gene_biotype_global, sums) %>% group_by(gene_biotype_global) %>%
+#   summarise(total_sums = sum(sums))
+# 
+# data9set_cleaned_sum.df_summary$percent <- data9set_cleaned_sum.df_summary$total_sums / sum(data9set_cleaned_sum.df_summary$total_sums)
+# 
+# # cumulative sum
+# data9set_cleaned_sum.df_summary$cum_percent <- cumsum(data9set_cleaned_sum.df_summary$percent)
+# 
+# # save 
+# write.table(data9set_cleaned_sum.df_summary, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_data9set_cleaned_sum.df_summary", sep = "\t")
+```
+
+This plot showed total UMIs belong to each biotype
+
+```{r warning=FALSE, message=FALSE, fig.width=4, fig.height=4.5}
+data9set_cleaned_sum.df_summary <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_data9set_cleaned_sum.df_summary", sep = "\t")
+
+
+data9set_cleaned_sum.df_summary$gene_biotype_global <- factor(data9set_cleaned_sum.df_summary$gene_biotype_global, levels = c("IG_gene", "TR_gene", "ncRNA", "TEC", "pseudogene", "lncRNA", "protein_coding"))
+
+
+ggplot(data9set_cleaned_sum.df_summary, aes(fill=gene_biotype_global, y=percent, x="gene_biotype")) + 
+    geom_bar(position="fill", stat="identity") + 
+  theme_classic() + 
+  geom_text(aes(y=0.95, label="lncRNA: 13.4%"), vjust=1.6, color="white", size=5) + 
+  geom_text(aes(y=0.5, label="protein coding:"), vjust=1.6, color="white", size=5) + 
+  geom_text(aes(y=0.42, label="85.7%"), vjust=1.6, color="white", size=5) + 
+  scale_y_continuous(expand = c(0,0), limits = c(0,1.2), breaks = c(0,1)) +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_text(size = 15, color = "black"),
+        axis.title = element_blank(), 
+        axis.line = element_blank(),
+        axis.ticks = element_blank(),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12)) + 
+  annotate(geom="text", x=1, y=1.08, label="rest: 0.9%", color="black", size = 5) + 
+  scale_fill_manual(values=c("darkred","#FFCC99","#56B4E9","darkgray","darkgreen","#E69F00", "#003366")) +
+  geom_segment(aes(x = 1, y = 0.999, xend = 1, yend = 1.05),color='black',size=0.5) 
+
+```
+
+### 2. Bulk vs scRNA-seq in lncRNAs
+
+```{r warning=FALSE, message=FALSE}
+################################################
+# Merge with scRNA-seq & Bulk data for lncRNAs
+################################################
+DGEm$gene <- rownames(DGEm)
+
+DGEm2 <- data.frame(WT = DGEm$`WT-1` + DGEm$`WT-2` + DGEm$`WT-3`, AD = DGEm$`AD-1` + DGEm$`AD-2`+ DGEm$`AD-3`, ADp40KO = DGEm$`ADp40KO-1` + DGEm$`ADp40KO-2` + DGEm$`ADp40KO-3`, row.names = rownames(DGEm))
+
+DGEm2$mgi_symbol <- rownames(DGEm2)
+
+data_sum_final.df <- inner_join(data9set_cleaned_sum.df, DGEm2, by = "mgi_symbol")
+
+# only lncRNAs
+data_lncRNA_sum_final.df <- data_sum_final.df[data_sum_final.df$gene_biotype_global %in% "lncRNA", ]
+```
+
+In subset total both expressed in bulk and scRNA-seq, 4730 lncRNAs were left. 
+
+Below plot shows between scRNA-seq and bulk of lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+
+data_lncRNA_sum_final_sub.df <- data_lncRNA_sum_final.df[which(data_lncRNA_sum_final.df$Ctrl_counts_sum > 50000| data_lncRNA_sum_final.df$WT > 30000), ]
+
+ggplot(data_lncRNA_sum_final.df, aes(x = Ctrl_counts_sum, y = WT)) + geom_point(size = 0.5) + scale_x_log10() +
+  scale_y_log10() + 
+  ggtitle("Bulk versus scRNA of lncRNA in WT") +
+  theme_classic() +
+  xlab("sum of lncRNAs counts in WT scRNA samples") +
+  ylab("sum of lncRNAs counts in all WT bulk samples") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = data_lncRNA_sum_final_sub.df, aes(x = Ctrl_counts_sum, y = WT), label = data_lncRNA_sum_final_sub.df$mgi_symbol)
+
+
+```
+
+Below, I identify specific genes number between highly expressed and lowly expressed. To remove lowly expressed lncRNAs, I cut out by median 15 lncRNAs in WT data and only 2360 lncRNAs left. (lowly expressed lncRNAs were 2370) 
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+ggplot(data_lncRNA_sum_final.df, aes(x=WT)) + theme_classic() +
+  geom_histogram(color="black", fill="white")+ scale_x_log10() + 
+  geom_vline(xintercept=15, color="red", 
+                 linetype="dashed") + geom_text(aes(x = 1000, y=400, label="median: 15"))
+
+```
+
+more than 15 median counts 2360 lncRNAs and less than 15 median counts 2370 lncRNAs
+
+
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+####################################################
+# calculate average lncRNA expression per cell type
+####################################################
+# 1st high expressed 
+data_lncRNA_cleaned_sum_final.df <- data_lncRNA_sum_final.df[data_lncRNA_sum_final.df$WT > 15, ]
+# 2nd low expressed
+data_lncRNA_cleaned_sum_final.df2 <- data_lncRNA_sum_final.df[data_lncRNA_sum_final.df$WT <= 15, ]
+
+# # Calculate average expression
+# # Excitatory
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_EX_Robj")
+# EX_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_EX.SO, slot = 'data')))
+# 
+# # Inhibitory
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_IN_Robj")
+# IN_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_IN.SO, slot = 'data')))
+# 
+# # Oligo_OPC
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_OL_OPC_Robj")
+# # split Oligo and OPC
+data9set_cleaned_OL.SO <- subset(data9set_cleaned_OL_OPC.SO, subset = seurat_clusters %in% c(1,5,6))
+data9set_cleaned_OPC.SO <- subset(data9set_cleaned_OL_OPC.SO, subset = seurat_clusters %in% c(12,38))
+# OL_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_OL.SO, slot = 'data')))
+# OPC_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_OPC.SO, slot = 'data')))
+
+# # MG
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_MG_Robj")
+# MG_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_MG.SO, slot = 'data')))
+# 
+# 
+# # AS
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/Seurat_object/20200501_Seurat_object_AS_Robj")
+# AS_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_AS.SO, slot = 'data')))
+# 
+# 
+# avg.df <- cbind(EX_avg.df, IN_avg.df, OL_avg.df, OPC_avg.df, MG_avg.df, AS_avg.df)
+# colnames(avg.df) <- c("Excitatory_Neuron", "Inhibitory_Neuron", "Oligodendrocytes", "OPC", "Microglia", "Astrocytes")
+# 
+# write.table(avg.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_avg.txt", sep = "\t")
+
+avg.df <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_avg.txt", sep = "\t")
+
+avg.df$gene <- rownames(avg.df)
+
+# Higly expressed in bulk
+avg_lncRNA.df <- avg.df[avg.df$gene %in% data_lncRNA_cleaned_sum_final.df$mgi_symbol, ] 
+avg_lncRNA.df$gene <- NULL
+avg_lncRNA.df <- avg_lncRNA.df[rowSums(avg_lncRNA.df) !=0, ]
+
+# lowly expressed in bulk
+avg_lncRNA.df2 <- avg.df[avg.df$gene %in% data_lncRNA_cleaned_sum_final.df2$mgi_symbol, ] 
+avg_lncRNA.df2$gene <- NULL
+avg_lncRNA.df2 <- avg_lncRNA.df2[rowSums(avg_lncRNA.df2) !=0, ]
+
+
+```
+
+In here, I showed total sum of lncRNAs in scRNA-seq data and show as boxplot in each category. (not expressed in bulk, both expressed in bulk & highly expressed, both expressed in bulk & lowly expressed)
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+high_sum.df <- data9set_cleaned_sum.df[which(data9set_cleaned_sum.df$gene_biotype_global %in% "lncRNA" & !(data9set_cleaned_sum.df$mgi_symbol %in% data_lncRNA_cleaned_sum_final.df$mgi_symbol)& !(data9set_cleaned_sum.df$mgi_symbol %in% data_lncRNA_cleaned_sum_final.df2$mgi_symbol)), ]
+
+sum.df <- rbind(data.frame(category = "not_in_bulk", total_sum = high_sum.df$sums), 
+                data.frame(category = "High_in_bulk", total_sum = data_lncRNA_cleaned_sum_final.df$sums),
+                data.frame(category = "Low_in_bulk", total_sum = data_lncRNA_cleaned_sum_final.df2$sums))
+
+ggplot(sum.df, aes(x=category, y=total_sum)) +  geom_boxplot(width=0.1) + scale_y_log10()
+
+```
+
+
+### 3. cell-type specific lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width=5, fig.height=7.5}
+#####################
+# calculate z-score
+#####################
+
+# calculate z-score (high)
+avg_lncRNA_z_score.df <- as.data.frame(t(apply(avg_lncRNA.df, 1, function(x) (x - mean(x)) / sd(x))))
+
+# calculate z-score (low)
+avg_lncRNA_z_score.df2 <- as.data.frame(t(apply(avg_lncRNA.df2, 1, function(x) (x - mean(x)) / sd(x))))
+
+avg_lncRNA_z_score.df$gene <- rownames(avg_lncRNA_z_score.df)
+avg_lncRNA_z_score.df$gene <- NULL
+
+# extract top10 z-score per cell type
+avg_lncRNA_top10_z_score.df <- rbind(avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$Excitatory_Neuron))[1:10],],
+avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$Inhibitory_Neuron))[1:10],],
+avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$Oligodendrocytes))[1:10],],
+avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$OPC))[1:10],],
+avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$Microglia))[1:10],],
+avg_lncRNA_z_score.df[rev(order(avg_lncRNA_z_score.df$Astrocytes))[1:10],])
+
+avg_lncRNA_top10_z_score.df$gene <- rownames(avg_lncRNA_top10_z_score.df)
+avg_lncRNA_top10_z_score.df <- avg_lncRNA_top10_z_score.df[,c(7,1:6)]
+
+
+# for ggplot modification
+avg_lncRNA_top10_z_score.df2 <- gather(avg_lncRNA_top10_z_score.df, Cell_type, z_score, Excitatory_Neuron:Astrocytes)
+
+avg_lncRNA_top10_z_score.df2$gene <- factor(avg_lncRNA_top10_z_score.df2$gene, levels = rev(rownames(avg_lncRNA_top10_z_score.df)))
+
+avg_lncRNA_top10_z_score.df2$Cell_type <- factor(avg_lncRNA_top10_z_score.df2$Cell_type, levels = 
+                                                   c("Excitatory_Neuron", "Inhibitory_Neuron",
+                                                     "Oligodendrocytes","OPC",
+                                                     "Microglia", "Astrocytes"))
+
+saveRDS(avg_lncRNA_top10_z_score.df2, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_avg_lncRNA_top20_z_score.rda")
+
+avg_lncRNA_top10_z_score.df2 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_avg_lncRNA_top20_z_score.rda")
+
+
+
+ggplot(data = avg_lncRNA_top10_z_score.df2, mapping = aes(x = Cell_type, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                        axis.title.x = element_blank(), 
+                                        axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"), 
+                                        axis.text.y = element_text(size = 8, color = "black"),
+                                        axis.line = element_line(color = "white"),
+                                        axis.ticks = element_line(color = "white"),
+                                        legend.title = element_blank(),
+                                        legend.text = element_text(size = 11, color = "black")) + 
+  scale_fill_viridis_c(limits=c(-2, 2), na.value = "#FDE725FF", labels = c("-2", " ", " "," ", "2"))
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=15}
+v1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm26871")
+v2 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Dlx6os1")
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm44866")
+v4 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm42948")
+v5 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm2629")
+v6 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm6145")
+grid.arrange(v1, v2, v3, v4, v5, v6, ncol = 3)
+
+
+```
+
+### 4. DE lncRNAs genes
+
+```{r warning=FALSE, message=FALSE}
+# Highly expressed 
+
+avg_lncRNA_z_score.df$gene <- NULL
+
+for(i in c(1:2358)){
+  avg_lncRNA_z_score.df[i,"specificity"] <- ifelse(ncol(avg_lncRNA_z_score.df[i,c(1:6)] %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:6) ] %>% select_if(~any(. < 0))) > 3, "specific", "not_specific")
+  
+  avg_lncRNA_z_score.df[i,"cell_type_specific"] <- ifelse(ncol(avg_lncRNA_z_score.df[i,c(1)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(2:6) ] %>% select_if(~any(. < 0))) > 3, "Excitatory", ifelse(ncol(avg_lncRNA_z_score.df[i,c(2)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1,3:6) ] %>% select_if(~any(. < 0))) > 3, "Inhibitory", ifelse(ncol(avg_lncRNA_z_score.df[i,c(3)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:2,4:6) ] %>% select_if(~any(. < 0))) > 3, "Oligo", ifelse(ncol(avg_lncRNA_z_score.df[i,c(4)] %>% as.data.frame %>%select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:3,5:6) ] %>% select_if(~any(. < 0))) > 3, "OPC",
+                                                          ifelse(ncol(avg_lncRNA_z_score.df[i,c(5)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:4,6) ] %>% select_if(~any(. < 0))) > 3, "Microglia",ifelse(ncol(avg_lncRNA_z_score.df[i,c(6)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:5) ] %>% select_if(~any(. < 0))) > 3, "Astrocytes", "not_specific"))))))
+  }
+
+table(avg_lncRNA_z_score.df$cell_type_specific)
+
+# for lowly expressed lncRNAs
+for(i in c(1:2362)){
+  avg_lncRNA_z_score.df2[i,"specificity"] <- ifelse(ncol(avg_lncRNA_z_score.df2[i,c(1:6)] %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df2[i,c(1:6) ] %>% select_if(~any(. < 0))) > 3, "specific", "not_specific")
+}
+
+#table(avg_lncRNA_z_score.df2$specificity)
+```
+
+I extracted lncRNAs that are avg_logFC > 0.2 & DE$p_val_adj < 0.01 and both cell type specific 
+
+```{r warning=FALSE, message=FALSE}
+DE_final <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_supple_DE_final.txt", sep = "\t", row.names = 1,header = TRUE)
+
+
+
+z_score_DE_genes <- function(Seurat_object){
+  for(i in c(1:9)){
+  if(i == 1){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+
+#print("1st")
+cell_avg.df$gene <- rownames(cell_avg.df)
+#print("2nd")
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% unique(DE_final$gene), ]
+#print("3rd")
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+}
+
+z_score_DE_genes_by_all <- function(Seurat_object){
+  for(i in c("Ctrl", "AD", "ADp40KO")){
+  if(i == 1){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = Seurat::subset(Seurat_object, subset = sample %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = Seurat::subset(Seurat_object, subset = sample %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+
+
+cell_avg.df$gene <- rownames(cell_avg.df)
+
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% unique(DE_final$gene), ]
+
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+#DE_gene_all_EX_z_score <- z_score_DE_genes_by_all(data9set_cleaned_EX.SO)
+
+# DE_gene_EX_z_score <- z_score_DE_genes(data9set_cleaned_EX.SO)
+# colnames(DE_gene_EX_z_score) <- c("Excitatory_Neurons_WT_1", "Excitatory_Neurons_APPPS1.p40_1", "Excitatory_Neurons_APPPS1_1","Excitatory_Neurons_WT_2", "Excitatory_Neurons_APPPS1.p40_2","Excitatory_Neurons_APPPS1_2", "Excitatory_Neurons_WT_3", "Excitatory_Neurons_APPPS1.p40_3", "Excitatory_Neurons_APPPS1_3")
+# 
+# DE_gene_IN_z_score <- z_score_DE_genes(data9set_cleaned_IN.SO)
+# colnames(DE_gene_IN_z_score) <- c("Inhibitory_Neurons_WT_1", "Inhibitory_Neurons_APPPS1.p40_1", "Inhibitory_Neurons_APPPS1_1","Inhibitory_Neurons_WT_2", "Inhibitory_Neurons_APPPS1.p40_2","Inhibitory_Neurons_APPPS1_2", "Inhibitory_Neurons_WT_3", "Inhibitory_Neurons_APPPS1.p40_3", "Inhibitory_Neurons_APPPS1_3")
+# 
+# DE_gene_MG_z_score <- z_score_DE_genes(data9set_cleaned_MG.SO)
+# colnames(DE_gene_MG_z_score) <- c("Microglia_WT_1", "Microglia_APPPS1.p40_1", "Microglia_APPPS1_1","Microglia_WT_2", "Microglia_APPPS1.p40_2","Microglia_APPPS1_2", "Microglia_WT_3", "Microglia_APPPS1.p40_3", "Microglia_APPPS1_3")
+# 
+# DE_gene_AS_z_score <- z_score_DE_genes(data9set_cleaned_AS.SO)
+# colnames(DE_gene_AS_z_score) <- c("Astrocytes_WT_1", "Astrocytes_APPPS1.p40_1", "Astrocytes_APPPS1_1","Astrocytes_WT_2", "Astrocytes_APPPS1.p40_2","Astrocytes_APPPS1_2", "Astrocytes_WT_3", "Astrocytes_APPPS1.p40_3", "Astrocytes_APPPS1_3")
+# 
+# DE_gene_OL_z_score <- z_score_DE_genes(data9set_cleaned_OL.SO)
+# colnames(DE_gene_OL_z_score) <- c("Oligodendrocytes_WT_1", "Oligodendrocytes_APPPS1.p40_1", "Oligodendrocytes_APPPS1_1","Oligodendrocytes_WT_2", "Oligodendrocytes_APPPS1.p40_2","Oligodendrocytes_APPPS1_2", "Oligodendrocytes_WT_3", "Oligodendrocytes_APPPS1.p40_3", "Oligodendrocytes_APPPS1_3")
+# 
+# DE_gene_total_z_score <- cbind(DE_gene_EX_z_score, DE_gene_IN_z_score, DE_gene_MG_z_score, DE_gene_AS_z_score, DE_gene_OL_z_score)
+# 
+# DE_gene_total_z_score$gene <- rownames(DE_gene_total_z_score)
+# DE_gene_total_z_score <- DE_gene_total_z_score[,c(46,1:45)]
+# 
+# DE_gene_total_z_score_2 <- gather(DE_gene_total_z_score, sample, z_score, Excitatory_Neurons_WT_1:Oligodendrocytes_APPPS1_3)
+# 
+# 
+# ggplot(data = DE_gene_total_z_score_2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+#   geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+#                                          axis.title.x = element_blank(), 
+#                                          axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"), 
+#                                          axis.text.y = element_text(size = 8, color = "black"),
+#                                          axis.line = element_line(color = "white"),
+#                                          axis.ticks = element_line(color = "white"),
+#                                          legend.title = element_blank(),
+#                                          legend.text = element_text(size = 11, color = "black")) + 
+#  scale_fill_viridis_c(limits=c(-2, 2), na.value = "#FDE725FF", labels = c("-2", " ", " "," ", "2"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+z_score_DE_genes_merge <- function(df_ctrl, df_AD, df_ADp40KO){
+  cell_avg.df <- cbind(df_ctrl, df_AD, df_ADp40KO)
+  cell_avg.df$gene <- rownames(cell_avg.df)
+  cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% unique(DE_final$gene), ]
+  cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+  cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+  return(cell_avg_z_score.df)
+  
+}
+
+
+EX_Ctrl.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_EX.SO, subset = sample %in% "Ctrl"), slot = 'data')))
+EX_AD.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_EX.SO, subset = sample %in% "AD"), slot = 'data')))
+EX_ADp40KO.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_EX.SO, subset = sample %in% "ADp40KO"), slot = 'data')))
+
+EX.df <- z_score_DE_genes_merge(EX_Ctrl.df, EX_AD.df, EX_ADp40KO.df)
+colnames(EX.df) <- c("Excitatory_Neurons_WT", "Excitatory_Neurons_APPPS1", "Excitatory_Neurons_APPPS1.p40")
+
+# Inhibitory
+IN_Ctrl.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_IN.SO, subset = sample %in% "Ctrl"), slot = 'data')))
+IN_AD.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_IN.SO, subset = sample %in% "AD"), slot = 'data')))
+IN_ADp40KO.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_IN.SO, subset = sample %in% "ADp40KO"), slot = 'data')))
+
+IN.df <- z_score_DE_genes_merge(IN_Ctrl.df, IN_AD.df, IN_ADp40KO.df)
+colnames(IN.df) <- c("Inhibitory_Neurons_WT", "Inhibitory_Neurons_APPPS1", "Inhibitory_Neurons_APPPS1.p40")
+
+# Microglia
+MG_Ctrl.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_MG.SO, subset = sample %in% "Ctrl"), slot = 'data')))
+MG_AD.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_MG.SO, subset = sample %in% "AD"), slot = 'data')))
+MG_ADp40KO.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_MG.SO, subset = sample %in% "ADp40KO"), slot = 'data')))
+
+MG.df <- z_score_DE_genes_merge(MG_Ctrl.df, MG_AD.df, MG_ADp40KO.df)
+colnames(MG.df) <- c("Microglia_WT", "Microglia_APPPS1", "Microglia_APPPS1.p40")
+
+# Oligodendrocytes
+OL_Ctrl.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_OL.SO, subset = sample %in% "Ctrl"), slot = 'data')))
+OL_AD.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_OL.SO, subset = sample %in% "AD"), slot = 'data')))
+OL_ADp40KO.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_OL.SO, subset = sample %in% "ADp40KO"), slot = 'data')))
+
+OL.df <- z_score_DE_genes_merge(OL_Ctrl.df, OL_AD.df, OL_ADp40KO.df)
+colnames(OL.df) <- c("Oligodendrocytes_WT", "Oligodendrocytes_APPPS1", "Oligodendrocytes_APPPS1.p40")
+
+# Astrocytes
+AS_Ctrl.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_AS.SO, subset = sample %in% "Ctrl"), slot = 'data')))
+AS_AD.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_AS.SO, subset = sample %in% "AD"), slot = 'data')))
+AS_ADp40KO.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(data9set_cleaned_AS.SO, subset = sample %in% "ADp40KO"), slot = 'data')))
+
+AS.df <- z_score_DE_genes_merge(AS_Ctrl.df, AS_AD.df, AS_ADp40KO.df)
+colnames(AS.df) <- c("Astrocytes_WT", "Astrocytes_APPPS1", "Astrocytes_APPPS1.p40")
+
+
+DE_gene_total_z_score <- cbind(EX.df, IN.df, MG.df, OL.df, AS.df)
+
+DE_gene_total_z_score$gene <- rownames(DE_gene_total_z_score)
+DE_gene_total_z_score <- DE_gene_total_z_score[,c(16,1:15)]
+
+DE_gene_total_z_score_2 <- gather(DE_gene_total_z_score, sample, z_score, Excitatory_Neurons_WT:Astrocytes_APPPS1.p40)
+
+DE_gene_total_z_score_2$sample <- factor(DE_gene_total_z_score_2$sample, levels = c("Excitatory_Neurons_WT","Inhibitory_Neurons_WT", "Microglia_WT", "Oligodendrocytes_WT","Astrocytes_WT", "Excitatory_Neurons_APPPS1", "Inhibitory_Neurons_APPPS1", "Microglia_APPPS1", "Oligodendrocytes_APPPS1", "Astrocytes_APPPS1", "Excitatory_Neurons_APPPS1.p40", "Inhibitory_Neurons_APPPS1.p40","Microglia_APPPS1.p40", "Oligodendrocytes_APPPS1.p40","Astrocytes_APPPS1.p40"))
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+
+ggplot(data = DE_gene_total_z_score_2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 8, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1.5, 1.5), na.value = "#FDE725FF", labels = c("-1.5", " ", " "," "," "," ", "1.5"))
+```
+
+#### 4-1. Neurons specific & DE lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=5}
+DE_gene_total_z_score_NE <- DE_gene_total_z_score[DE_gene_total_z_score$gene %in% c("A230004M16Rik","Rmst"), c(1:7)]
+DE_gene_total_z_score_NE2 <- gather(DE_gene_total_z_score_NE, sample, z_score, Excitatory_Neurons_WT:Inhibitory_Neurons_APPPS1.p40)
+
+DE_gene_total_z_score_NE2$sample <- factor(DE_gene_total_z_score_NE2$sample, levels = c("Excitatory_Neurons_WT", "Inhibitory_Neurons_WT","Excitatory_Neurons_APPPS1", "Inhibitory_Neurons_APPPS1", "Excitatory_Neurons_APPPS1.p40", "Inhibitory_Neurons_APPPS1.p40"))
+
+ggplot(data = DE_gene_total_z_score_NE2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 8, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1.5, 1.5), na.value = "#FDE725FF", labels = c("-1.5", " ", " "," "," "," ", "1.5"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=15}
+v1 <- VlnPlot(data9set_cleaned_EX.SO, features = "A230004M16Rik", group.by = "sample", pt.size = 0)
+v2 <- VlnPlot(data9set_cleaned_EX.SO, features = "A230004M16Rik", pt.size = 0)
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "A230004M16Rik")
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=15}
+v1 <- VlnPlot(data9set_cleaned_EX.SO, features = "Rmst", group.by = "sample", pt.size = 0)
+v2 <- VlnPlot(data9set_cleaned_EX.SO, features = "Rmst", pt.size = 0)
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Rmst")
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+
+#### 4-2. Microglia specific & DE lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=5}
+DE_gene_total_z_score_MG <- DE_gene_total_z_score[DE_gene_total_z_score$gene %in% DE_final[c(10:34),]$gene, c(1, 8:10)]
+DE_gene_total_z_score_MG2 <- gather(DE_gene_total_z_score_MG, sample, z_score, Microglia_WT:Microglia_APPPS1.p40)
+
+DE_gene_total_z_score_MG2$sample <- factor(DE_gene_total_z_score_MG2$sample, levels = c("Microglia_WT","Microglia_APPPS1", "Microglia_APPPS1.p40"))
+
+DE_gene_total_z_score_MG2$gene <- factor(DE_gene_total_z_score_MG2$gene, 
+                                         levels = c("4933406I18Rik", "Meg3", "Gm10790", "Trp53cor1", "A830008E24Rik", "Gm50035", "Gm26520", "9130019P16Rik", "Gm13391","A930007I19Rik", "Pvt1", "Gm15283", "Gm37168",  "AU020206", "Neat1", "4930479D17Rik"))
+
+
+
+ggplot(data = DE_gene_total_z_score_MG2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 8, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1.5, 1.5), na.value = "#FDE725FF", labels = c("-1.5", " ", " "," "," "," ", "1.5"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+v1 <- VlnPlot(data9set_cleaned_MG.SO, features = "Gm50035", group.by = "sample", pt.size = 0)
+#v2 <- VlnPlot(data9set_cleaned_MG.SO, features = "9130019P16Rik", groub.by = "seurat_clusters", pt.size = 0)
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm50035")
+grid.arrange(v1, v3, ncol = 2)
+```
+
+#### 4-3. Oligodendrocytes specific & DE lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=5}
+DE_gene_total_z_score_OL <- DE_gene_total_z_score[DE_gene_total_z_score$gene %in% DE_final[c(35:49),]$gene, c(1, 11:13)]
+DE_gene_total_z_score_OL2 <- gather(DE_gene_total_z_score_OL, sample, z_score, Oligodendrocytes_WT:Oligodendrocytes_APPPS1.p40)
+
+DE_gene_total_z_score_OL2$sample <- factor(DE_gene_total_z_score_OL2$sample, levels = c("Oligodendrocytes_WT","Oligodendrocytes_APPPS1", "Oligodendrocytes_APPPS1.p40"))
+
+DE_gene_total_z_score_OL2$gene <- factor(DE_gene_total_z_score_OL2$gene, 
+                                        levels = c("Meg3", "9330111N05Rik", "A230001M10Rik", "Gm44866", "Gm37459", "Gm11149", "A330015K06Rik", "Dtnbos"))
+
+
+
+ggplot(data = DE_gene_total_z_score_OL2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 8, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1.5, 1.5), na.value = "#FDE725FF", labels = c("-1.5", " ", " "," "," "," ", "1.5"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+v1 <- VlnPlot(data9set_cleaned_OL.SO, features = "A230001M10Rik", group.by = "sample", pt.size = 0)
+#v2 <- VlnPlot(data9set_cleaned_MG.SO, features = "9130019P16Rik", groub.by = "seurat_clusters", pt.size = 0)
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "A230001M10Rik")
+grid.arrange(v1, v3, ncol = 2)
+```
+
+#### 4-4. Astrocytes specific & DE lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=5}
+DE_gene_total_z_score_AS <- DE_gene_total_z_score[DE_gene_total_z_score$gene %in% DE_final[c(1:7),]$gene, c(1, 14:16)]
+DE_gene_total_z_score_AS2 <- gather(DE_gene_total_z_score_AS, sample, z_score, Astrocytes_WT:Astrocytes_APPPS1.p40)
+
+DE_gene_total_z_score_AS2$sample <- factor(DE_gene_total_z_score_AS2$sample, levels = c("Astrocytes_WT","Astrocytes_APPPS1", "Astrocytes_APPPS1.p40"))
+
+DE_gene_total_z_score_AS2$gene <- factor(DE_gene_total_z_score_AS2$gene,
+                                        levels = c("Meg3", "D030047H15Rik", "Gm48747", "Rmst", "Gm14964"))
+
+
+
+ggplot(data = DE_gene_total_z_score_AS2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile()+  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 8, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1.5, 1.5), na.value = "#FDE725FF", labels = c("-1.5", " ", " "," "," "," ", "1.5"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+v1 <- VlnPlot(data9set_cleaned_AS.SO, features = "D030047H15Rik", group.by = "sample", pt.size = 0)
+#v2 <- VlnPlot(data9set_cleaned_MG.SO, features = "9130019P16Rik", groub.by = "seurat_clusters", pt.size = 0)
+v3 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "D030047H15Rik")
+grid.arrange(v1, v3, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```
+
+
+
+
+
+
+
+
+

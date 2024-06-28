@@ -1,0 +1,320 @@
+---
+title: "cell_phone_DB_whole_Graph"
+author: "Skim"
+date: '2020 2 20 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(viridis)
+library(igraph)
+```
+
+### 1. Ctrl total significant 
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=8}
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+Ctrl_CB <- sigmeanvalue_Ctrl.df
+# sigmeanvalue modification
+Ctrl_CB[is.na(Ctrl_CB)] <- 0
+
+colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+
+colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+
+Ctrl_CB <- data.frame(Ctrl_CB[, c(2, 13:268)])
+Ctrl_CB <- Ctrl_CB %>% distinct()
+
+rownames(Ctrl_CB) <- Ctrl_CB$interacting_pair
+Ctrl_CB <- Ctrl_CB[, -c(1)]
+
+Ctrl_CB_sum <- data.frame(sum = colSums(Ctrl_CB != 0))
+
+for(i in 1:nrow(Ctrl_CB_sum)){
+  
+  Ctrl_CB_sum[i,2] <- strsplit(rownames(Ctrl_CB_sum), "\\.")[[i]][1]
+  Ctrl_CB_sum[i,3] <- strsplit(rownames(Ctrl_CB_sum), "\\.")[[i]][2]
+}
+
+colnames(Ctrl_CB_sum) <- c("sum", "sender", "receiver")
+
+Ctrl_CB_sum <- as.data.frame(Ctrl_CB_sum)
+
+Ctrl_CB_sum$sender <- factor(Ctrl_CB_sum$sender, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+Ctrl_CB_sum$receiver <- factor(Ctrl_CB_sum$receiver, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+ggplot(Ctrl_CB_sum, aes(x=sender, y=receiver, fill=sum)) + geom_tile() + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90)) + scale_fill_distiller(palette = 'RdBu', limits=c(0,55))
+
+#+ scale_fill_viridis(limits=c(0,55)) 
+
+```
+
+### 2. AD total significant 
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=8}
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+AD_CB <- sigmeanvalue_AD.df
+# sigmeanvalue modification
+AD_CB[is.na(AD_CB)] <- 0
+
+colnames(AD_CB) <- str_replace(colnames(AD_CB), "/", "_")
+colnames(AD_CB) <- str_replace(colnames(AD_CB), "/", "_")
+
+colnames(AD_CB) <- str_replace(colnames(AD_CB), " ", "_")
+colnames(AD_CB) <- str_replace(colnames(AD_CB), " ", "_")
+colnames(AD_CB) <- str_replace(colnames(AD_CB), " ", "_")
+
+AD_CB <- data.frame(AD_CB[, c(2, 13:268)])
+AD_CB <- AD_CB %>% distinct()
+
+rownames(AD_CB) <- AD_CB$interacting_pair
+AD_CB <- AD_CB[, -c(1)]
+
+AD_CB_sum <- data.frame(sum = colSums(AD_CB != 0))
+
+for(i in 1:nrow(AD_CB_sum)){
+  
+  AD_CB_sum[i,2] <- strsplit(rownames(AD_CB_sum), "\\.")[[i]][1]
+  AD_CB_sum[i,3] <- strsplit(rownames(AD_CB_sum), "\\.")[[i]][2]
+}
+
+colnames(AD_CB_sum) <- c("sum", "sender", "receiver")
+
+AD_CB_sum <- as.data.frame(AD_CB_sum)
+
+AD_CB_sum$sender <- factor(AD_CB_sum$sender, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+AD_CB_sum$receiver <- factor(AD_CB_sum$receiver, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+ggplot(AD_CB_sum, aes(x=sender, y=receiver, fill=sum)) + geom_tile() + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90)) + scale_fill_distiller(palette = 'RdBu', limits=c(0,55))
+
+```
+
+### 3. ADp40KO total significant 
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=8}
+sigmeanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+ADp40KO_CB <- sigmeanvalue_ADp40KO.df
+# sigmeanvalue modification
+ADp40KO_CB[is.na(ADp40KO_CB)] <- 0
+
+colnames(ADp40KO_CB) <- str_replace(colnames(ADp40KO_CB), "/", "_")
+colnames(ADp40KO_CB) <- str_replace(colnames(ADp40KO_CB), "/", "_")
+
+colnames(ADp40KO_CB) <- str_replace(colnames(ADp40KO_CB), " ", "_")
+colnames(ADp40KO_CB) <- str_replace(colnames(ADp40KO_CB), " ", "_")
+colnames(ADp40KO_CB) <- str_replace(colnames(ADp40KO_CB), " ", "_")
+
+ADp40KO_CB <- data.frame(ADp40KO_CB[, c(2, 13:268)])
+ADp40KO_CB <- ADp40KO_CB %>% distinct()
+
+rownames(ADp40KO_CB) <- ADp40KO_CB$interacting_pair
+ADp40KO_CB <- ADp40KO_CB[, -c(1)]
+
+ADp40KO_CB_sum <- data.frame(sum = colSums(ADp40KO_CB != 0))
+
+for(i in 1:nrow(ADp40KO_CB_sum)){
+  
+  ADp40KO_CB_sum[i,2] <- strsplit(rownames(ADp40KO_CB_sum), "\\.")[[i]][1]
+  ADp40KO_CB_sum[i,3] <- strsplit(rownames(ADp40KO_CB_sum), "\\.")[[i]][2]
+}
+
+colnames(ADp40KO_CB_sum) <- c("sum", "sender", "receiver")
+
+ADp40KO_CB_sum <- as.data.frame(ADp40KO_CB_sum)
+
+ADp40KO_CB_sum$sender <- factor(ADp40KO_CB_sum$sender, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+ADp40KO_CB_sum$receiver <- factor(ADp40KO_CB_sum$receiver, levels = c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum",
+                                                            "Inhibitory_Interneurons", "Neurons", "Cajal_Retzius", "Astrocytes",
+                                                            "Microglia", "Oligo", "OPC", "Fibroblast",
+                                                            "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"))
+
+ggplot(ADp40KO_CB_sum, aes(x=sender, y=receiver, fill=sum)) + geom_tile() + theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 90)) + scale_fill_distiller(palette = 'RdBu', limits=c(0,55))
+
+```
+
+### 4. Astrocytes 
+
+```{r warning=FALSE, message=FALSE, fig.height= 16, fig.width=12}
+source("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200226_CellPhoneDB_functions.R")
+
+list1 <- "Astrocytes"
+list2 <- c("Dentate_Gyrus", "CA1_Neurons", "CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Microglia", "Oligo", "OPC")
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8]), ncol = 2, heights = c(2.5,3,2,1.5))
+
+```
+
+### 5. Microglia
+
+```{r warning=FALSE, message=FALSE, fig.height= 16, fig.width= 12}
+list1 <- "Microglia"
+list2 <- c("Dentate_Gyrus", "CA1_Neurons","CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Oligo", "OPC")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[4], test[2], test[3], test[5], test[1], test[6], test[7], test[8]), ncol = 2, heights = c(3,3,2.5,2))
+```
+
+### 6. Oligo
+
+```{r warning=FALSE, message=FALSE, fig.height= 12, fig.width= 12}
+list1 <- "Oligo"
+list2 <- c("Dentate_Gyrus", "CA1_Neurons","CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "OPC")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[4], test[2], test[3], test[5], test[1], test[6], test[7], test[8]), ncol = 2, heights = c(3,3,2.5,2))
+```
+
+### 7. OPC
+
+```{r warning=FALSE, message=FALSE, fig.height= 14, fig.width= 12}
+list1 <- "OPC"
+list2 <- c("Dentate_Gyrus", "CA1_Neurons","CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[4], test[6], test[3], test[5], test[1], test[2], test[7], test[8]), ncol = 2, heights = c(2,3,2.5,2))
+```
+
+### 8. Dentate Gyrus
+
+```{r warning=FALSE, message=FALSE, fig.height= 16, fig.width= 12}
+list1 <- "Dentate_Gyrus"
+list2 <- c("OPC", "CA1_Neurons","CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[1], test[6], test[3], test[5], test[4], test[2], test[7], test[8]), ncol = 2, heights = c(2.5,3.5,2.5,2))
+```
+
+### 9. CA1 Neurons
+
+```{r warning=FALSE, message=FALSE, fig.height= 16, fig.width= 12}
+list1 <- "CA1_Neurons"
+list2 <- c("OPC", "Dentate_Gyrus","CA2_CA3_Neuron", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[1], test[6], test[3], test[5], test[4], test[2], test[7], test[8]), ncol = 2, heights = c(2.5,3,2.5,2.5))
+```
+
+### 10. CA2/CA3 Neuron
+
+```{r warning=FALSE, message=FALSE, fig.height= 18, fig.width= 12}
+list1 <- "CA2_CA3_Neuron"
+list2 <- c("OPC", "Dentate_Gyrus","CA1_Neurons", "Subiculum", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[1], test[6], test[3], test[5], test[4], test[2], test[7], test[8]), ncol = 2, heights = c(2.5,3,3,2))
+```
+
+### 11. Subiculum
+
+```{r warning=FALSE, message=FALSE, fig.height= 16, fig.width= 12}
+list1 <- "Subiculum"
+list2 <- c("OPC", "Dentate_Gyrus","CA1_Neurons", "CA2_CA3_Neuron", "Inhibitory_Interneurons", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[7], test[6], test[3], test[5], test[4], test[2], test[1], test[8]), ncol = 2, heights = c(2,3,3.5,2))
+```
+
+### 12. Inhibitory Interneurons
+
+```{r warning=FALSE, message=FALSE, fig.height= 18, fig.width= 12}
+list1 <- "Inhibitory_Interneurons"
+list2 <- c("OPC", "Dentate_Gyrus","CA1_Neurons", "CA2_CA3_Neuron", "Subiculum", "Astrocytes", "Microglia", "Oligo")
+
+
+test <- cellphonedb_multiplot(list1, list2)
+
+grid.arrange(grobs = c(test[7], test[6], test[3], test[5], test[4], test[2], test[1], test[8]), ncol = 2, heights = c(2.5,3,3,2))
+```
+
+```{r fig.height= 10, fig.width=12}
+# Ctrl_CB_sum_2 <- Ctrl_CB_sum[,c(2,3,1)]
+# colnames(Ctrl_CB_sum_2) <- c("from", "to", "value")
+# 
+# Ctrl_CB_sum_2_meta.df <- data.frame(cluster = unique(Ctrl_CB_sum_2$to))
+# 
+# g1 <- graph_from_data_frame(Ctrl_CB_sum_2, directed=FALSE, vertices=Ctrl_CB_sum_2_meta.df) %>% 
+#   set_edge_attr("diff", value = 1:3) %>% 
+#   set_edge_attr("color", value = "darkgrey")
+# 
+# V(g1)$size <- c(sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Astrocytes" | Ctrl_CB_sum$receiver == "Astrocytes"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "CA1_Neurons" | Ctrl_CB_sum$receiver == "CA1_Neurons"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "CA2_CA3_Neuron" | Ctrl_CB_sum$receiver == "CA2_CA3_Neuron"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Cajal_Retzius" | Ctrl_CB_sum$receiver == "Cajal_Retzius"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Choroid_Plexus" | Ctrl_CB_sum$receiver == "Choroid_Plexus"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Dentate_Gyrus" | Ctrl_CB_sum$receiver == "Dentate_Gyrus"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Fibroblast" | Ctrl_CB_sum$receiver == "Fibroblast"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Inhibitory_Interneurons" | Ctrl_CB_sum$receiver == "Inhibitory_Interneurons"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Microglia" | Ctrl_CB_sum$receiver == "Microglia"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Neurons" | Ctrl_CB_sum$receiver == "Neurons"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "OPC" | Ctrl_CB_sum$receiver == "OPC"), ]$sum)/50, 
+#                 sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Oligo" | Ctrl_CB_sum$receiver == "Oligo"), ]$sum)/50, 
+#                 sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Pericytes" | Ctrl_CB_sum$receiver == "Pericytes"), ]$sum)/50, sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Subiculum" | Ctrl_CB_sum$receiver == "Subiculum"), ]$sum)/50,
+# sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "VLMC" | Ctrl_CB_sum$receiver =="VLMC"),]$sum)/50,
+# sum(Ctrl_CB_sum[which(Ctrl_CB_sum$sender == "Vascular_Endothelial" | Ctrl_CB_sum$receiver == "Vascular_Endothelial"), ]$sum)/50)
+# 
+# V(g1)$color <- ifelse(V(g1)$name %in% c("Astrocytes","Microglia", "Oligo", "OPC", "Fibroblast",
+#                                                             "Vascular_Endothelial", "VLMC", "Pericytes", "Choroid_Plexus"), "lightblue", "darkorange")
+# #Color scaling function
+# c_scale <- colorRamp(c('red','yellow','cyan'))
+# 
+# E(g1)$color = apply(c_scale(E(g1)$diff), 1, function(x) rgb(x[1]/255,x[2]/255,x[3]/255) )
+# 
+# E(g1)$width <- E(g1)$diff/12
+# E(g1)$color <- E(g1)$diff
+# 
+# plot(g1, vertex.size=V(g1)$size, 
+#      vertex.label.cex = V(g1)$size/10,
+#      vertex.label.color = "black")
+# 
+# palf <-colorRampPalette(c("gray80", "dark red"))
+
+#,  edge.width = E(g1)$diff, edge.color = "gray85"
+```
+
+```{r fig.height= 10, fig.width=12}
+sessionInfo()
+```

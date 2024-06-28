@@ -1,0 +1,849 @@
+---
+title: "heatmap by GO results"
+author: "Skim"
+date: "8/31/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+heatmap of selective GO terms and genes and expression as well
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+library(scran)
+library(edgeR)
+library(topGO)
+library(scales)
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+
+# give levels to large cell type
+data9set_cleaned.SO$cell_type <- factor(data9set_cleaned.SO$cell_type, levels = c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum",  "Unidentified_Neurons", 
+                                                                                  "Inhibitory_Neurons", "MOL", "MFOL", "OPC", "NFOL", "Microglia","Astrocytes",
+                                                                                  "Vascular", "VLMC", "Choroid", "Fibroblast", "Cajal", "Pericyte", "Macrophage"))
+
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+GO_Open <- function(cell_type = "Astrocytes"){
+  
+#### 1-1. Astrocytes AD vs Ctrl up-regulated genes
+
+topGOResults.df <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df <- topGOResults.df[topGOResults.df$Fisher.elim < .01 , ]
+
+
+#### 1-2. Astrocytes AD vs Ctrl down-regulated genes
+
+topGOResults.df2 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df2 <- topGOResults.df2[topGOResults.df2$Fisher.elim < .01 , ]
+
+#### 1-3. Astrocytes ADp40KO vs Ctrl up-regulated genes
+
+topGOResults.df3 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df3 <- topGOResults.df3[topGOResults.df3$Fisher.elim < .01 , ]
+
+#### 1-4. Astrocytes ADp40KO vs Ctrl down-regulated genes
+
+topGOResults.df4 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type ,"_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df4 <- topGOResults.df4[topGOResults.df4$Fisher.elim < .01 , ]
+
+#### 1-5. Astrocytes AD vs ADp40KO up-regulated genes
+
+topGOResults.df5 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df5 <- topGOResults.df5[topGOResults.df5$Fisher.elim < .01 , ]
+
+#### 1-6. Astrocytes AD vs ADp40KO down-regulated genes
+
+topGOResults.df6 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type ,"_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df6 <- topGOResults.df6[topGOResults.df6$Fisher.elim < .05 , ]
+
+
+  return(list(topGOResults.df, topGOResults.df2, topGOResults.df3, topGOResults.df4, topGOResults.df5, topGOResults.df6))
+}
+
+```
+
+### 1. CA1
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+CA1_list <- GO_Open(cell_type = "CA1")
+
+CA_AD_Ctrl_up.df <- CA1_list[1] %>% as.data.frame
+CA_AD_Ctrl_down.df <- CA1_list[2] %>% as.data.frame
+CA_ADp40KO_Ctrl_up.df <- CA1_list[3] %>% as.data.frame
+CA_ADp40KO_Ctrl_down.df <- CA1_list[4] %>% as.data.frame
+CA_AD_ADp40KO_up.df <- CA1_list[5] %>% as.data.frame
+CA_AD_ADp40KO_down.df <- CA1_list[6] %>% as.data.frame
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+############
+# AD 
+############
+
+amyloid_beta_clearance <- c("Ldlr", "Apoe", "Hmgcr", "Ldlr", "Hmgcr", "Cyp51") %>% unique
+
+iron_ion_binding <- c("Msmo1", "Dpyd", "Sc5d", "Msmo1", "Fth1", "Sc5d", "Cyp51", "Scd2") %>% unique
+
+axonogenesis <- c("Thy1", "Ptprz1", "Apoe", "Robo1", "Unc5d", "Cntn5", "Thy1", "Ntrk2", "Prkca", "Nr4a3", "Ifrd1", "Olfm1", "Nr4a2", "Unc5d") %>% unique
+
+# cholesterol is removed
+sterol_biosynthetic_process <- c("Apoe", "Msmo1", "Sqle", "Sc5d", "Hmgcr", "Hmgcr", "Msmo1", "Sc5d", "Hmgcs1", "Cyp51", "Sqle", "Nsdhl", "Insig1") %>% unique
+
+#CA_ADp40KO_Ctrl_up.df[CA_ADp40KO_Ctrl_up.df$Term %in% "sterol biosynthetic process", ]$genes
+
+############
+# ADp40KO
+############
+
+central_nervous_system_neuron_development <- c("Ntrk2", "Fgfr1", "Prkca", "Btg2", "Nr4a2", "Ntrk2", "Prkca", "Fgfr1", "Nr4a2") %>% unique
+
+#vasculogenesis is removed
+protein_autophosphorylation <- c("Thy1", "Ntrk2", "Fgfr1", "Prkca", "Sik2", "Errfi1", "Ntrk2", "Prkca", "Sik2", "Fgfr1") %>% unique
+
+############
+# WT
+############
+# cell-cell adhesion mediated by cadherin is removed
+# 	cell-cell junction assembly is also removed
+calcium_dependent_cell_cell_adhesion <- c("Cdh10", "Cdh20", "Cdh6", "Cdh4", "Cdh20") %>% unique
+
+
+##############
+# All genes
+##############
+genes <- c(amyloid_beta_clearance, iron_ion_binding, axonogenesis, sterol_biosynthetic_process, central_nervous_system_neuron_development, protein_autophosphorylation, calcium_dependent_cell_cell_adhesion) %>% unique
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+data9set_CA1.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("CA1"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_CA1_1.SO <- subset(data9set_CA1.SO, subset = sample %in% "Ctrl")
+data9set_CA1_2.SO <- subset(data9set_CA1.SO, subset = sample %in% "AD")
+data9set_CA1_3.SO <- subset(data9set_CA1.SO, subset = sample %in% "ADp40KO")
+
+########################
+# expression calculation
+########################
+df1 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA1_1.SO, slot = "data")))
+df1$gene <- rownames(df1)
+colnames(df1) <- c("WT", "gene")
+
+df2 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA1_2.SO, slot = "data")))
+df2$gene <- rownames(df2)
+colnames(df2) <- c("APPPS1", "gene")
+
+df3 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA1_3.SO, slot = "data")))
+df3$gene <- rownames(df3)
+colnames(df3) <- c("APPPS1.il12b-/-", "gene")
+
+df <- merge(df1, c(df2, df3))
+df$gene.1 <- NULL
+
+
+ZS.df1 <- z_score_from_gene_list(data9set_CA1_1.SO, genes)
+colnames(ZS.df1) <- c("WT", "gene")
+ZS.df2 <- z_score_from_gene_list(data9set_CA1_2.SO, genes)
+colnames(ZS.df2) <- c("APPPS1", "gene")
+ZS.df3 <- z_score_from_gene_list(data9set_CA1_3.SO, genes)
+colnames(ZS.df3) <- c("APPPS1.il12b-/-", "gene")
+
+# merge all data frame
+ZS.df <- merge(ZS.df1, c(ZS.df2, ZS.df3), by = "gene")
+
+ZS.df$gene.1 <- NULL
+rownames(ZS.df) <- ZS.df$gene
+ZS.df$gene <- NULL
+
+CA1_ZS.df <- apply(ZS.df, 1, function(x) (x - mean(x)) / sd(x))
+CA1_ZS.df <- data.frame(t(CA1_ZS.df))
+CA1_ZS.df$gene <- rownames(CA1_ZS.df)
+
+
+CA1_ZS.df <- CA1_ZS.df %>% mutate(GO = case_when(gene %in% amyloid_beta_clearance ~ "amyloid\nbeta\nclearance",
+                                                     gene %in% iron_ion_binding ~ "iron\nion\nbinding",
+                                                     gene %in% axonogenesis ~ "axonogenesis",
+                                                     gene %in% sterol_biosynthetic_process ~ "sterol\nbiosynthetic\nprocess",
+                                                     gene %in% central_nervous_system_neuron_development ~ "central\nnervous\nsystem\nneuron\ndevelopment",
+                                                     gene %in% protein_autophosphorylation ~ "protein\nautophosphorylation",
+                                                     gene %in% calcium_dependent_cell_cell_adhesion ~ "calcium\ndependent\ncell cell adhesion"))
+
+
+CA1_zs.df <- gather(CA1_ZS.df, sample, z_score, "WT":"APPPS1.il12b...")
+
+CA1_zs.df$GO <- factor(CA1_zs.df$GO, levels = c("amyloid\nbeta\nclearance", "iron\nion\nbinding", "axonogenesis", "sterol\nbiosynthetic\nprocess", "central\nnervous\nsystem\nneuron\ndevelopment", "protein\nautophosphorylation", "calcium\ndependent\ncell cell adhesion"))
+
+
+CA1_zs.df2 <- left_join(CA1_zs.df, df, by = "gene")
+
+
+
+g1 <- ggplot(data = CA1_zs.df2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+CA1_zs.df3 <- CA1_zs.df2[,c(1:3, 5:7)]
+
+CA1_zs.df3 <- gather(CA1_zs.df3, sample, expression, "WT":"APPPS1.il12b...")
+
+g2 <- ggplot(data = CA1_zs.df3, mapping = aes(x = sample, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(0, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,2))
+```
+
+### 2. CA2/3
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+CA23_list <- GO_Open(cell_type = "CA2_3")
+
+CA_AD_Ctrl_up.df <- CA23_list[1] %>% as.data.frame
+CA_AD_Ctrl_down.df <- CA23_list[2] %>% as.data.frame
+CA_ADp40KO_Ctrl_up.df <- CA23_list[3] %>% as.data.frame
+CA_ADp40KO_Ctrl_down.df <- CA23_list[4] %>% as.data.frame
+CA_AD_ADp40KO_up.df <- CA23_list[5] %>% as.data.frame
+CA_AD_ADp40KO_down.df <- CA23_list[6] %>% as.data.frame
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+############
+# AD 
+############
+# lipid storage, cholesterol removed
+
+amyloid_beta_binding <- c("Apoe", "Cst3", "Ldlr", "Ldlr", "Olfm1", "Itm2c") %>% unique
+
+amyloid_beta_clearance <- c("Apoe", "Ldlr", "Ldlr", "Hmgcr", "Cyp51") %>% unique
+
+
+############
+# ADp40KO
+############
+
+phospholipid_metabolic_process <- c("Ldlr", "Hmgcs1", "Inpp5d", "Fdft1", "Inpp4b", "Hexb", "Mvd", "Idi1", "Smpd4", "Hmgcs1", "Mvd", "Ldlr", "Fdft1", "Sh3glb1") %>% unique
+
+voltage_gated_ion_channel_activity <- c("Kcnt2", "Cacng2", "Ncs1", "Kcnt2", "Scn3b", "Cachd1", "Kcns3", "Scn1b") %>% unique
+
+semaphorin_plexin_signaling_pathway <- c("Sema5b", "Sema6d", "Sema5a", "Sema6d", "Sema5b") %>% unique
+
+############
+# WT
+############
+# cell-cell adhesion mediated by cadherin is removed
+# 	cell-cell junction assembly is also removed
+cell_cell_adhesion_mediated_by_cadherin <- c("Cdh10", "Cdh24", "Ptpru", "Cdh24") %>% unique
+
+
+##############
+# All genes
+##############
+genes <- c(amyloid_beta_binding, amyloid_beta_clearance, phospholipid_metabolic_process, voltage_gated_ion_channel_activity, semaphorin_plexin_signaling_pathway, cell_cell_adhesion_mediated_by_cadherin) %>% unique
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+data9set_CA23.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("CA2_3"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_CA23_1.SO <- subset(data9set_CA23.SO, subset = sample %in% "Ctrl")
+data9set_CA23_2.SO <- subset(data9set_CA23.SO, subset = sample %in% "AD")
+data9set_CA23_3.SO <- subset(data9set_CA23.SO, subset = sample %in% "ADp40KO")
+
+########################
+# expression calculation
+########################
+df1 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA23_1.SO, slot = "data")))
+df1$gene <- rownames(df1)
+colnames(df1) <- c("WT", "gene")
+
+df2 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA23_2.SO, slot = "data")))
+df2$gene <- rownames(df2)
+colnames(df2) <- c("APPPS1", "gene")
+
+df3 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA23_3.SO, slot = "data")))
+df3$gene <- rownames(df3)
+colnames(df3) <- c("APPPS1.il12b-/-", "gene")
+
+df <- merge(df1, c(df2, df3))
+df$gene.1 <- NULL
+
+
+ZS.df1 <- z_score_from_gene_list(data9set_CA23_1.SO, genes)
+colnames(ZS.df1) <- c("WT", "gene")
+ZS.df2 <- z_score_from_gene_list(data9set_CA23_2.SO, genes)
+colnames(ZS.df2) <- c("APPPS1", "gene")
+ZS.df3 <- z_score_from_gene_list(data9set_CA23_3.SO, genes)
+colnames(ZS.df3) <- c("APPPS1.il12b-/-", "gene")
+
+# merge all data frame
+ZS.df <- merge(ZS.df1, c(ZS.df2, ZS.df3), by = "gene")
+
+ZS.df$gene.1 <- NULL
+rownames(ZS.df) <- ZS.df$gene
+ZS.df$gene <- NULL
+
+CA1_ZS.df <- apply(ZS.df, 1, function(x) (x - mean(x)) / sd(x))
+CA1_ZS.df <- data.frame(t(CA1_ZS.df))
+CA1_ZS.df$gene <- rownames(CA1_ZS.df)
+
+
+CA1_ZS.df <- CA1_ZS.df %>% mutate(GO = case_when(gene %in% amyloid_beta_binding ~ "amyloid\nbeta\nbinding",
+                                                     gene %in% amyloid_beta_clearance ~ "amyloid\nbeta\nclearance",
+                                                     gene %in% phospholipid_metabolic_process ~ "phospholipid\nmetabolic\nprocess",
+                                                     gene %in% voltage_gated_ion_channel_activity ~ "voltage\ngated\nion\nchannel\nactivity",
+                                                     gene %in% semaphorin_plexin_signaling_pathway ~ "semaphorin\nplexin\nsignaling\npathway",
+                                                     gene %in% cell_cell_adhesion_mediated_by_cadherin ~ "cell\ncell\nadhesion\nmediated\nby\ncadherin"))
+
+
+CA1_zs.df <- gather(CA1_ZS.df, sample, z_score, "WT":"APPPS1.il12b...")
+
+CA1_zs.df$GO <- factor(CA1_zs.df$GO, levels = c("amyloid\nbeta\nbinding", "amyloid\nbeta\nclearance", "phospholipid\nmetabolic\nprocess", "voltage\ngated\nion\nchannel\nactivity", "semaphorin\nplexin\nsignaling\npathway", "cell\ncell\nadhesion\nmediated\nby\ncadherin"))
+
+
+CA1_zs.df2 <- left_join(CA1_zs.df, df, by = "gene")
+
+
+
+g1 <- ggplot(data = CA1_zs.df2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+CA1_zs.df3 <- CA1_zs.df2[,c(1:3, 5:7)]
+
+CA1_zs.df3 <- gather(CA1_zs.df3, sample, expression, "WT":"APPPS1.il12b...")
+
+g2 <- ggplot(data = CA1_zs.df3, mapping = aes(x = sample, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(0, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,2))
+```
+
+### 3. Dentate Gyrus
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+DG_list <- GO_Open(cell_type = "Dentate_Gyrus")
+
+CA_AD_Ctrl_up.df <- DG_list[1] %>% as.data.frame
+CA_AD_Ctrl_down.df <- DG_list[2] %>% as.data.frame
+CA_ADp40KO_Ctrl_up.df <- DG_list[3] %>% as.data.frame
+CA_ADp40KO_Ctrl_down.df <- DG_list[4] %>% as.data.frame
+CA_AD_ADp40KO_up.df <- DG_list[5] %>% as.data.frame
+CA_AD_ADp40KO_down.df <- DG_list[6] %>% as.data.frame
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+############
+# AD 
+############
+# antioxidant acti, cholesterol removed
+
+negative_regulation_of_inflammatory <- c("Apoe", "Il12b") %>% unique
+
+
+###############
+# ADp40KO
+###############
+
+axon_guidance <- c("Epha5", "Etv1", "Epha5", "Sema6d", "Unc5d") %>% unique
+
+
+###############
+# WT
+###############
+
+synapse_organization <- c("Nrxn3", "Lrrc4c", "Dgkb", "Epha5", "Lrrtm3") %>% unique
+
+# cell-cell adhesion via ... removed
+
+cell_adhesion_molecule_binding <- c("Tenm4", "Lrrc4c", "Cdh10", "Fgfr1", "Tenm4", "Tenm1", "Lrrc4c") %>% unique
+
+##############
+# All genes
+##############
+genes <- c(negative_regulation_of_inflammatory, axon_guidance, synapse_organization, cell_adhesion_molecule_binding) %>% unique
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+data9set_DG.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Dentate_Gyrus"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_DG_1.SO <- subset(data9set_DG.SO, subset = sample %in% "Ctrl")
+data9set_DG_2.SO <- subset(data9set_DG.SO, subset = sample %in% "AD")
+data9set_DG_3.SO <- subset(data9set_DG.SO, subset = sample %in% "ADp40KO")
+
+########################
+# expression calculation
+########################
+df1 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_DG_1.SO, slot = "data")))
+df1$gene <- rownames(df1)
+colnames(df1) <- c("WT", "gene")
+
+df2 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_DG_2.SO, slot = "data")))
+df2$gene <- rownames(df2)
+colnames(df2) <- c("APPPS1", "gene")
+
+df3 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_DG_3.SO, slot = "data")))
+df3$gene <- rownames(df3)
+colnames(df3) <- c("APPPS1.il12b-/-", "gene")
+
+df <- merge(df1, c(df2, df3))
+df$gene.1 <- NULL
+
+
+ZS.df1 <- z_score_from_gene_list(data9set_DG_1.SO, genes)
+colnames(ZS.df1) <- c("WT", "gene")
+ZS.df2 <- z_score_from_gene_list(data9set_DG_2.SO, genes)
+colnames(ZS.df2) <- c("APPPS1", "gene")
+ZS.df3 <- z_score_from_gene_list(data9set_DG_3.SO, genes)
+colnames(ZS.df3) <- c("APPPS1.il12b-/-", "gene")
+
+# merge all data frame
+ZS.df <- merge(ZS.df1, c(ZS.df2, ZS.df3), by = "gene")
+
+ZS.df$gene.1 <- NULL
+rownames(ZS.df) <- ZS.df$gene
+ZS.df$gene <- NULL
+
+CA1_ZS.df <- apply(ZS.df, 1, function(x) (x - mean(x)) / sd(x))
+CA1_ZS.df <- data.frame(t(CA1_ZS.df))
+CA1_ZS.df$gene <- rownames(CA1_ZS.df)
+
+
+CA1_ZS.df <- CA1_ZS.df %>% mutate(GO = case_when(gene %in% negative_regulation_of_inflammatory ~ "negative\nregulation\nof\ninflammatory",
+                                                     gene %in% axon_guidance ~ "axon\nguidance",
+                                                     gene %in% synapse_organization ~ "synapse\norganization",
+                                                     gene %in% cell_adhesion_molecule_binding ~ "cell\nadhesion\nmolecule\nbinding"))
+
+
+CA1_zs.df <- gather(CA1_ZS.df, sample, z_score, "WT":"APPPS1.il12b...")
+
+CA1_zs.df$GO <- factor(CA1_zs.df$GO, levels = c("negative\nregulation\nof\ninflammatory", "axon\nguidance", "synapse\norganization", "cell\nadhesion\nmolecule\nbinding"))
+
+
+CA1_zs.df2 <- left_join(CA1_zs.df, df, by = "gene")
+
+
+
+g1 <- ggplot(data = CA1_zs.df2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=9, fig.height=4}
+
+CA1_zs.df3 <- CA1_zs.df2[,c(1:3, 5:7)]
+
+CA1_zs.df3 <- gather(CA1_zs.df3, sample, expression, "WT":"APPPS1.il12b...")
+
+g2 <- ggplot(data = CA1_zs.df3, mapping = aes(x = sample, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(0, 3), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,2))
+```
+
+### 4. Subiculum
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+SB_list <- GO_Open(cell_type = "subiculum")
+
+CA_AD_Ctrl_up.df <- SB_list[1] %>% as.data.frame
+CA_AD_Ctrl_down.df <- SB_list[2] %>% as.data.frame
+CA_ADp40KO_Ctrl_up.df <- SB_list[3] %>% as.data.frame
+CA_ADp40KO_Ctrl_down.df <- SB_list[4] %>% as.data.frame
+CA_AD_ADp40KO_up.df <- SB_list[5] %>% as.data.frame
+CA_AD_ADp40KO_down.df <- SB_list[6] %>% as.data.frame
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+############
+# AD 
+############
+# antioxidant acti, cholesterol removed
+
+release_of_sequestered_calcium_ion <- c("Thy1", "Htr2a", "Plce1", "Hap1", "Htr2c", "Hap1", "Camk2d", "Htr2a", "Plce1") %>% unique
+
+GABA_ergic_synapse <- c("Erbb4", "Ptpro", "Cdh13", "Glra3", "Hap1", "Erbb4", "Glra3", "Hap1", "Baiap3", "Ptpro", "Calb1") %>% unique
+
+potassium_ion_transport <- c("Kcnc2", "Slc9a9", "Htr2a", "Kcnip4", "Kcnt2", "Kcnc2", "Prkg1", "Kcnt2", "Htr2a", "Slc9a9", "Slc24a3") %>% unique
+
+regulation_of_exocytosis <- c("Cadps2", "Htr2a", "Glra3", "Hap1", "Rab26", "Glra3", "Hap1", "Baiap3", "Cadps2", "Htr2a", "Syt17") %>% unique
+
+###############
+# ADp40KO
+###############
+
+calcium_dependent_phospholipid_binding <- c("Cpne4", "Syt4", "Syt2", "Cpne4", "Syt4", "Anxa7") %>% unique
+
+cholesterol_biosynthetic_process <- c("Hmgcr", "Hmgcs1", "Sc5d", "Fdft1", "Dhcr24", "Fdft1", "Prkaa2", "Hmgcr", "Abcg1", "Hmgcs1") %>% unique
+
+negative_regulation_of_canonical_Wnt  <- c("Kremen1", "Ptpru", "Rbms3", "Tle4", "Egr1", "Shisa6", "Prickle1", "Rbms3", "Mcc", "Tle4", "Bicc1", "Dkk3", "Ptpru", "Shisa6") %>% unique
+
+glutamate_receptor_signaling_pathway <- c("Neto2", "Grik3", "Grin3a", "Shisa6", "Grik1", "Nrxn1", "Ephb2", "Grm4", "Grm8", "Shisa6") %>% unique
+
+positive_regulation_of_MAPK_cascade <- c("Alk", "Sh3rf1", "Hmgcr", "Htr2c", "Rell1", "Igf1r", "Tgfbr1", "Psap", "Sash1", "Timp2", "Robo1", "Nrxn1", "Alk", "Samd5", "Rell1", "Sh3rf1", "Psap", "Nrp1", "Kit", "Ntrk2", "Prkca", "Pak1", "Grm4", "Hmgcr", "Ksr1", "Fgfr1", "Timp2", "Dcc") %>% unique
+
+#CA_ADp40KO_Ctrl_up.df[CA_ADp40KO_Ctrl_up.df$Term == "positive regulation of MAPK cascade", ]$genes
+#CA_AD_ADp40KO_down.df[CA_AD_ADp40KO_down.df$Term == "positive regulation of MAPK cascade", ]$genes
+ 
+dendrite_development <- c("Alk", "Klhl1", "Grin3a", "Fezf2", "Fmn1", "Robo1", "Sez6", "Fmn1", "Alk", "Map1b", "Nedd4l", "Hecw2", "Dab1", "Fat3", "Nrp1", "Ntrk2", "Pak1", "Ephb2", "Ss18l1") %>% unique
+
+#CA_AD_ADp40KO_down.df[CA_AD_ADp40KO_down.df$Term == "dendrite development", ]$genes
+ 
+transmitter_gated_ion_channel_activity <- c("Grik3", "Grin3a", "Gabrg3", "Grik1", "Grid2", "Gria1", "Glra2") %>% unique
+
+potassium_ion_transmembrane_transporter <- c("Kcnip1", "Kcnh8", "Slc9a2", "Grik3", "Grik1", "Kcnc2", "Slc9a9", "Kcnip4", "Kcnt2") %>% unique
+
+positive_regulation_of_neuron_differentiation <- c("Alk", "Robo2", "Igf1r", "Serpini1", "Fezf2", "Syt4", "Timp2", "Robo1", "Sez6", "Vwc2l", "Negr1", "Cdh4", "Rarb", "Robo1", "Robo2", "Vwc2", "Ptprz1", "Rgs6", "Hap1") %>% unique
+
+#CA_ADp40KO_Ctrl_up.df[CA_ADp40KO_Ctrl_up.df$Term == "positive regulation of neuron differenti...", ]$genes
+#CA_AD_Ctrl_up.df[CA_AD_Ctrl_up.df$Term == "positive regulation of neuron differenti...", ]$genes
+ 
+positive_regulation_of_lipid_biosynthetic <- c("Ldlr", "Htr2c", "Igf1r", "Zbtb20", "Ccdc3", "Tcf7l2", "Htr2a", "Htr2c")  %>% unique
+###############
+# WT
+###############
+
+dendritic_spine_morphogenesis <- c("Ube3a", "Myo5b", "Dock10", "Cux2", "Ube3a", "Myo5b", "Ephb1", "Ephb2", "Cux2") %>% unique
+
+positive_regulation_of_developmental_growth <- c("Myo5b", "Cacna2d2", "Syt2", "Sema5a", "Unc13a", "Pls1", "Flt3", "Ppard", "Myo5b", "Cdh4", "Ghr", "Trpc5", "Ntrk3", "Cacna2d2", "Cpne5", "Erbb4") %>% unique
+
+#CA_AD_Ctrl_down.df[CA_AD_Ctrl_down.df$Term == "positive regulation of developmental gro...", ]$genes
+#CA_ADp40KO_Ctrl_down.df[CA_ADp40KO_Ctrl_down.df$Term == "positive regulation of developmental gro...", ]$genes
+
+
+##############
+# All genes
+##############
+genes <- c(release_of_sequestered_calcium_ion, GABA_ergic_synapse, potassium_ion_transport, regulation_of_exocytosis,
+           calcium_dependent_phospholipid_binding, cholesterol_biosynthetic_process, negative_regulation_of_canonical_Wnt, glutamate_receptor_signaling_pathway,
+           positive_regulation_of_MAPK_cascade, dendrite_development, transmitter_gated_ion_channel_activity, potassium_ion_transmembrane_transporter,
+           positive_regulation_of_neuron_differentiation, positive_regulation_of_lipid_biosynthetic, dendritic_spine_morphogenesis, positive_regulation_of_developmental_growth) %>% unique
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=20, fig.height=5}
+data9set_SB.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("subiculum"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_SB_1.SO <- subset(data9set_SB.SO, subset = sample %in% "Ctrl")
+data9set_SB_2.SO <- subset(data9set_SB.SO, subset = sample %in% "AD")
+data9set_SB_3.SO <- subset(data9set_SB.SO, subset = sample %in% "ADp40KO")
+
+########################
+# expression calculation
+########################
+df1 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_SB_1.SO, slot = "data")))
+df1$gene <- rownames(df1)
+colnames(df1) <- c("WT", "gene")
+
+df2 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_SB_2.SO, slot = "data")))
+df2$gene <- rownames(df2)
+colnames(df2) <- c("APPPS1", "gene")
+
+df3 <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_SB_3.SO, slot = "data")))
+df3$gene <- rownames(df3)
+colnames(df3) <- c("APPPS1.il12b-/-", "gene")
+
+df <- merge(df1, c(df2, df3))
+df$gene.1 <- NULL
+
+
+ZS.df1 <- z_score_from_gene_list(data9set_SB_1.SO, genes)
+colnames(ZS.df1) <- c("WT", "gene")
+ZS.df2 <- z_score_from_gene_list(data9set_SB_2.SO, genes)
+colnames(ZS.df2) <- c("APPPS1", "gene")
+ZS.df3 <- z_score_from_gene_list(data9set_SB_3.SO, genes)
+colnames(ZS.df3) <- c("APPPS1.il12b-/-", "gene")
+
+# merge all data frame
+ZS.df <- merge(ZS.df1, c(ZS.df2, ZS.df3), by = "gene")
+
+ZS.df$gene.1 <- NULL
+rownames(ZS.df) <- ZS.df$gene
+ZS.df$gene <- NULL
+
+CA1_ZS.df <- apply(ZS.df, 1, function(x) (x - mean(x)) / sd(x))
+CA1_ZS.df <- data.frame(t(CA1_ZS.df))
+CA1_ZS.df$gene <- rownames(CA1_ZS.df)
+
+
+CA1_ZS.df <- CA1_ZS.df %>% mutate(GO = case_when(gene %in% release_of_sequestered_calcium_ion ~ "release of\nsequestered\ncalcium ion",
+                                                     gene %in% GABA_ergic_synapse ~ "GABAergic\nsynapse",
+                                                     gene %in% potassium_ion_transport ~ "potassium ion\ntransport",
+                                                     gene %in% regulation_of_exocytosis ~ "regulation of\nexocytosis",
+                                                     gene %in% calcium_dependent_phospholipid_binding ~ "calcium\ndependent\nphospholipid\nbinding",
+                                                     gene %in% cholesterol_biosynthetic_process ~ "cholesterol\nbiosynthetic\nprocess",
+                                                     gene %in% negative_regulation_of_canonical_Wnt ~ "negative\nregulation of\ncanonical Wnt",
+                                                     gene %in% glutamate_receptor_signaling_pathway ~ "glutamate\nreceptor\nsignaling\npathway",
+                                                     gene %in% positive_regulation_of_MAPK_cascade ~ "positive\nregulation of\nMAPK cascade",
+                                                     gene %in% dendrite_development ~ "dendrite\ndevelopment",
+                                                     gene %in% transmitter_gated_ion_channel_activity ~ "transmitter\ngated ion\nchannel\nactivity",
+                                                     gene %in% potassium_ion_transmembrane_transporter ~ "potassium ion\ntransmembrane\ntransporter",
+                                                     gene %in% positive_regulation_of_neuron_differentiation ~ "positive\nregulation of\nneuron\ndifferentiation",
+                                                     gene %in% positive_regulation_of_lipid_biosynthetic ~ "positive\nregulation of\nlipid\nbiosynthetic",
+                                                     gene %in% dendritic_spine_morphogenesis ~ "dendritic\nspine\nmorphogenesis",
+                                                     gene %in% positive_regulation_of_developmental_growth ~ "positive\nregulation of\ndevelopmental\ngrowth"))
+
+
+CA1_zs.df <- gather(CA1_ZS.df, sample, z_score, "WT":"APPPS1.il12b...")
+
+CA1_zs.df$GO <- factor(CA1_zs.df$GO, levels = c("release of\nsequestered\ncalcium ion", "GABAergic\nsynapse", "potassium ion\ntransport", "regulation of\nexocytosis", "transmitter\ngated ion\nchannel\nactivity", "positive\nregulation of\nneuron\ndifferentiation", 
+                                                "calcium\ndependent\nphospholipid\nbinding", "cholesterol\nbiosynthetic\nprocess", "negative\nregulation of\ncanonical Wnt",  "glutamate\nreceptor\nsignaling\npathway",
+                                                "positive\nregulation of\nMAPK cascade", "dendrite\ndevelopment",  "potassium ion\ntransmembrane\ntransporter",
+                                                "positive\nregulation of\nlipid\nbiosynthetic", "dendritic\nspine\nmorphogenesis", "positive\nregulation of\ndevelopmental\ngrowth"))
+
+
+CA1_zs.df2 <- left_join(CA1_zs.df, df, by = "gene")
+
+
+
+g1 <- ggplot(data = CA1_zs.df2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=20, fig.height=6}
+
+CA1_zs.df3 <- CA1_zs.df2[,c(1:3, 5:7)]
+
+CA1_zs.df3 <- gather(CA1_zs.df3, sample, expression, "WT":"APPPS1.il12b...")
+
+g2 <- ggplot(data = CA1_zs.df3, mapping = aes(x = sample, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(0, 4), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,2))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+sessionInfo()
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+
+
+```
+
+

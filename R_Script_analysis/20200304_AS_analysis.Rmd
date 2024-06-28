@@ -1,0 +1,654 @@
+---
+title: "Astrocytes"
+author: "Skim"
+date: "3/4/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is about Astrocytes analysis. As we found only 1 cluster (#4) in Astrocytes from previous analysis, I subclustered cluster 4. 
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(fgsea)
+library(MAST)
+library(ggrepel)
+library(biomaRt)
+library(topGO)
+library(viridis)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+### 1. AS cluster analysis
+
+This analysis is done by Astrocytes cluster (from res 0.8 and cluster 4) and I investigate more in here.
+
+```{r warning=FALSE, message=FALSE, fig.width = 5.5, fig.height=5}
+data9set_cleaned_AS.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(4))
+
+FeaturePlot(data9set_cleaned_AS.SO, features = "Rmst", cols = c("#FFCC00",'#003366')) + xlim(5,10) + ylim(-30, -20)
+FeaturePlot(data9set_cleaned_AS.SO, features = "Gfap", cols = c("#FFCC00",'#003366')) + xlim(5,10) + ylim(-30, -20)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+
+d1 <- DimPlot(object = data9set_cleaned_AS.SO, 
+        cells = as.vector(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "Ctrl",])), reduction = "umap", cols = viridis(3)[1]) + ggtitle("Astrocytes Ctrl") + scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 9, y = -29), label = paste0(length(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "Ctrl",])), " cells"), size = 5)
+
+d2 <- DimPlot(object = data9set_cleaned_AS.SO, 
+        cells = as.vector(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "AD",])), reduction = "umap", cols = viridis(3)[2]) + ggtitle("Astrocytes AD") + scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 9, y = -29), label = paste0(length(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "AD",])), " cells"), size = 5)
+
+d3 <- DimPlot(object = data9set_cleaned_AS.SO, 
+        cells = as.vector(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "ADp40KO",])), reduction = "umap", cols = viridis(3)[3]) + ggtitle("Astrocytes ADp40KO") + scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 9, y = -29), label = paste0(length(rownames(data9set_cleaned_AS.SO@meta.data[data9set_cleaned_AS.SO@meta.data$sample %in% "ADp40KO",])), " cells"), size = 5)
+
+grid.arrange(d1, d2, d3, ncol = 3)
+```
+
+### 2. subclustering 
+
+As Astrocytes has 1 cluster from previous analysis, I decided to do subclustering and identified 6 clusters. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=5}
+data9set_AS.SO <- CreateSeuratObject(counts =  GetAssayData(data9set_cleaned_AS.SO, slot = 'counts'),  min.cells = 3, min.features = 200, project = "ADp40KO")
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set_AS.SO@meta.data), split="-"), "[[", 2)
+data9set_AS.SO <- AddMetaData(object=data9set_AS.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set_AS.SO@meta.data)))
+
+# calculate MT genes
+data9set_AS.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set_AS.SO, pattern = "^mt-")
+data9set_AS.SO <- subset(x = data9set_AS.SO, subset = nCount_RNA < 30000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+data9set_AS.SO <- NormalizeData(object = data9set_AS.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+
+data9set_AS.SO <- FindVariableFeatures(object = data9set_AS.SO, nfeatures = 200, selection.method = "vst", verbose = FALSE)
+
+
+
+data9set_AS.SO <- ScaleData(object = data9set_AS.SO, vars.to.regress = c("percent.mt", "nCount_RNA", "gemgroup"))
+data9set_AS.SO <- RunPCA(data9set_AS.SO, features = VariableFeatures(object = data9set_AS.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(data9set_AS.SO, ndims = 20) until 6 PCs
+data9set_AS.SO <- FindNeighbors(object = data9set_AS.SO, reduction = "pca", dims = 1:6, verbose = FALSE)
+data9set_AS.SO <- FindClusters(object = data9set_AS.SO, resolution = 0.4, verbose = FALSE)
+
+data9set_AS.SO <- RunTSNE(object = data9set_AS.SO, dims = 1:6, nthreads = 8, perplexity = 30)
+data9set_AS.SO <- RunUMAP(object = data9set_AS.SO, dims = 1:6, n.neighbors = 25, min.dist = 0.1, n.epochs = 500, spread = 1)
+
+
+DimPlot(object = data9set_AS.SO, reduction = "umap")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 5.5, fig.height=5}
+FeaturePlot(object = data9set_AS.SO, features = "Rmst", cols = c("#FFCC00",'#003366'), order = TRUE)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+data9set_AS.SO@meta.data$sample <- ifelse((data9set_AS.SO$gemgroup == 1 | data9set_AS.SO$gemgroup == 4 | data9set_AS.SO$gemgroup == 7), "Ctrl", ifelse((data9set_AS.SO$gemgroup == 2 | data9set_AS.SO$gemgroup == 5 | data9set_AS.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+data9set_AS_ctrl.SO <- subset(data9set_AS.SO, subset = sample %in% "Ctrl")
+data9set_AS_AD.SO <- subset(data9set_AS.SO, subset = sample %in% "AD")
+data9set_AS_ADp40KO.SO <- subset(data9set_AS.SO, subset = sample %in% "ADp40KO")
+
+
+f1 <- FeaturePlot(object = data9set_AS_ctrl.SO, features = "Rmst", cols = c("#FFCC00",'#003366'), order = TRUE)
+f2 <- FeaturePlot(object = data9set_AS_AD.SO, features = "Rmst", cols = c("#FFCC00",'#003366'), order = TRUE)
+f3 <- FeaturePlot(object = data9set_AS_ADp40KO.SO, features = "Rmst", cols = c("#FFCC00",'#003366'), order = TRUE)
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+data9set_AS.SO@meta.data$sample <- ifelse((data9set_AS.SO$gemgroup == 1 | data9set_AS.SO$gemgroup == 4 | data9set_AS.SO$gemgroup == 7), "Ctrl", ifelse((data9set_AS.SO$gemgroup == 2 | data9set_AS.SO$gemgroup == 5 | data9set_AS.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+data9set_AS.SO$sample <- factor(data9set_AS.SO$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+
+
+DimPlot(object = data9set_AS.SO, reduction = "umap", split.by = "sample")
+```
+
+### 3. subcluster proportion
+
+It seems there are more Astrocytes in AD compare to others. 
+
+Postmortem quantitative neuropathological studies have shown that the number of **reactive astrocytes** in the vicinity of amyloid plaques **increases** as the disease advances [reactive astrocytes ref](https://www.frontiersin.org/articles/10.3389/fnagi.2018.00114/full)
+
+The number of reactive astrocytes increases, engulfing and reducing the amyloid plaques. In addition, astrocytes surround the amyloid plaques and secrete proinflammatory factors, such as tumor necrosis factor(TNF) or interleukin 1(IL-1) [reactive astrocytes ref](https://www.intechopen.com/online-first/astrocytes-and-inflammatory-processes-in-alzheimer-s-disease)
+
+```{r warning=FALSE, message=FALSE, fig.width = 8, fig.height=5}
+
+plot.data <- data9set_AS.SO@meta.data %>%
+    dplyr::select(sample, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cluster, sample) %>%
+    summarise(count = n()) %>%
+    mutate(clust_total = sum(count)) %>%
+    mutate(clust_prop = count / clust_total) %>%
+    group_by(sample) %>%
+    mutate(dataset_total = sum(count)) %>%
+    ungroup() %>%
+    mutate(dataset_prop = count / dataset_total)
+
+plot.data$sample <- factor(plot.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+ggplot(plot.data, aes(x = cluster, y = count, fill = sample)) +
+    geom_col() + 
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 1200), expand = c(0,0)) + 
+  scale_fill_viridis_d() + 
+  geom_text(aes(label = count), color = "darkgray", size = 4,  position = position_stack(0.5)) + 
+  theme(axis.text.x = element_text(size =14,  color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =18), legend.title = element_blank(), legend.text = element_text(size = 14),legend.position = c(0.8, 0.8))
+```
+
+There was no specific Astrocytes cluster of disease. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=4.5}
+plot.data <- data9set_AS.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 6), rep("ADp40KO-1", 6), rep("AD-1", 6),
+                              rep("Ctrl-2", 6), rep("ADp40KO-2", 6), rep("AD-2", 6),
+                              rep("Ctrl-3", 5), rep("ADp40KO-3", 6), rep("AD-3", 6)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cluster)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  scale_fill_manual(values=c("#CC0000",  "#FF9900", "#FFCC66", "#33CC33",  "#009999", "#000033"))
+
+
+
+```
+
+### 4. feature markers
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+# data9set_AS.markers <- FindAllMarkers(data9set_AS.SO)
+# write.csv(data9set_AS.markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200304_AS_analysis_AS_Find_markers.csv")
+data9set_AS.markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200304_AS_analysis_AS_Find_markers.csv", row.names = 1)
+
+data9set_AS_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv", row.names = 1)
+
+data9set_AS_DE_AD_ADp40KO_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv", row.names = 1)
+```
+
+First I checked known astrocytes markers from literatures S100b, Aldoc, Aqp4 [marker ref](https://www.cell.com/cell-reports/pdf/S2211-1247(17)31848-X.pdf)
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("S100b"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_AS.SO, features = c("Aldoc"), cols = c("#FFCC00",'#003366'))
+f3 <- FeaturePlot(data9set_AS.SO, features = c("Aqp4"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned.SO, features = c("S100b"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Aldoc"), cols = c("#FFCC00",'#003366'))
+f3 <- FeaturePlot(data9set_cleaned.SO, features = c("Aqp4"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+#### 4-1 Gfap (cluster 3 & reactive astrocytes marker)
+
+Gfap as a routine identifier of astrocytes in the healthy CNS. However, increased Gfap gene expression in astrocytes as the standard marker of astrocyte reactivity. Also, GFAP antisera stained astrocytes in pathological **human Alzheimer’s brain** [reactive astrocytes ref](https://www.cell.com/immunity/pdf/S1074-7613(17)30234-0.pdf)
+
+Cluster 3 seems reactive astrocytes while cluster 1, 2 are not. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Gfap"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Gfap"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+FeaturePlot(data9set_AS.SO, features = c("Gfap"), split.by = "sample", order = TRUE, cols = c("#FFCC00",'#003366')) 
+
+```
+
+
+#### 4-1 Plce1 (cluster 2 & up- in AD)
+
+Plce1 is highly expressed in cluster 2
+
+Phospholipase Cɛ links G protein-coupled receptor activation to **inflammatory astrocytic responses** [Plce1 ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3587233/) 
+
+Plce1 is Calcium signalling pathway, imbalances/deregulation in calcium signalling and **AD pathology**. [Plce1 ref](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0010153)
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Plce1"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Plce1"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+FeaturePlot(data9set_AS.SO, features = c("Plce1"), split.by = "sample", order = TRUE, cols = c("#FFCC00",'#003366'))
+
+```
+
+#### 4-3. Pde10a (cluster 0 & down- ADp40KO)
+
+Pde10a is highly expressed in cluster 0 and not expressed in cluster 2. Also, Pde10a is upregulated in AD compare to ADp40KO while they are not upregulated in AD vs Ctrl
+
+[Pde10a](https://jneuroinflammation.biomedcentral.com/track/pdf/10.1186/s12974-019-1649-3)
+Pde10a The phosphodiesterase 10 inhibitorpapaverine exerts anti-inflammatory and neuroprotective effects via the PKA signaling pathway in neuroinflammation
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Pde10a"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Pde10a"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+FeaturePlot(data9set_AS.SO, features = c("Pde10a"), split.by = "sample", order = TRUE, cols = c("#FFCC00",'#003366'))
+
+```
+
+#### 4-4. Asic2 (up- only AD)
+
+Asic2 inflammation induces an increase in the ASIC current and its expression in the cell membrane, leading to an increase in neuronal excitability [Asic2](https://www.hindawi.com/journals/mi/2017/3728096/) 
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Asic2"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Asic2"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+FeaturePlot(data9set_AS.SO, features = c("Asic2"), split.by = "sample", order = TRUE, cols = c("#FFCC00",'#003366'))
+
+```
+
+#### 4-5. Adgrv1 (cluster 4)
+
+Adgrv1 is cluster 4 marker. 
+
+We  also identified  a  novel  astrocyte-specific  gene, ADGRV1,  encoding  the  nervous  system-restricted calcium binding G coupled protein receptor, GPR98
+[Adgrv1](https://actaneurocomms.biomedcentral.com/track/pdf/10.1186/s40478-020-0880-6)
+[Adgrv1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5995803/)
+[Adgrv1](https://www.biorxiv.org/content/biorxiv/early/2019/05/14/628347.full.pdf)
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Adgrv1"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_cleaned.SO, features = c("Adgrv1"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+Other cluster 4 markers Siah3, Dscaml1, Tmem132b
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_AS.SO, features = c("Siah3"), cols = c("#FFCC00",'#003366'))
+f2 <- FeaturePlot(data9set_AS.SO, features = c("Dscaml1"), cols = c("#FFCC00",'#003366'))
+f3 <- FeaturePlot(data9set_AS.SO, features = c("Tmem132b"), cols = c("#FFCC00",'#003366'))
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+```
+
+#### 4-6. cluster 5 by lncRNAs
+
+It seems doublets cluster
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=9}
+FeaturePlot(data9set_AS.SO, features = c("Olfr539", "Gm43670", "4930419G24Rik", "Gm26871", "Gm42756", "5330417C22Rik"), ncol = 3, order = TRUE, cols = c("#FFCC00",'#003366'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=9}
+FeaturePlot(data9set_cleaned.SO, features = c("Olfr539", "Gm43670", "4930419G24Rik", "Gm26871", "Gm42756", "5330417C22Rik"), ncol = 3, order = TRUE, cols = c("#FFCC00",'#003366'))
+```
+
+### 5. GO analysis
+
+To identify the function of astrocytes subclusters, I used GO for each cluster. 
+
+In here, genes of interest are padj < 0.01 & logFC > 0.5 from marker genes. Backgrond genes are derived from DE analysis genes with pct > 0.01. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+return(topGOResults.df)
+}
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") +
+  theme_minimal() + theme(axis.text = element_text(size = 10))
+
+}
+```
+
+#### 5-1. cluster 0
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_AS.markers[which(data9set_AS.markers$cluster %in% "0" &data9set_AS.markers$p_val_adj < 0.01 & data9set_AS.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_AS_DE_AD_Ctrl_markers[data9set_AS_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_AS_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 5-2. cluster 1
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_AS.markers[which(data9set_AS.markers$cluster %in% "1" &data9set_AS.markers$p_val_adj < 0.01 & data9set_AS.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_AS_DE_AD_Ctrl_markers[data9set_AS_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_AS_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 5-3. cluster 2
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_AS.markers[which(data9set_AS.markers$cluster %in% "2" &data9set_AS.markers$p_val_adj < 0.01 & data9set_AS.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_AS_DE_AD_Ctrl_markers[data9set_AS_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_AS_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 5-4. cluster 3
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_AS.markers[which(data9set_AS.markers$cluster %in% "3" &data9set_AS.markers$p_val_adj < 0.01 & data9set_AS.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_AS_DE_AD_Ctrl_markers[data9set_AS_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_AS_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 5-5. cluster 4
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_AS.markers[which(data9set_AS.markers$cluster %in% "4" &data9set_AS.markers$p_val_adj < 0.01 & data9set_AS.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_AS_DE_AD_Ctrl_markers[data9set_AS_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_AS_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+
+### 6. DE
+
+#### 6-1. AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=6}
+AS_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv", row.names = 1)
+AS_DE_AD_Ctrl_padj <- AS_DE_AD_Ctrl[which(AS_DE_AD_Ctrl$p_val_adj < 0.01), ]
+
+ggplot(AS_DE_AD_Ctrl) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = AS_DE_AD_Ctrl_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("AS DE analysis AD vs Ctrl") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(AS_DE_AD_Ctrl$p_val_adj) > 10 , rownames(AS_DE_AD_Ctrl),""))) 
+
+```
+
+#### 6-2. AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=6}
+AS_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv", row.names = 1)
+AS_DE_AD_ADp40KO_padj <- AS_DE_AD_ADp40KO[which(AS_DE_AD_ADp40KO$p_val_adj < 0.01), ]
+
+ggplot(AS_DE_AD_ADp40KO) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = AS_DE_AD_ADp40KO_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("AS DE analysis AD vs ADp40KO") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(AS_DE_AD_ADp40KO$p_val_adj) > 8 , rownames(AS_DE_AD_ADp40KO),""))) 
+
+```
+
+### 7. GSEA
+
+```{r warning=FALSE, message=FALSE}
+GSEA_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv_GSEA_logFC_reactome.csv", row.names = 1)
+
+GSEA_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv_GSEA_logFC_reactome.csv", row.names = 1)
+
+GSEA_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesADp40KO_Ctrl.csv_GSEA_logFC_reactome.csv", row.names = 1)
+```
+
+#### 7-1. AD vs Ctrl
+
+In here, I only showed statistically significant pathways. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 7, fig.height=4}
+ggplot(GSEA_AD_Ctrl[GSEA_AD_Ctrl$padj < 0.25, ], aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(title = "GSEA", y="Normalized Enrichment Score") + 
+  theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10), legend.position = "none")
+
+```
+
+#### 7-2. AD vs ADp40KO
+
+In here, I only showed statistically significant pathways. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 9, fig.height=5}
+ggplot(GSEA_AD_Ctrl[GSEA_AD_ADp40KO$padj < 0.25, ], aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(title = "GSEA", y="Normalized Enrichment Score") + 
+  theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10), legend.position = "none")
+
+```
+
+```{r warning=FALSE, message=FALSE}
+#data9set_AS_DE_AD_Ctrl_markers <- FindMarkers(data9set_AS.SO, ident.1 =  "AD", ident.2 = "Ctrl", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1, min.pct = 0.05)
+#data9set_AS_DE_AD_Ctrl_markers$gene <- rownames(data9set_AS_DE_AD_Ctrl_markers)
+#write.csv(data9set_AS_DE_AD_Ctrl_markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200304_AS_analysis_AS_DE_AD_Ctrl_markers.csv")
+
+#data9set_AS_DE_AD_ADp40KO_markers <- FindMarkers(data9set_AS.SO, ident.1 =  "AD", ident.2 = "ADp40KO", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1, min.pct = 0.05)
+#data9set_AS_DE_AD_ADp40KO_markers$gene <- rownames(data9set_AS_DE_AD_ADp40KO_markers)
+#write.csv(data9set_AS_DE_AD_ADp40KO_markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200304_AS_analysis_AS_DE_AD_ADp40KO_markers.csv")
+
+#data9set_AS_DE_AD_ADp40KO_markers_2nd <- read.csv( "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv")
+
+#data9set_AS_DE_ADp40KO_Ctrl_markers <- FindMarkers(data9set_AS.SO, ident.1 =  "ADp40KO", ident.2 = "Ctrl", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1, min.pct = 0.05)
+#data9set_AS_DE_ADp40KO_Ctrl_markers$gene <- rownames(data9set_AS_DE_ADp40KO_Ctrl_markers)
+#write.csv(data9set_AS_DE_ADp40KO_Ctrl_markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200304_AS_analysis_AS_DE_ADp40KO_Ctrl_markers.csv")
+
+# load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# # data was swapped between AD and ADp40KO
+# #data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# # new swapped assignment
+# data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+# 
+# 
+# data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+# 
+# DimPlot(data9set.SO, reduction = "umap", label = TRUE, label.size = 4)
+# DimPlot(object = data9set.SO, reduction = "umap", split.by = "sample")+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20))
+# FALSE, message=FALSE, fig.width = 12, fig.height=5}
+# 
+# f1 <- FeaturePlot(data9set.SO, features = c("Pde4dip"), order = TRUE, split.by = "sample")+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20))
+# f1
+# 
+# f2 <- FeaturePlot(data9set.SO, features = c("Pfkp"), order = TRUE)+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) 
+# f3 <- FeaturePlot(data9set.SO, features = c("Col5a3"), order = TRUE)+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) 
+# f4 <- FeaturePlot(data9set.SO, features = c("Ncan"), order = TRUE)+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) 
+# f5 <- FeaturePlot(data9set.SO, features = c("Sod2"), order = TRUE)+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) 
+# f6 <- FeaturePlot(data9set.SO, features = c("Cd44"), order = TRUE)+ scale_x_continuous(limits = c(5,10)) + scale_y_continuous(limits = c(-30, -20)) 
+# 
+# grid.arrange(f1, f2, f3, f4, f5, f6, ncol = 3)
+```
+
+#### non-related search of markers 
+
+Msmo1 is upregulated in AD. Msmo1 is cholesterol biosynthesis gene [Msmo1 ref ](https://orbi.uliege.be/bitstream/2268/238491/1/467118.full.pdf)
+[Msmo1 ref](http://amp.pharm.mssm.edu/Harmonizome/gene_set/Inflammation/CTD+Gene-Disease+Associations)
+[Msmo1 ref](https://www.eneuro.org/content/6/6/ENEURO.0226-19.2019)
+
+decreases cholesterol synthesis by directly silencing the expression of two key cholesterologenic enzymes CYP51A1
+[Cyp51](https://academic.oup.com/edrv/article/33/5/715/2354830)
+
+Astrocyte-Microglia Cross Talk through Complement Activation Modulates 
+[C4b, Gfap](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4710776/)
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```

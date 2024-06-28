@@ -1,0 +1,398 @@
+---
+title: "velocyto_test"
+author: "Skim"
+date: '2020 5 24 '
+output: html_document
+---
+
+```{r}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+### SP064 022 CB
+
+```{r}
+data9set.meta <- data9set_cleaned.SO@meta.data %>% as.data.frame
+
+data9set.meta1 <- data9set.meta[data9set.meta$gemgroup %in% 1, ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_T851Q:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_CB.txt", quote = FALSE)
+```
+
+### SP064 022 Oligo & OPC CB
+
+```{r}
+data9set.meta <- data9set_cleaned.SO@meta.data %>% as.data.frame
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 1 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_T851Q:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 022 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 1)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_T851Q:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.table(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_UMAP.txt", quote = FALSE)
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 022 cluster
+
+```{r}
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_T851Q:", substr(rownames(cluster_1), 1, 16))
+
+
+#write.table(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_UMAP.txt", quote = FALSE)
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_022_modified_cluster.csv", quote = FALSE)
+```
+
+
+#### SP064_023
+
+```{r}
+
+data9set.meta2 <- data9set.meta[data9set.meta$gemgroup %in% 2, ]
+
+CB_2 <- rownames(data9set.meta2)
+
+CB_2 <- substr(CB_2, 1, 16)
+CB_2 <- paste0("possorted_genome_bam_OB274:", CB_2)
+write.table(CB_2, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_023_modified_CB.txt", quote = FALSE)
+```
+
+### SP064 023 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 2 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_OB274:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_023_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+```{r}
+data2set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 2)
+UMAP_2 <- data2set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_2) <- paste0("possorted_genome_bam_OB274:", substr(rownames(UMAP_2), 1, 16))
+
+write.csv(UMAP_2, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_023_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 023 cluster
+
+```{r}
+
+cluster_1 <- data9set.meta2[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_OB274:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_023_modified_cluster.csv", quote = FALSE)
+```
+
+
+### SP064 024 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 3 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_PKVIP:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_024_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+
+### SP064 024 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 3)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_PKVIP:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_024_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 024 cluster
+
+```{r}
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_PKVIP:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_024_modified_cluster.csv", quote = FALSE)
+```
+
+
+### SP064 025 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 4 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_CBQ0U:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_025_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 025 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 4)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_CBQ0U:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_025_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 025 cluster
+
+```{r}
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_CBQ0U:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_025_modified_cluster.csv", quote = FALSE)
+```
+
+
+
+
+### SP064 026 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 5 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_S8W26:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_026_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 026 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 5)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_S8W26:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_026_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 026 cluster
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 5 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_S8W26:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_026_modified_cluster.csv", quote = FALSE)
+```
+
+
+
+
+### SP064 027 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 6 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_NUPLB:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_027_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 027 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 6)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_NUPLB:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_027_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 027 cluster
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 6 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_NUPLB:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_027_modified_cluster.csv", quote = FALSE)
+```
+
+
+
+### SP064 028 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 7 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_NGGPQ:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_028_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 028 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 7)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_NGGPQ:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_028_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 028 cluster
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 7 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_NGGPQ:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_028_modified_cluster.csv", quote = FALSE)
+```
+
+
+
+
+### SP064 029 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 8 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_H3017:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_029_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 029 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 8)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_H3017:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_029_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 029 cluster
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 8 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_H3017:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_029_modified_cluster.csv", quote = FALSE)
+```
+
+
+
+### SP064 030 Oligo & OPC CB
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 9 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+CB_1 <- rownames(data9set.meta1)
+
+CB_1 <- substr(CB_1, 1, 16)
+CB_1 <- paste0("possorted_genome_bam_EEP08:", CB_1)
+write.table(CB_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_030_modified_Oligo_OPC_CB.txt", quote = FALSE)
+```
+
+### SP064 030 UMAP
+
+```{r}
+data1set.SO <- subset(data9set_cleaned.SO, subset = gemgroup %in% 9)
+UMAP_1 <- data1set.SO@reductions$umap@cell.embeddings %>% as.data.frame
+
+rownames(UMAP_1) <- paste0("possorted_genome_bam_EEP08:", substr(rownames(UMAP_1), 1, 16))
+
+
+write.csv(UMAP_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_030_modified_UMAP.csv", quote = FALSE)
+```
+
+### SP064 030 cluster
+
+```{r}
+
+data9set.meta1 <- data9set.meta[which(data9set.meta$gemgroup %in% 9 & data9set.meta$seurat_clusters %in% c(1,5,6,12,38)), ]
+
+
+cluster_1 <- data9set.meta1[,c("seurat_clusters"), drop = FALSE] %>% as.data.frame(keep = row.names)
+
+rownames(cluster_1) <- paste0("possorted_genome_bam_EEP08:", substr(rownames(cluster_1), 1, 16))
+
+write.csv(cluster_1, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200524_velocyto_test_SP064_030_modified_cluster.csv", quote = FALSE)
+```
+
+
+

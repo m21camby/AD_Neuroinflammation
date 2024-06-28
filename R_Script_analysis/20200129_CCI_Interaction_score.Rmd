@@ -1,0 +1,251 @@
+---
+title: "Interaction_score"
+author: "Skim"
+date: "1/29/2020"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(igraph)
+library(dplyr)
+library(stringr)
+library(tidyverse)
+library(Seurat)
+library(biomaRt)
+
+# ligand-receptor network
+lr_network = readRDS(url("https://zenodo.org/record/3260758/files/lr_network.rds"))
+# weighted integrated networks
+weighted_networks = readRDS(url("https://zenodo.org/record/3260758/files/weighted_networks.rds"))
+weighted_networks_lr = weighted_networks$lr_sig %>% inner_join(lr_network %>% distinct(from,to), by = c("from","to"))
+
+
+
+# distinct ligands and receptor data base
+lr_network.df <- lr_network[,c(1,2)] %>% distinct()
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# old resolution 0.6
+#load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+# new resolutio 0.8 by Shirin
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+# sample for nichenet
+data9set.SO$sample_nichenet <- as.character(data9set.SO$sample)
+
+
+data9set.SO <- RenameIdents(data9set.SO, '0' = "Dentate Gyrus", '1' = "Oligo", '2' = "Neurons", '3' = "Microglia", 
+                            '4' = "Astrocytes", '5' = "Oligo", '6' = "Oligo", '7' = "Inhibitory Interneurons", '8' = "Microglia", 
+                            '9' = "Neuron CA2/CA3", '10' = "Dentate Gyrus", '11' = "Subiculum", '12' = "OPC", 
+                            '13' = "Subiculum", '14' = "Subiculum", '15' = "Neurons", 
+                            '16' = "Interneurons", '17' = "Neuron (Interneuron/subiculum)", '18' = "Neurons",
+                            '19' = "Neurons", '20' = "Inhibitory Interneurons", '21' = "Inhibitory Interneurons", '22' = "Inhibitory Interneurons",
+                            '23' = "Fibroblast", '24' = "Neurons", '25' = "Dentate Gyrus", '26' = "Choroid Plexus", 
+                            '27' = "Neurons (Subiculum/Interneurons/ExCA)", '28' = "Cajal Rutz", '29' = "Microglia/Neuron/Fibroblast", '30' = "Inhibitory Interneurons",
+                            '31' = "Dentate Gyrus", '32' = "Neurons", '33' = "Astrocytes", '34' = "Microglia",
+                            '35' = "Pericytes", '36' = "Vascular Endothelial",'37' = "Microglia", '38' = "OPC",
+                            '39' = "VLMC", '40' = "Neuron (subiculum/Cajal Rutz)", '41' = "OPC", '42' = "OPC", 
+                            '43' = "Astrocytes", '44' = "OPC")
+```
+
+### Oligo Ctrl
+
+```{r warning=FALSE, message=FALSE}
+# cellphonedb data create for Oligodendrocytes (1,5,6) and microglia (3, 8, 29, 34, 37)
+data9set_OG.SO <- subset(data9set.SO, subset = seurat_clusters == c(1,5,6))
+data9set_MG.SO <- subset(data9set.SO, subset = seurat_clusters == c(3, 8, 29, 34, 37))
+
+# cellphonedb data create for Oligodendrocytes (1,5,6) and microglia (3, 8, 29, 34, 37)
+# And subset Ctrl and AD
+data9set_OG_Ctrl.SO <- subset(data9set_OG.SO, subset = sample == c("Ctrl"))
+
+
+data9set_OG_Ctrl.df <- as.data.frame(as.matrix(data9set_OG_Ctrl.SO@assays$RNA@counts))
+
+# normalize
+data9set_OG_Ctrl_Nor.df <- as.data.frame(apply(data9set_OG_Ctrl.df, 2, function(x) (x/sum(x))*10000))
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE}
+#mart <- useDataset("mmusculus_gene_ensembl", mart=useMart("ensembl"))
+
+#bm <- getBM(attributes=c("ensembl_gene_id", "hsapiens_homolog_associated_gene_name"),
+#            filters = 'mgi_symbol',
+#            values = rownames(data9set_CP2.df),
+#            mart=mart)
+#bm <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM.df")
+
+# only distinct gene names
+#bm <- bm %>% distinct() %>% as_tibble() %>% na_if("") %>% na.omit() %>% as.data.frame()
+
+# for Data Frame
+#bm.df <- data.frame(ensembl_gene_id= bm$ensembl_gene_id, hsapiens_homolog_associated_gene_name = bm$hsapiens_homolog_associated_gene_name, stringsAsFactors = FALSE)
+
+#names(bm.df) <- gsub("\\s"," ",names(bm.df))
+#names(bm.df) <- names(bm.df) %>% stringr::str_replace_all("\\s","_")
+
+##################
+# mouse genes
+##################
+
+#bm2 <- getBM(attributes=c("ensembl_gene_id", "mgi_symbol"),
+#             filters = 'mgi_symbol',
+#             values = rownames(data9set_CP2.df),
+#             mart=mart)
+#bm2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM2.df")
+
+#bm2.df <- as.data.frame(bm2)
+
+#total <- merge(bm.df,bm2.df, by = "ensembl_gene_id")
+
+# total.df <- data.frame(Gene = total$mgi_symbol, HGene = total$hsapiens_homolog_associated_gene_name)
+# 
+# total.df <- total.df %>% distinct()
+# 
+# total2.df <- total.df
+# total2.df$GENE <- toupper(total2.df$Gene)
+# 
+# total2.df <- total2.df[which(total2.df$HGene == total2.df$GENE), ]
+# 
+# 
+# final.df <- total2.df[, c(1,2)]
+# final.df <- final.df %>% distinct()
+# 
+# final.df$HGene[duplicated(final.df$HGene)]
+# 
+# data9set_CP2.df$Gene <- rownames(data9set_CP2.df)
+# 
+# data9set_CP3.df <- merge(final.df, data9set_CP2.df, by = "Gene")
+# data9set_CP3.df$HGene <- as.character(data9set_CP3.df$HGene)
+# 
+# rownames(data9set_CP3.df) <- data9set_CP3.df$HGene
+# 
+# data9set_CP3.df <- data9set_CP3.df[, -c(1,2)]
+# 
+
+
+
+```
+
+## CellphoneDB interaction plot
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 12}
+pvalue.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_Ctrl/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_Ctrl/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_Ctrl/significant_means.txt", sep = "\t", header = TRUE)
+
+
+meanvalue_MG_Ctrl.df <- meanvalue.df[,c(2, 12:75)]
+meanvalue_MG_Ctrl.df <- meanvalue_MG_Ctrl.df %>% distinct()
+rownames(meanvalue_MG_Ctrl.df) <- meanvalue_MG_Ctrl.df[,c(1)]
+meanvalue_MG_Ctrl.df <- meanvalue_MG_Ctrl.df[,-c(1)]
+meanvalue_MG_Ctrl.df[470,] <- colSums(meanvalue_MG_Ctrl.df)
+
+meanvalue_MG_Ctrl_sum.df <- as.data.frame(t(meanvalue_MG_Ctrl.df[470,]))
+colnames(meanvalue_MG_Ctrl_sum.df) <- "sum_meanvalue"
+
+for(i in 1:nrow(meanvalue_MG_Ctrl_sum.df)){
+  meanvalue_MG_Ctrl_sum.df[i, "from"] <- paste0("cluster", str_split(sub(".", "", rownames(meanvalue_MG_Ctrl_sum.df)), "\\.")[[i]][1])
+  meanvalue_MG_Ctrl_sum.df[i, "to"] <- paste0("cluster", str_split(sub(".", "", rownames(meanvalue_MG_Ctrl_sum.df)), "\\.")[[i]][2])
+}
+
+meanvalue_MG_Ctrl_sum.df <- meanvalue_MG_Ctrl_sum.df[, c(2,3,1)]
+meanvalue_MG_Ctrl_sum.df$sum_meanvalue <- meanvalue_MG_Ctrl_sum.df$sum_meanvalue/100
+
+meanvalue_MG_Ctrl_sum_meta.df <- data.frame(cluster = unique(meanvalue_MG_Ctrl_sum.df$to))
+
+
+g <- graph_from_data_frame(meanvalue_MG_Ctrl_sum.df, directed=TRUE, vertices=meanvalue_MG_Ctrl_sum_meta.df) %>% set_edge_attr("sum_meanvalue", value = 1:3) %>%
+  set_edge_attr("color", value = "red")
+plot(g, vertex.size=30, vertex.label.cex=1.5, edge.width = E(g)$sum_meanvalue)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 12}
+
+pvalue_MG_Ctrl.df <- pvalue.df[,c(2, 12:75)]
+pvalue_MG_Ctrl.df <- pvalue_MG_Ctrl.df %>% distinct()
+rownames(pvalue_MG_Ctrl.df) <- pvalue_MG_Ctrl.df[,c(1)]
+pvalue_MG_Ctrl.df <- pvalue_MG_Ctrl.df[,-c(1)]
+
+# count less than 0.01
+
+pvalue_MG_Ctrl2.df <- pvalue_MG_Ctrl.df %>% gather(cluster, value, X1.1:X37.37) %>% group_by(cluster)%>% tally(value < 0.05)
+
+
+for(i in 1:nrow(pvalue_MG_Ctrl2.df)){
+  pvalue_MG_Ctrl2.df[i, "from"] <- paste0("cluster", str_split(sub(".", "", pvalue_MG_Ctrl2.df$cluster), "\\.")[[i]][1])
+  pvalue_MG_Ctrl2.df[i, "to"] <- paste0("cluster", str_split(sub(".", "", pvalue_MG_Ctrl2.df$cluster), "\\.")[[i]][2])
+}
+
+pvalue_MG_Ctrl2.df <- pvalue_MG_Ctrl2.df[, c(3,4,2)]
+#pvalue_MG_Ctrl2.df$n <- pvalue_MG_Ctrl2.df$n/10
+
+pvalue_MG_Ctrl2_meta.df <- data.frame(cluster = unique(pvalue_MG_Ctrl2.df$to))
+
+
+g <- graph_from_data_frame(pvalue_MG_Ctrl2.df, directed=TRUE, vertices=pvalue_MG_Ctrl2_meta.df) %>% set_edge_attr("n", value = 1:5) %>%
+  set_edge_attr("color", value = "darkgrey")
+plot(g, vertex.size=30, vertex.label.cex=1.5, edge.width = E(g)$n, edge.arrow.width=1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 12}
+pvalueAD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_AD/pvalues.txt", sep = "\t", header = TRUE)
+meanvalueAD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_AD/means.txt", sep = "\t", header = TRUE)
+sigmeanvalueAD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Oligo_MG_AD/significant_means.txt", sep = "\t", header = TRUE)
+
+pvalueAD_MG_Ctrl.df <- pvalueAD.df[,c(2, 12:75)]
+pvalueAD_MG_Ctrl.df <- pvalueAD_MG_Ctrl.df %>% distinct()
+rownames(pvalueAD_MG_Ctrl.df) <- pvalueAD_MG_Ctrl.df[,c(1)]
+pvalueAD_MG_Ctrl.df <- pvalueAD_MG_Ctrl.df[,-c(1)]
+
+# count less than 0.01
+
+pvalueAD_MG_Ctrl2.df <- pvalueAD_MG_Ctrl.df %>% gather(cluster, value, X1.1:X37.37) %>% group_by(cluster)%>% tally(value < 0.05)
+
+
+for(i in 1:nrow(pvalueAD_MG_Ctrl2.df)){
+  pvalueAD_MG_Ctrl2.df[i, "from"] <- paste0("cluster", str_split(sub(".", "", pvalueAD_MG_Ctrl2.df$cluster), "\\.")[[i]][1])
+  pvalueAD_MG_Ctrl2.df[i, "to"] <- paste0("cluster", str_split(sub(".", "", pvalueAD_MG_Ctrl2.df$cluster), "\\.")[[i]][2])
+}
+
+pvalueAD_MG_Ctrl2.df <- pvalueAD_MG_Ctrl2.df[, c(3,4,2)]
+
+pvalueAD_Ctrl_MG.df <- pvalue_MG_Ctrl2.df
+
+pvalueAD_Ctrl_MG.df$diff <- abs(pvalueAD_Ctrl_MG.df$n - pvalueAD_MG_Ctrl2.df$n) 
+
+pvalueAD_Ctrl_MG_meta.df <- data.frame(cluster = unique(pvalueAD_Ctrl_MG.df$to))
+
+pvalueAD_Ctrl_MG.df <- pvalueAD_Ctrl_MG.df[,c(1,2,4)]
+
+pvalueAD_Ctrl_MG.df$diff <- pvalueAD_Ctrl_MG.df$diff/10
+
+
+
+g3 <- graph_from_data_frame(pvalueAD_Ctrl_MG.df, directed=TRUE, vertices=pvalueAD_Ctrl_MG_meta.df) %>% set_edge_attr("diff", value = 1:3) %>% 
+  set_edge_attr("color", value = "darkgrey")
+plot(g3, vertex.size=30, vertex.label.cex=1.5, edge.width = E(g)$diff, edge.arrow.width=1)
+
+```
+
+

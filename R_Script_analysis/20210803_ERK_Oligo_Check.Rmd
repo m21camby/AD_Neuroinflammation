@@ -1,0 +1,669 @@
+---
+title: "ERK Oligo analysis"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(tradeSeq)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(slingshot)
+library(monocle)
+library(mclust, quietly = TRUE)
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+require(mgcv, quietly = TRUE)
+library(gridExtra)
+library(readxl)
+library(xlsx)
+library(cowplot)
+library(mgcv)
+library(nlme)
+# remotes::install_github("cardiomoon/ggGam", lib = "/data/rajewsky/shared_libs/R")
+# update.packages(c("mgcv"))
+#install.packages("visreg", lib = "/data/rajewsky/shared_libs/R")
+library(visreg)
+# install.packages("itsadug", repos = "https://cran.r-project.org/src/contrib/itsadug_2.4.tar.gz", type="source", lib = "/data/rajewsky/shared_libs/R")
+# 
+# library(itsadug)
+
+```
+
+```{r warning=FALSE, message=FALSE}
+get_difference <- function(model, comp, cond = NULL, rm.ranef = TRUE, se = TRUE, sim.ci = FALSE, f = 1.96, 
+    return.n.posterior = 0, print.summary = getOption("itsadug_print")) {
+    if (!"lm" %in% class(model)) {
+        stop("This function does not work for class %s models.", class(model)[1])
+    } else {
+        newd <- NULL
+        su <- model$var.summary
+        dat <- model$model
+        # check comp
+        if (is.null(names(comp))) {
+            stop("Predictor specified in 'comp' unknown. Please provide a named list for 'comp', in the form of 'comp=list(Predictor=c('level1', 'level2'))'.")
+        }
+        if (all(names(comp) %in% colnames(dat))) {
+            for (i in 1:length(comp)) {
+                if (length(comp[[i]]) < 2) {
+                  stop(sprintf("Provide two levels for %s to calculate difference.", names(comp)[i]))
+                } else if (length(comp[[i]]) > 2) {
+                  warning(sprintf("More than two levels provided for predictor %s. Only first two levels are being used.", 
+                    names(comp)[i]))
+                }
+            }
+        } else {
+            errname <- paste(which(!names(comp) %in% colnames(dat)), collapse = ", ")
+            stop(sprintf("Grouping predictor(s) not found in model: %s.", errname))
+        }
+        if (any(names(cond) %in% names(comp))) {
+            for (i in names(cond)[names(cond) %in% names(comp)]) {
+                cond[[i]] <- NULL
+                warning(sprintf("Predictor %s specified in comp and cond. (The value in cond will be ignored.)", 
+                  i))
+            }
+        }
+        new.cond1 <- list()
+        new.cond2 <- list()
+        for (i in names(su)) {
+            if (i %in% names(comp)) {
+                new.cond1[[i]] <- comp[[i]][1]
+                new.cond2[[i]] <- comp[[i]][2]
+            } else if (i %in% names(cond)) {
+                new.cond1[[i]] <- new.cond2[[i]] <- cond[[i]]
+            } else {
+                if (class(su[[i]]) == "factor") {
+                  new.cond1[[i]] <- as.character(su[[i]][1])
+                  new.cond2[[i]] <- as.character(su[[i]][1])
+                } else if (class(su[[i]]) == "numeric") {
+                  new.cond1[[i]] <- su[[i]][2]
+                  new.cond2[[i]] <- su[[i]][2]
+                }
+            }
+        }
+        newd1 <- expand.grid(new.cond1)
+        newd2 <- expand.grid(new.cond2)
+        p1 <- mgcv::predict.gam(model, newd1, type = "lpmatrix")
+        p2 <- mgcv::predict.gam(model, newd2, type = "lpmatrix")
+        newd <- as.data.frame(newd1, stringsAsFactors = TRUE)
+        newd.names <- colnames(newd)
+        for (nn in newd.names) {
+            if (nn %in% names(comp)) {
+                newd[, nn] <- NULL
+            }
+            
+        }
+        mysummary <- summary_data(newd, print = FALSE)
+        # Check for random effects:
+        if (class(rm.ranef) == "logical") {
+            if (rm.ranef[1] == FALSE) {
+                rm.ranef <- NULL
+            }
+        }
+        if (!is.null(rm.ranef)) {
+            # get random effects columns:
+            smoothlabels.table <- as.data.frame(do.call("rbind", lapply(model$smooth, function(x) {
+                data.frame(Label = x[["label"]], Dim = x[["null.space.dim"]], Class = attr(x, "class")[1], 
+                  stringsAsFactors = FALSE)
+            })), stringsAsFactors = FALSE)
+            # smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in%
+            # c('random.effect','fs.interaction'), 'Label'] )
+            smoothlabels <- as.vector(smoothlabels.table[smoothlabels.table$Dim == 0, "Label"])
+            if (class(rm.ranef) == "logical") {
+                if (rm.ranef[1] == TRUE) {
+                  rm.ranef <- smoothlabels
+                } else {
+                  rm.ranef <- ""
+                }
+            } else if (inherits(rm.ranef, c("numeric", "integer"))) {
+                smoothlabels.table <- smoothlabels.table[rm.ranef, ]
+                smoothlabels <- as.vector(smoothlabels.table[smoothlabels.table$Class %in% c("random.effect", 
+                  "fs.interaction"), "Label"])
+            }
+            rm.col <- unlist(lapply(rm.ranef, function(x) {
+                colnames(p1)[grepl(x, colnames(p1), fixed = TRUE)]
+            }))
+            rm.col <- unlist(lapply(smoothlabels, function(x) {
+                rm.col[grepl(x, rm.col, fixed = TRUE)]
+            }))
+            # cancel random effects
+            p1[, rm.col] <- 0
+            p2[, rm.col] <- 0
+            # find terms that only occur in random effects:
+            predictors <- do.call("rbind", lapply(model$smooth, function(x) {
+                data.frame(Label = x[["label"]], Terms = x[["term"]], stringsAsFactors = TRUE)
+            }))
+            test <- table(predictors$Terms) - table(predictors[predictors$Label %in% rm.ranef, ]$Terms)
+            for (pred in names(test[test == 0])) {
+                if (pred %in% names(mysummary)) {
+                  mysummary[[pred]] <- paste(mysummary[[pred]], "(Might be canceled as random effect, check below.)")
+                }
+            }
+            if (length(rm.col) > 0) {
+                mysummary[["NOTE"]] = sprintf("The following random effects columns are canceled: %s\n", paste(smoothlabels, 
+                  collapse = ","))
+            } else {
+                mysummary[["NOTE"]] = "No random effects in the model to cancel.\n"
+                # warning('No random effects to cancel.\n')
+            }
+        }
+        # calculate the difference:
+        p <- p1 - p2
+        newd$difference <- as.vector(p %*% coef(model))
+        if (se) {
+            newd$CI <- f * sqrt(rowSums((p %*% vcov(model)) * p))
+        }
+        # simultaneous CI See http://www.fromthebottomoftheheap.net/2016/12/15/simultaneous-interval-revisited/
+        stackFits <- NULL
+        if (sim.ci == TRUE) {
+            Vb <- vcov(model, freq = FALSE, unconditional = TRUE)
+            se.fit <- sqrt(rowSums((p %*% Vb) * p))
+            sim <- mgcv::rmvn(10000, mu = rep(0, nrow(Vb)), V = Vb)
+            # Cg <- predict(model, newd, type='lpmatrix') Cg replaced by p
+            simDev <- p %*% t(sim)
+            # Evaluate the basis function at g and compute the deviations between the fitted and true parameters. Then
+            # we find the absolute values of the standardized deviations from the true model:
+            absDev <- abs(sweep(simDev, 1, se.fit, FUN = "/"))
+            # maximum of the absolute standardized deviations:
+            masd <- apply(absDev, 2L, max)
+            # set simultaneous X% CI on the basis of original se multiplication specified by f:
+            crit <- quantile(masd, prob = 1 - round(2 * (1 - pnorm(f)), 2), type = 8)
+            newd$sim.CI <- crit * se.fit
+            
+            if ((return.n.posterior > 0) | (print.summary == TRUE)) {
+                # coverage pointwise and simultaneous CIs:
+                sims <- rmvn(max(10000, return.n.posterior), mu = coef(model), V = Vb)
+                fits <- p %*% t(sims)
+                inCI <- function(x, upr, lwr) {
+                  all(x >= lwr & x <= upr)
+                }
+                fitsInPCI <- apply(fits, 2L, inCI, upr = newd$fit + newd$CI, lwr = newd$fit - newd$CI)
+                fitsInSCI <- apply(fits, 2L, inCI, upr = newd$fit + newd$sim.CI, lwr = newd$fit - newd$sim.CI)
+                mysummary[[paste("Simultaneous ", 100 * (1 - round(2 * (1 - pnorm(f)), 2)), "%-CI used", sep = "")]] = sprintf("\n\t\t%s\n\t\t%s\n\t\t%s\n", 
+                  paste("Critical value: ", round(crit, 3), sep = ""), paste("Proportion posterior simulations in pointwise CI: ", 
+                    round(sum(fitsInPCI)/length(fitsInPCI), 2), " (10000 samples)", sep = ""), paste("Proportion posterior simulations in simultaneous CI: ", 
+                    round(sum(fitsInSCI)/length(fitsInSCI), 2), " (10000 samples)", sep = ""))
+                
+                if (return.n.posterior > 0) {
+                  rnd <- sample(max(10000, return.n.posterior), return.n.posterior)
+                  fits <- stack(as.data.frame(fits[, rnd], stringsAsFactors = FALSE))[, 1]
+                  stackFits <- newd[rep(1:nrow(newd), length(rnd)), colnames(newd)[!colnames(newd) %in% c("fit", 
+                    "CI", "sim.CI", "rm.ranef")]]
+                  row.names(stackFits) <- NULL
+                  stackFits$posterior.fit <- fits
+                  stackFits$draw <- rep(rnd, each = nrow(newd))
+                }
+            }
+        }
+        # print summary of chosen values
+        if (print.summary == TRUE) {
+            print_summary(mysummary)
+        }
+        
+        if (return.n.posterior > 0) {
+            return(list(newd = newd, posterior.fit = stackFits))
+        } else {
+            return(newd)
+        }
+    }
+}
+
+summary_data <- function(data, print = TRUE, n = 10) {
+    
+    labelColumns <- function(x, data) {
+        out <- NULL
+        cn <- ifelse(is.numeric(x), colnames(data)[x], x)
+        cl <- class(data[, cn])
+        if (inherits(data[, cn], "factor")) {
+            vals <- sort(unique(as.character(data[, x])))
+            n.cur <- length(vals) + 1
+            if (!is.null(n)) {
+                n.cur <- n
+            }
+            if (length(vals) > n.cur) {
+                out <- sprintf("factor with %d values; set to the value(s): %s, ...", length(vals), paste(vals[1:n.cur], 
+                  collapse = ", "))
+            } else {
+                out <- sprintf("factor; set to the value(s): %s.", paste(vals, collapse = ", "))
+            }
+        } else if (inherits(data[, cn], "numeric")) {
+            if (length(unique(data[, x])) > 2) {
+                out <- sprintf("numeric predictor; with %d values ranging from %f to %f.", length(unique(data[, 
+                  x])), min(data[, x], na.rm = TRUE), max(data[, x], na.rm = TRUE))
+            } else {
+                out <- sprintf("numeric predictor; set to the value(s): %s.", paste(unique(data[, x]), collapse = ", "))
+            }
+        } else if (inherits(data[, cn], "matrix")) {
+            if (length(unique(data[, x])) > 2) {
+                out <- sprintf("a matrix predictor; with %d values ranging from %f to %f.", length(unique(data[, 
+                  x])), min(data[, x], na.rm = TRUE), max(data[, x], na.rm = TRUE))
+            } else {
+                out <- sprintf("matrix predictor; set to the value(s): %s.", paste(unique(data[, x]), collapse = ", "))
+            }
+        } else {
+            vals <- sort(unique(data[, x]))
+            n.cur <- length(vals) + 1
+            if (!is.null(n)) {
+                n.cur <- n
+            }
+            if (length(vals) > n.cur) {
+                out <- sprintf("%s vector with %d values; set to the value(s): %s, ...", class(data[, cn])[1], 
+                  length(vals), paste(vals[1:n.cur], collapse = ", "))
+            } else {
+                out <- sprintf("%s vector; set to the value(s): %s.", class(data[, cn])[1], paste(vals, collapse = ", "))
+            }
+        }
+        return(out)
+    }
+    mysummary <- sapply(colnames(data), function(x) {
+        labelColumns(x, data)
+    })
+    if (print) {
+        print_summary(mysummary)
+    }
+    invisible(mysummary)
+}
+
+smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
+                        unconditional = FALSE) {
+    xp <- predict(model, newdata = newdata, type = 'lpmatrix')
+    c1 <- grepl(f1, colnames(xp))
+    c2 <- grepl(f2, colnames(xp))
+    r1 <- newdata[[var]] == f1
+    r2 <- newdata[[var]] == f2
+    ## difference rows of xp for data from comparison
+    X <- xp[r1, ] - xp[r2, ]
+    ## zero out cols of X related to splines for other lochs
+    X[, ! (c1 | c2)] <- 0
+    ## zero out the parametric cols
+    X[, !grepl('^s\\(', colnames(xp))] <- 0
+    dif <- X %*% coef(model)
+    se <- sqrt(rowSums((X %*% vcov(model, unconditional = unconditional)) * X))
+    crit <- qt(alpha/2, df.residual(model), lower.tail = FALSE)
+    upr <- dif + (crit * se)
+    lwr <- dif - (crit * se)
+    data.frame(pair = paste(f1, f2, sep = '-'),
+               diff = dif,
+               se = se,
+               upper = upr,
+               lower = lwr)
+}
+```
+
+```{r warning=FALSE, message=FALSE}
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo", "OPC"))
+
+rm(data9set_cleaned.SO)
+
+data9set_sub.meta <- data9set_sub.SO@meta.data %>% as.data.frame
+
+data9set_sub.meta$cell_barcode <- rownames(data9set_sub.meta)
+
+data9set_sub.meta <- data9set_sub.meta %>% mutate(cell_type_precise = case_when(seurat_clusters %in% 6 ~ "MOL",
+                                                                                            seurat_clusters %in% c(1,5) ~ "MFOL",
+                                                                                            seurat_clusters %in% 12 ~ "OPC",
+                                                                                            seurat_clusters %in% 38 ~ "NFOL"))
+
+
+rownames(data9set_sub.meta) <- data9set_sub.meta$cell_barcode
+
+
+GO_ERK_negative <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210803_101421_GO_0070373_sub.txt", sep = " ")
+
+# remove overlap genes 
+GO_ERK_negative_genes <- as.vector(as.character(unique(GO_ERK_negative$Gene.Marker)))
+
+# remove myelination genes not in the list
+GO_ERK_negative_genes <- GO_ERK_negative_genes[GO_ERK_negative_genes %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_ERK_positive <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210803_101453_GO_0070374_sub.txt", sep = " ")
+
+# remove overlap genes 
+GO_ERK_positive_genes <- as.vector(as.character(unique(GO_ERK_positive$Gene.Marker)))
+
+# remove myelination genes not in the list
+GO_ERK_positive_genes <- GO_ERK_positive_genes[GO_ERK_positive_genes %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+traj <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_trajectory.rda")
+
+traj.df <- traj$time %>% as.data.frame
+colnames(traj.df) <- "pseudotime"
+
+traj.df <- cbind(traj.df, data9set_sub.meta)
+
+traj.df <- traj.df[, c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise")]
+
+expression.df <- as.data.frame(data9set_sub.SO@assays$RNA@data)
+
+
+pseudograph <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph2 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph3 <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.43, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph4 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.43, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+  return(traj_gene.df)  
+}
+
+graph_fig <- function(pseudo_graph = pseudo_graph, gene = gene, coord = c(0,1)){
+  ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + 
+    geom_point(size = 0.1, alpha = 0.1) + 
+    stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + 
+    ggtitle(gene) + 
+    coord_cartesian(ylim = coord) +
+    theme_cowplot()
+}
+```
+
+## 1. GO ERK positive
+
+### 1-1. ERK positive all genes
+
+```{r warning=FALSE, message=FALSE}
+gene.df <- expression.df[rownames(expression.df) %in% GO_ERK_positive_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_ERK_positive_genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+# saveRDS(traj_gene.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20210803_ERK_Oligo_Check_ERK_postive.rds")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x, k  = 100), size = 1, se = FALSE) + ggtitle("ERK positive 222 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.3))
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+m1=gam(gene~s(pseudotime),data=traj_gene.df)
+m2=gam(gene~s(pseudotime),data=traj_gene.df, sp = 0.0001)
+m3=gam(gene~s(pseudotime, k = 100),data=traj_gene.df)
+
+
+
+visreg(m1,  gg=T, type="conditional", overlay=T, partial=F, rug=F, ylab="Response")
+visreg(m2,  gg=T, type="conditional", overlay=T, partial=F, rug=F, ylab="Response")
+visreg(m3,  gg=T, type="conditional", overlay=T, partial=F, rug=F, ylab="Response")
+summary(m1)
+summary(m2)
+summary(m3)
+
+# PLOT 1:
+plot_diff(m1, view="Time", comp=list(Group=c("Adults", "Children")), cond=list(Condition=1), rm.ranef=TRUE, ylim=c(-15,15))
+plot_diff(m2, view="Time", comp=list(Group=c("Adults", "Children")),  cond=list(Condition=4), add=TRUE, col='red')
+
+
+
+
+uri <- 'https://gist.githubusercontent.com/gavinsimpson/eb4ff24fa9924a588e6ee60dfae8746f/raw/geochimica-metals.csv'
+metals <- read_csv(uri, skip = 1, col_types = c('ciccd'))
+metals <- mutate(metals, SiteCode = factor(SiteCode))
+m <- gam(Hg ~ SiteCode + s(Date, by = SiteCode), data = metals)
+plot(m, shade = TRUE, pages = 1, scale = 0)
+
+
+pdat <- expand.grid(Date = seq(1860, 2000, length = 400),
+                    SiteCode = c('FION', 'CHNA', 'NODH'))
+xp <- predict(m, newdata = pdat, type = 'lpmatrix')
+
+
+c1 <- grepl('CHNA', colnames(xp))
+c2 <- grepl('FION', colnames(xp))
+## which rows of xp relate to sites of interest?
+r1 <- with(pdat, SiteCode == 'CHNA')
+r2 <- with(pdat, SiteCode == 'FION')
+## difference rows of xp for data from comparison
+X <- xp[r1, ] - xp[r2, ]
+## zero out cols of X related to splines for other lochs
+X[, ! (c1 | c2)] <- 0
+## zero out the parametric cols
+X[, !grepl('^s\\(', colnames(xp))] <- 0
+
+comp1 <- smooth_diff(m, pdat, 'FION', 'CHNA', 'SiteCode')
+
+comp1 <- smooth_diff(m, pdat, 'FION', 'CHNA', 'SiteCode')
+
+comp1 <- smooth_diff(m1, traj_gene.df, 'Ctrl', 'AD', 'sample')
+```
+
+### 1-2. ERK positive highly expressed genes
+
+```{r warning=FALSE, message=FALSE}
+gene.df <- expression.df[rownames(expression.df) %in% GO_ERK_positive_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_ERK_positive_genes] %>% as.data.frame
+
+check <- colMeans(gene.df) %>% as.data.frame
+
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+gene.df$avg <- rowMeans(gene.df[, colnames(gene.df) %in% high_genes])
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("ERK positive genes (highly expressed 47 genes) gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+
+```
+
+### 1-3. ERK positive highly expressed genes (each)
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(1:10)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,4)), g2, g3, g4, g5, g6, g7, g8, g9, g10, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(11:20)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-10, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3, g4 + coord_cartesian(ylim = c(0,1)), g5 + coord_cartesian(ylim = c(0,2)), g6, g7, g8, g9, g10 + coord_cartesian(ylim = c(0,1.5)), ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(21:30)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-20, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,2)), g3 + coord_cartesian(ylim = c(0,2)), g4 + coord_cartesian(ylim = c(0,3)), g5 + coord_cartesian(ylim = c(0,1)), g6, g7, g8, g9 + coord_cartesian(ylim = c(0,2)), g10 , ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(31:40)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-30, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3, g4 , g5 , g6 + coord_cartesian(ylim = c(0,2)), g7+ coord_cartesian(ylim = c(0,2)), g8, g9, g10 + coord_cartesian(ylim = c(0,3)), ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height = 9.6}
+for(i in c(41:46)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-40, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,4)), g3, g4 , g5 + coord_cartesian(ylim = c(0,3)), g6, ncol = 2)
+```
+
+## 2. GO ERK negative
+
+### 2-1. ERK negative all genes
+
+```{r warning=FALSE, message=FALSE}
+gene.df <- expression.df[rownames(expression.df) %in% GO_ERK_negative_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_ERK_positive_genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+# saveRDS(traj_gene.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20210803_ERK_Oligo_Check_ERK_negative.rds")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("ERK negative 79 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.3))
+```
+
+### 2-2. ERK negative highly expressed genes
+
+```{r warning=FALSE, message=FALSE}
+gene.df <- expression.df[rownames(expression.df) %in% GO_ERK_negative_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_ERK_negative_genes] %>% as.data.frame
+
+check <- colMeans(gene.df) %>% as.data.frame
+
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+gene.df$avg <- rowMeans(gene.df[, colnames(gene.df) %in% high_genes])
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("ERK negative genes (highly expressed 19 genes) gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+
+```
+
+### 2-3. ERK negative highly expressed genes (each)
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(1:10)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,4)), g2, g3, g4, g5, g6, g7 + coord_cartesian(ylim = c(0,3)), g8, g9, g10, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(11:19)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-10, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 , g2, g3, g4, g5 + coord_cartesian(ylim = c(0,2)), g6 + coord_cartesian(ylim = c(0,2)), g7 , g8, g9, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+sessionInfo()
+```

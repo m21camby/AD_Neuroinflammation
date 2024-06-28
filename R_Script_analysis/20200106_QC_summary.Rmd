@@ -1,0 +1,97 @@
+---
+title: "QC_Summary"
+author: "Skim"
+date: "1/6/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(plyr)
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(gridExtra)
+library(DT)
+library(readr)
+```
+
+## 1. Overview
+
+```{r warning=FALSE, message=FALSE}
+SP064_022 <- c("Hippocampus nuclei", "250d (old)" , "Ctrl", "10X", "FACS & multilanes")
+SP064_023 <- c("Hippocampus nuclei", "250d (old)" , "AD", "10X", "FACS & multilanes")
+SP064_024 <- c("Hippocampus nuclei", "250d (old)" , "ADp40KO", "10X", "FACS & multilanes")
+SP064_025 <- c("Hippocampus nuclei", "250d (old)" , "Ctrl", "10X", "FACS & multilanes")
+SP064_026 <- c("Hippocampus nuclei", "250d (old)" , "AD", "10X", "FACS & multilanes")
+SP064_027 <- c("Hippocampus nuclei", "250d (old)" , "ADp40KO", "10X", "FACS & multilanes")
+SP064_028 <- c("Hippocampus nuclei", "250d (old)" , "Ctrl", "10X", "FACS & multilanes")
+SP064_029 <- c("Hippocampus nuclei", "250d (old)" , "AD", "10X", "FACS & multilanes")
+SP064_030 <- c("Hippocampus nuclei", "250d (old)" , "ADp40KO", "10X", "FACS & multilanes")
+
+Q <- t(data.frame(SP064_022, SP064_023, SP064_024, SP064_025, SP064_026, SP064_027, SP064_028, SP064_029, SP064_030))
+colnames(Q) <- c("cell type", "days","exp (Ctrl, AD)", "high-throughput system", "remark") 
+knitr::kable(Q, format="html", align = "c", booktabs = T) %>% kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
+```
+
+## 2. QC Metric
+
+```{r warning=FALSE, message=FALSE}
+SP064_022 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_022_premrna/outs/metrics_summary.csv")
+SP064_023 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_023_premrna/outs/metrics_summary.csv")
+SP064_024 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_024_premrna/outs/metrics_summary.csv")
+SP064_025 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_025_multilanes_chemistry3p/outs/metrics_summary.csv")
+SP064_026 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_026_premrna/outs/metrics_summary.csv")
+SP064_027 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_027_premrna/outs/metrics_summary.csv")
+SP064_028 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_028_premrna/outs/metrics_summary.csv")
+SP064_029 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_029_premrna/outs/metrics_summary.csv")
+SP064_030 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_030_premrna/outs/metrics_summary.csv")
+
+QC_Metrics <- rbind(SP064_022, SP064_023, SP064_024, SP064_025, SP064_026, SP064_027, SP064_028, SP064_029, SP064_030)
+QC_Metric1 <- QC_Metrics[, c(4, 12, 15, 13, 14, 16, 17)]
+rownames(QC_Metric1) <- c("SP064_022", "SP064_023", "SP064_024", "SP064_025", "SP064_026", "SP064_027", "SP064_028", "SP064_029", "SP064_030")
+datatable(QC_Metric1, options = list(pageLength = 10, dom = 'tip'))
+```
+
+## 3. downstream QC Metric (premrna)
+
+```{r warning=FALSE, message=FALSE}
+QC_Metric2 <- QC_Metrics[, c(1, 2, 3, 19, 20, 6, 18)]
+rownames(QC_Metric2) <- c("SP064_022", "SP064_023", "SP064_024", "SP064_025", "SP064_026", "SP064_027", "SP064_028", "SP064_029", "SP064_030")
+datatable(QC_Metric2, options = list(pageLength = 10, dom = 'tip'))
+```
+
+## 4. QC Metric (exon only)
+
+```{r warning=FALSE, message=FALSE}
+SP064_022 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_022_exon/outs/metrics_summary.csv")
+SP064_023 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_023_exon/outs/metrics_summary.csv")
+SP064_024 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_024_exon/outs/metrics_summary.csv")
+SP064_025 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_025_exon/outs/metrics_summary.csv")
+SP064_026 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_026_exon/outs/metrics_summary.csv")
+SP064_027 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_027_exon/outs/metrics_summary.csv")
+SP064_028 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_028_exon/outs/metrics_summary.csv")
+SP064_029 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_029_exon/outs/metrics_summary.csv")
+SP064_030 <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/output_normal_gtf_ref/SP064_030_exon/outs/metrics_summary.csv")
+
+QC_Metrics <- rbind(SP064_022, SP064_023, SP064_024, SP064_025, SP064_026, SP064_027, SP064_028, SP064_029, SP064_030)
+QC_Metric3 <- QC_Metrics[, c(4, 12, 15, 13, 14, 16, 17)]
+rownames(QC_Metric3) <- c("SP064_022", "SP064_023", "SP064_024", "SP064_025", "SP064_026", "SP064_027", "SP064_028", "SP064_029", "SP064_030")
+datatable(QC_Metric3, options = list(pageLength = 10, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```
+
+
+
+

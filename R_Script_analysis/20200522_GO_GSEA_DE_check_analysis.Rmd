@@ -1,0 +1,54 @@
+---
+title: "GO_GSEA"
+author: "Skim"
+date: '2020 5 22 '
+output: html_document
+---
+
+```{r}
+MG_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv")
+EX_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv")
+
+IN_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv")
+
+```
+
+```{r}
+
+OL_hall_logFC_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GSEA_logFC_hall.csv")
+OL_hall_padj_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GSEA_padj_hall.csv")
+
+OL_reac_logFC_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GSEA_logFC_reactome.csv")
+OL_reac_padj_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GSEA_padj_reactome.csv")
+
+
+OL_GO_up_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_up/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GO.csv")
+OL_GO_down_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_down/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv_GO.csv")
+
+```
+
+
+```{r}
+EX_GO_up_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_up/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv_GO.csv")
+
+IN_GO_up_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_up/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv_GO.csv")
+
+EX_hall_logFC_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv_GSEA_logFC_hall.csv")
+IN_hall_padj_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv_GSEA_logFC_hall.csv")
+
+```
+
+
+```{r}
+AS_GO_up_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_up/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv_GO.csv")
+
+AS_GO_down_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_down/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv_GO.csv")
+
+
+IN_GO_up_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/Cell_type_GO_up/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv_GO.csv")
+
+EX_hall_logFC_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv_GSEA_logFC_hall.csv")
+IN_hall_padj_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv_GSEA_logFC_hall.csv")
+
+```
+

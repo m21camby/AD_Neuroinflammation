@@ -1,0 +1,549 @@
+---
+title: "CA2/3 analysis"
+author: "Skim"
+date: '2020 6 17 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+```
+
+Below is each cluster in Neuronal cell types
+
+Dentate Gyrus = 0, 10  
+CA1 = 2, 13, 18, 40  
+CA2/3 = 9, 21, 27  
+Subiculum = 11, 14, 15, 17, 19, 20  
+Inhibitory = 7, 16, 22, 30  
+Neurons = 24, 29, 32
+
+```{r warning=FALSE, message=FALSE}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+```{r warning=FALSE, message=FALSE}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+# export GO ID from BP
+if(i == 1){
+  allGO_MF <- genesInTerm(GOdata)
+}
+if(i == 2){
+  allGO_BP <- genesInTerm(GOdata)
+}
+
+if(i == 3){
+  allGO_CC <- genesInTerm(GOdata)
+}
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+for(i in 1:30){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_MF[ID][[1]]], collapse=', ' )
+}
+for(i in 31:60){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_BP[ID][[1]]], collapse=', ' )
+}
+for(i in 61:90){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_CC[ID][[1]]], collapse=', ' )
+}
+
+return(topGOResults.df)
+}
+
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") +
+  theme_minimal() + theme(axis.text = element_text(size = 10))
+
+}
+```
+
+### 1. cluster 32
+
+Cluster 32 marker genes
+
+4930467D21Rik & Cpne9is marker gene of (TEGLU23	Excitatory neurons, hippocampus CA3)
+
+Cluster 32 will be included in CA2/3 cluster
+
+```{r warning=FALSE, message=FALSE, fig.width=13, fig.height=12}
+# markers <- list.files("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DropViz_cluster_Markers/")
+# genes <- read_csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DropViz_cluster_Markers/cluster-markers_Neuron_CA2CA3_Pvrl3.csv")
+
+Cluster_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker.csv")
+
+f1 <- FeaturePlot(data9set_cleaned.SO, features = "Gm32647")
+f2 <- FeaturePlot(data9set_cleaned.SO, features = "Cpne9")
+f3 <- FeaturePlot(data9set_cleaned.SO, features = "4930467D21Rik")
+f4 <- FeaturePlot(data9set_cleaned.SO, features = "Crispld1")
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+CA2/3 marker genes
+
+```{r warning=FALSE, message=FALSE, fig.width=13, fig.height=6}
+f1 <- FeaturePlot(data9set_cleaned.SO, features = "Lsm11")
+f2 <- FeaturePlot(data9set_cleaned.SO, features = "Homer3")
+
+grid.arrange(f1, f2, ncol = 2)
+```
+
+
+### 2. CA2/3 overview
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+data9set_CA23.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(9, 21, 27,32))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+ggplot(plot.data[plot.data$cluster %in% c(9, 21, 27, 32),], aes(x=cluster, y=cell_prop, fill=sample)) +
+  geom_boxplot(position=position_dodge(1)) + ylim(c(0, 0.05))
+```
+
+```{r  warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+Idents(data9set_CA23.SO) <- data9set_CA23.SO$seurat_clusters
+
+# c9.markers <- FindMarkers(data9set_CA23.SO, ident.1 = "9", ident.2 = c("21", "27", "32"), min.pct = 0.05)
+# write.csv(c9.markers, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster9_markers.csv")
+c9.markers <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster9_markers.csv", row.names = 1)
+
+# c21.markers <- FindMarkers(data9set_CA23.SO, ident.1 = "21", ident.2 = c("9", "27", "32"), min.pct = 0.05)
+# write.csv(c21.markers, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster21_markers.csv")
+c21.markers <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster21_markers.csv", row.names = 1)
+
+# c27.markers <- FindMarkers(data9set_CA23.SO, ident.1 = "27", ident.2 = c("9", "21", "32"), min.pct = 0.05)
+# write.csv(c27.markers, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster27_markers.csv")
+c27.markers <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster27_markers.csv", row.names = 1)
+
+# c32.markers <- FindMarkers(data9set_CA23.SO, ident.1 = "32", ident.2 = c("9", "21", "27"), min.pct = 0.05)
+# write.csv(c32.markers, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster32_markers.csv")
+c32.markers <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_analysis_cluster32_markers.csv", row.names = 1)
+```
+
+```{r  warning=FALSE, message=FALSE, fig.width=15, fig.height = 5}
+DimPlot(data9set_CA23.SO, split.by = "sample", group.by = "seurat_clusters") + xlim(c(0, 10)) + ylim(c(-16, -6))
+```
+
+#### 2-1. Cluster 9
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 7.5}
+f1 <- FeaturePlot(data9set_CA23.SO, features = "Epha3") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f2 <- FeaturePlot(data9set_CA23.SO, features = "Cntnap5c") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f3 <- FeaturePlot(data9set_CA23.SO, features = "Fstl4") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f4 <- FeaturePlot(data9set_CA23.SO, features = "Etl4") + xlim(c(0, 10)) + ylim(c(-16, -6))
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+# geneUniverse <- rownames(data9set_CA23.SO@assays$RNA@counts[rowSums(data9set_CA23.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- as.character(rownames(c9.markers[which(c9.markers$p_val_adj < 0.01 & c9.markers$avg_logFC > 0.5 & c9.markers$pct.2 < 0.5), ]))
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# #
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster9.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster9.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 2-2. Cluster 21
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 7.5}
+f1 <- FeaturePlot(data9set_CA23.SO, features = "Gabrg3") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f2 <- FeaturePlot(data9set_CA23.SO, features = "St18") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f3 <- FeaturePlot(data9set_CA23.SO, features = "Nrg1") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f4 <- FeaturePlot(data9set_CA23.SO, features = "Htr2c") + xlim(c(0, 10)) + ylim(c(-16, -6))
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+# genesOfInterest <- as.character(rownames(c21.markers[which(c21.markers$p_val_adj < 0.01 & c21.markers$avg_logFC > 0.5 & c21.markers$pct.2 < 0.5), ]))
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# #
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster21.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster21.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 2-3. Cluster 27
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 7.5}
+f1 <- FeaturePlot(data9set_CA23.SO, features = "Asic2") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f2 <- FeaturePlot(data9set_CA23.SO, features = "Egfem1") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f3 <- FeaturePlot(data9set_CA23.SO, features = "Kcnk2") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f4 <- FeaturePlot(data9set_CA23.SO, features = "Adcy1") + xlim(c(0, 10)) + ylim(c(-16, -6))
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+# genesOfInterest <- as.character(rownames(c27.markers[which(c27.markers$p_val_adj < 0.01 & c27.markers$avg_logFC > 0.5 & c27.markers$pct.2 < 0.5), ]))
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# #
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster27.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster27.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 2-4. Cluster 32
+
+CNTN4/BIG-2, an neuronal glycoprotein, which belongs to a subfamily of the immunoglobulin superfamily of cell adhesion molecules is known to guide axons during development. This function has been studied in the development of the olfactory and visual neural circuit However, the precise role of CNTN4 in establishing neural networks and synaptic contacts remains to be clarified. [ref](https://www.frontiersin.org/articles/10.3389/fnmol.2018.00212/full)
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 7.5}
+f1 <- FeaturePlot(data9set_CA23.SO, features = "Cntn5") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f2 <- FeaturePlot(data9set_CA23.SO, features = "Cntn4") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f3 <- FeaturePlot(data9set_CA23.SO, features = "Grm8") + xlim(c(0, 10)) + ylim(c(-16, -6))
+f4 <- FeaturePlot(data9set_CA23.SO, features = "Slc35f1") + xlim(c(0, 10)) + ylim(c(-16, -6))
+
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+# genesOfInterest <- as.character(rownames(c32.markers[which(c32.markers$p_val_adj < 0.01 & c32.markers$avg_logFC > 0.5 & c32.markers$pct.2 < 0.5), ]))
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# #
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster32.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_cluster32.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 3. DE in CA2/3 neurons
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+
+# CA2_DE_AD_ADp40KO <- FindMarkers(data9set_CA23.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# write.csv(CA2_DE_AD_ADp40KO, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_DE_AD_ADp40KO.csv")
+
+CA2_DE_AD_ADp40KO <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_CA2_3_Neurons_DE_AD_ADp40KO.csv")
+
+
+CA2_DE_AD_ADp40KO2 <- CA2_DE_AD_ADp40KO[abs(CA2_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+CA2_DE_AD_ADp40KO2 <- CA2_DE_AD_ADp40KO2[CA2_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+CA2_DE_AD_ADp40KO_padj <- CA2_DE_AD_ADp40KO[abs(CA2_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+CA2_DE_AD_ADp40KO_padj <- CA2_DE_AD_ADp40KO_padj[CA2_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+CA2_DE_AD_ADp40KO_padj <- CA2_DE_AD_ADp40KO_padj[which(CA2_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(CA2_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height= 5}
+
+ggplot(CA2_DE_AD_ADp40KO2) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = CA2_DE_AD_ADp40KO_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("CA2/3 Neurons DE analysis AD vs ADp40KO") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = CA2_DE_AD_ADp40KO_padj[CA2_DE_AD_ADp40KO_padj$p_val_adj < 1e-10, ], aes(x = avg_logFC, y = -log10(p_val_adj), label = CA2_DE_AD_ADp40KO_padj[CA2_DE_AD_ADp40KO_padj$p_val_adj < 1e-10, ]$X)) 
+```
+
+GO of AD vs ADp40KO up-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+# genesOfInterest <- CA2_DE_AD_ADp40KO_padj[CA2_DE_AD_ADp40KO_padj$avg_logFC > 0, ]$X %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_AD_ADp40KO_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+GO of AD vs ADp40KO down-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+# genesOfInterest <- CA2_DE_AD_ADp40KO_padj[CA2_DE_AD_ADp40KO_padj$avg_logFC < 0, ]$X %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_AD_ADp40KO_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200617_CA2_3_neurons_analysis_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 7}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:12), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 4. DE by clustter
+
+#### 4-1. DE cluster 9
+
+```{r warning=FALSE, message=FALSE}
+c9_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_9ADp40KO_AD_corrected.csv")
+
+# reverse logFC2
+c9_DE_AD_ADp40KO$avg_logFC <- c9_DE_AD_ADp40KO$avg_logFC * -1
+
+c9_DE_AD_ADp40KO2 <- c9_DE_AD_ADp40KO[abs(c9_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c9_DE_AD_ADp40KO2 <- c9_DE_AD_ADp40KO2[c9_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+c9_DE_AD_ADp40KO_padj <- c9_DE_AD_ADp40KO[abs(c9_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c9_DE_AD_ADp40KO_padj <- c9_DE_AD_ADp40KO_padj[c9_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+c9_DE_AD_ADp40KO_padj <- c9_DE_AD_ADp40KO_padj[which(c9_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(c9_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+
+```
+
+#### 4-2. DE cluster 21
+
+```{r warning=FALSE, message=FALSE}
+c21_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_21ADp40KO_AD_corrected.csv")
+
+# reverse logFC2
+c21_DE_AD_ADp40KO$avg_logFC <- c21_DE_AD_ADp40KO$avg_logFC * -1
+
+c21_DE_AD_ADp40KO2 <- c21_DE_AD_ADp40KO[abs(c21_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c21_DE_AD_ADp40KO2 <- c21_DE_AD_ADp40KO2[c21_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+c21_DE_AD_ADp40KO_padj <- c21_DE_AD_ADp40KO[abs(c21_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c21_DE_AD_ADp40KO_padj <- c21_DE_AD_ADp40KO_padj[c21_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+c21_DE_AD_ADp40KO_padj <- c21_DE_AD_ADp40KO_padj[which(c21_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(c21_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+
+```
+
+
+#### 4-3. DE cluster 27
+
+```{r warning=FALSE, message=FALSE}
+c27_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_27ADp40KO_AD_corrected.csv")
+
+# reverse logFC2
+c27_DE_AD_ADp40KO$avg_logFC <- c27_DE_AD_ADp40KO$avg_logFC * -1
+
+c27_DE_AD_ADp40KO2 <- c27_DE_AD_ADp40KO[abs(c27_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c27_DE_AD_ADp40KO2 <- c27_DE_AD_ADp40KO2[c27_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+c27_DE_AD_ADp40KO_padj <- c27_DE_AD_ADp40KO[abs(c27_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c27_DE_AD_ADp40KO_padj <- c27_DE_AD_ADp40KO_padj[c27_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+c27_DE_AD_ADp40KO_padj <- c27_DE_AD_ADp40KO_padj[which(c27_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(c27_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+
+```
+
+#### 4-4. DE cluster 32
+
+```{r warning=FALSE, message=FALSE}
+c32_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_32ADp40KO_AD_corrected.csv")
+
+# reverse logFC2
+c32_DE_AD_ADp40KO$avg_logFC <- c32_DE_AD_ADp40KO$avg_logFC * -1
+
+c32_DE_AD_ADp40KO2 <- c32_DE_AD_ADp40KO[abs(c32_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c32_DE_AD_ADp40KO2 <- c32_DE_AD_ADp40KO2[c32_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+c32_DE_AD_ADp40KO_padj <- c32_DE_AD_ADp40KO[abs(c32_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c32_DE_AD_ADp40KO_padj <- c32_DE_AD_ADp40KO_padj[c32_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+c32_DE_AD_ADp40KO_padj <- c32_DE_AD_ADp40KO_padj[which(c32_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(c32_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```
+

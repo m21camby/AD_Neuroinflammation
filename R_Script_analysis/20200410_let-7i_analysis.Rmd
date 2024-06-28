@@ -1,0 +1,72 @@
+---
+title: "let-7i analysis"
+author: "Skim"
+date: '2020 4 10 '
+output: html_document
+---
+
+
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+
+```{r cars}
+
+SP064_023.SO <-  subset(data9set_cleaned.SO, subset = gemgroup %in% c("2"))
+
+DimPlot(SP064_023.SO)
+```
+
+```{r cars}
+SP064_023.SO.df <- SP064_023.SO@meta.data
+SP064_023.umap.df <- as.data.frame(SP064_023.SO@reductions$umap@cell.embeddings)
+
+SP064_023.df <- cbind(SP064_023.SO.df, SP064_023.umap.df)
+SP064_023.df$cell_barcode <- rownames(SP064_023.df)
+```
+
+```{r fig.height= 10, fig.width= 10}
+SP064_023_final.df <- left_join(SP064_023.df, SP064_023_pri_miRNA.df, by = "cell_barcode")
+SP064_023_final.df[is.na(SP064_023_final.df)] <- 0
+
+
+ggplot(SP064_023_final.df, aes(x = UMAP_1, y = UMAP_2, col = let7i, size = let7i)) +
+  geom_point(aes(col = let7i)) + 
+  theme_classic() + 
+  theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12)) + scale_color_gradient(low="blue", high="red")
+```
+
+```{r fig.height= 8, fig.width= 8}
+FeaturePlot(SP064_023.SO, features = c("D630033A02Rik"))
+```
+
+```{r fig.height= 8, fig.width= 8}
+let7i_info <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_023_pri_miRNA/outs/let-7i_BAM_from_orig_exon_final.txt")
+
+table(let7i_info$V3)
+
+```
+
+```{r fig.height= 8, fig.width= 8}
+let7i_info.df <- let7i_info[let7i_info$V3 =="RE:A:E",] %>% dplyr::select(V1, V2, V3) %>% group_by(V1, V2) %>% summarise(count = n())
+
+
+let7i_info.df$cell_barcode <- gsub("CB:Z:", "",let7i_info.df$V1)
+let7i_info.df$cell_barcode <- gsub("-1", "",let7i_info.df$cell_barcode)
+let7i_info.df$cell_barcode <- paste0(let7i_info.df$cell_barcode, "-2")
+
+SP064_023_final.df$let7i_filtered <- ifelse(SP064_023_final.df$cell_barcode %in% let7i_info.df$cell_barcode, 0, SP064_023_final.df$let7i)
+
+sum(SP064_023_final.df$let7i_filtered)
+```
+
+```{r fig.height= 8, fig.width= 9}
+
+ggplot(SP064_023_final.df, aes(x = UMAP_1, y = UMAP_2, col = let7i_filtered)) +
+  geom_point(aes(col = let7i_filtered, size = let7i_filtered)) + 
+  theme_classic() + 
+  theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12)) + scale_color_gradient(low="gray", high="red")
+```

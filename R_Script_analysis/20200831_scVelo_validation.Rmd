@@ -1,0 +1,103 @@
+---
+title: "scVelo check"
+author: "Skim"
+date: '2020 8 31 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# load Seurat object
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+data9set_cleaned_OL.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1,5,6,12,38))
+
+data9set_cleaned_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(12,38))
+
+```
+
+
+```{r fig.height=10, fig.width= 8}
+FeaturePlot(data9set_cleaned_OL.SO, features = c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap"), ncol = 2, order = TRUE)
+```
+
+````{r fig.height=10, fig.width= 8}
+FeaturePlot(data9set_cleaned_OL.SO, features = c("Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ncol = 2, order = TRUE)
+```
+
+
+### 3. OPC
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_Ctrl.csv", row.names = 1)
+
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl.df[AD_Ctrl.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+
+AD_ADp40KO.df[AD_ADp40KO.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=5}
+
+VlnPlot(data9set_cleaned_OPC.SO, features = c("Brinp3"), group.by = "sample", pt.size = 0.1)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_Ctrl.csv", row.names = 1)
+
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl.df[AD_Ctrl.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO.df[AD_ADp40KO.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+
+ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% c("Vxn","Brinp3", "Kcnh8", "Arhgef26", "Rap1gap", "Lhfpl3", "Ptprz1", "Xylt1", "Ntm", "Cspg5"), ] 
+
+```
+

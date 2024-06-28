@@ -1,0 +1,435 @@
+---
+title: "Markers_and_DGE"
+author: "Skim"
+date: '2020 1 5 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is preliminary analysis to look over data sets how it looks like. My criteria for analysis is :  
+min UMIs: 200  
+max UMIs: 30,000  
+HVGs: 2000 (vst)  
+PCs: 40  
+resolution: 0.6
+
+The above parameters are not optimal parameters but just for the quick overview. 
+
+```{r warning=FALSE, message=FALSE}
+Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All_025_3p/outs/filtered_feature_bc_matrix/")
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+```
+
+### 1. number of UMIs per sample
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set.SO, features = c("nCount_RNA"), group.by = "gemgroup", pt.size = 0.2)
+```
+
+### 2. visualization
+
+I identified **35 clusters** in here. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+#data9set.SO <- RunUMAP(object = data9set.SO, dims = 1:40, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+DimPlot(object = data9set.SO, reduction = "umap", label = TRUE, label.size = 4)
+```
+
+Check the distribution of cells by each experiment
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=6}
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+#table(data9set.SO$sample)
+
+DimPlot(object = data9set.SO, group.by = "sample", pt.size = 0.05, cols = c("#003333", "#FF6600", "#FFFF00"))
+```
+
+### 3. cluster markers
+
+Cell type annotation in here is not accurate. I just briefly used **dropviz.org** and check 3~4 markers and annotate myself. But I have done just for quick overview. 
+
+```{r warning=FALSE, message=FALSE}
+#data9set.markers <- FindAllMarkers(data9set.SO, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#data9set.markers_top10 <- data9set.markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_logFC)
+#datatable(data9set.markers_top10, options = list(pageLength = 10, dom = 'tip'))
+#write.csv(data9set.markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200105_data9set_marker.csv")
+#write.csv(data9set.markers_top10, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200105_data9set_marker_top20.csv")
+data9set.markers_top10 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200105_data9set_marker_top20.csv", row.names = 1)
+datatable(data9set.markers_top10, class = 'cell-border stripe')
+```
+
+**Microglia** = 3, 29, 32 (Perivascular macrophages = 32), **OPC** = 9, 34 (Olig1, Pdgfra)  **polydendrocytes** = 33 (Newly formed oligo),   **Mature oligo** = 1,4 (Mbp, Mag, Neat1), **Chorid plexus epithelial cells** = 23 (Rbm47, Htr2c), **Fibroblast** = 20 (VLMC), **Endothelial** = 30, 31 (Cldn5, Flt1, Rgs5), **Cajal-Retzius cells** = 25 (Reln), **Astrocytes** = 5,27 (Gja1, Cst3)  
+     
+**subiculum** = 8 (Cck interneurons/excitatory), **dentate** = 0, 22, 26 (Glis3, Cdh9, Sema5a, Rfx3, Ahcyl2),  **CA1 subiculum/interneuron** = 21, **interneuron** = 6, 13, 18 (Dlx6os1, 4930555F03Rik, Gad1, Cit, Nxph1, Kcnmb2), **CA1 subiculum** = 2, 10, **interneuron/subiculum** = 11, 12, 14, 15, 16, 17, **CA2/CA3** = 7, 19, 24, 28 (Cholinergic exciatory, Mgat4c, Hs3st4, Kcnq5)
+
+
+
+I plotted by **old gene markers** used in drop-seq pipeline
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+dot_genes <- c("Hexb", "Siglech", "P2ry12",
+               "Olig1", "Pdgfra",
+               "Mbp", "Mag", "Neat1",
+               "Sned1", "Alcam",
+               "Cldn5", "Flt1", "Rgs5",
+               "Slc1a2", "Gja1", "Cst3",
+               "Snap25", "Cnr1",
+               "Ahcyl2", "Dock10", "Trpc6", 
+               "Gad1", "Cit",
+               "Cdh18", "Cntnap4", 
+               "Man1a", "Brd9",
+               "Tshz2", "Gria4",
+               "Adam11", "Rnf112")
+
+
+
+DotPlot(data9set.SO, features = dot_genes, cols = c("lightgrey", "blue"),  group.by = "seurat_clusters") + 
+  theme(axis.text.y = element_text(size = 10), 
+        axis.title.x = element_blank(),
+        legend.title = element_text(size =10),
+        legend.text = element_text(size = 10)) + 
+  coord_flip()
+
+```
+
+Finally, I annotated 16 clusters
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height= 6}
+data9set.SO <- RenameIdents(data9set.SO, '0' = "dentate", '1' = "Mature oligo", '2' = "CA1 subiculum", '3' = "Microglia", 
+                            '4' = "Mature oligo", '5' = "Astrocytes", '6' = "interneuron", '7' = "CA2/CA3", '8' = "subiculum", 
+                            '9' = "OPC", '10' = "CA1 subiculum", '11' = "interneuron/subiculum", '12' = "interneuron/subiculum", 
+                            '13' = "interneuron", '14' = "interneuron/subiculum", '15' = "interneuron/subiculum", 
+                            '16' = "interneuron/subiculum", '17' = "interneuron/subiculum", '18' = "interneuron",
+                            '19' = "CA2/CA3", '20' = "Fibroblast", '21' = "CA1 subiculum/interneuron", '22' = "dentate",
+                            '23' = "Chorid plexus", '24' = "CA2/CA3", '25' = "Cajal-Retzius", '26' = "dentate", 
+                            '27' = "Astrocytes", '28' = "CA2/CA3", '29' = "Microglia", '30' = "Endothelial", '31' = "Endothelial",
+                            '32' = "Microglia", '33' = "polydendrocytes", '34' = "OPC")
+
+data9set.SO@active.ident <- factor(data9set.SO@active.ident, levels = c("dentate", "CA1 subiculum", "CA1 subiculum/interneuron", "CA2/CA3",
+                                                                        "interneuron", "interneuron/subiculum", "subiculum", "Astrocytes",
+                                                                        "Mature oligo", "polydendrocytes", "OPC", "Microglia",
+                                                                        "Endothelial", "Cajal-Retzius", "Chorid plexus", "Fibroblast"))
+
+DimPlot(data9set.SO, label = TRUE)
+
+```
+
+The plot here shows **distribution of cells** in each experiment by separate UMAP
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=6}
+#data.umap <- DimPlot(data9set.SO, reduction = "umap")
+#data.umap.1 <- data.umap$data[data.umap$data$ident == 13, ]
+#data.umap.2 <- data.umap$data[data.umap$data$ident == 17, ]
+#data.umap_2 <- data.umap + theme(legend.text = element_text(size = 7), axis.title = element_text(size = 10), 
+#                                 axis.text = element_text(size = 10), 
+#                                 plot.title = element_text(size = 9)) + 
+#  geom_point(data = data.umap.1, aes(x = UMAP_1, y = UMAP_2), size = 1) +
+#  geom_point(data = data.umap.2, aes(x = UMAP_1, y = UMAP_2), size = 1)
+#data.umap_2
+DimPlot(data9set.SO, reduction = "umap", split.by = "sample", no.legend = TRUE)
+```
+
+In here, I showed **UMIs per annotated cluster** by violin plot
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+
+VlnPlot(data9set.SO, features = c("nCount_RNA"), pt.size = 0)  +
+  geom_text(x = 1, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 0 | data9set.SO@meta.data$seurat_clusters == 22 | data9set.SO@meta.data$seurat_clusters == 26, ]$nCount_RNA), size = 3.5) +  
+  geom_text(x = 2, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 2 | data9set.SO@meta.data$seurat_clusters == 10, ]$nCount_RNA), size = 3.5) +  
+   geom_text(x = 3, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 21, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 4, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 7 | data9set.SO@meta.data$seurat_clusters == 19| data9set.SO@meta.data$seurat_clusters == 24| data9set.SO@meta.data$seurat_clusters == 28, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 5, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 6 | data9set.SO@meta.data$seurat_clusters == 13| data9set.SO@meta.data$seurat_clusters == 18, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 6, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 11 | data9set.SO@meta.data$seurat_clusters == 12| data9set.SO@meta.data$seurat_clusters == 14| data9set.SO@meta.data$seurat_clusters == 15| data9set.SO@meta.data$seurat_clusters == 16| data9set.SO@meta.data$seurat_clusters == 17, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 7, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 8, ]$nCount_RNA), size = 3.5) + 
+   geom_text(x = 8, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 5| data9set.SO@meta.data$seurat_clusters == 27, ]$nCount_RNA), size = 3.5) + 
+  geom_text(x = 9, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 1| data9set.SO@meta.data$seurat_clusters == 4, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 10, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 33, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 11, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 9| data9set.SO@meta.data$seurat_clusters == 34, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 12, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 3| data9set.SO@meta.data$seurat_clusters == 29| data9set.SO@meta.data$seurat_clusters == 32, ]$nCount_RNA), size = 3.5) +
+   geom_text(x = 13, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 30| data9set.SO@meta.data$seurat_clusters == 31, ]$nCount_RNA), size = 3.5) +
+  geom_text(x = 14, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 25, ]$nCount_RNA), size = 3.5) + 
+  geom_text(x = 15, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 23, ]$nCount_RNA), size = 3.5) + 
+  geom_text(x = 16, y = 30000, label = median(data9set.SO@meta.data[data9set.SO@meta.data$seurat_clusters == 20, ]$nCount_RNA), size = 3.5) 
+
+```
+
+The plot here shows how clustering resolution from **0.2, 0.4, 0.6, 0.8** changes clusters. [clustree ref](https://cran.r-project.org/web/packages/clustree/vignettes/clustree.html)
+
+<p float="middle">
+  <img src="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/clustree_res0.2_0.4_0.6_0.8.png"/>
+</p>
+
+
+
+### 4. Cell population proportions
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+##################
+# per experiment
+##################
+exp <- c("Ctrl", "AD", "ADp40KO")
+# Create new data frame
+exp_cell.df <- data.frame(ident = as.character(), cluster = as.numeric(), cells = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in exp){
+  for(j in c(0:34)){
+    if(i == "Ctrl"){
+      k <- j
+    }
+    if(i == "AD"){
+      k <- j + 35
+    }
+    if(i =="ADp40KO"){
+      k <- j + 70
+    }
+    exp_cell.df[k+1, 1] <- i
+    exp_cell.df[k+1, 2] <- j
+    exp_cell.df[k+1, 3] <- table(data9set.SO@meta.data$sample == i & data9set.SO@meta.data$seurat_clusters == j)[2]
+    #exp_cell.df[is.na(exp_cell.df)] <- 0
+  }
+}
+
+#sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells)
+
+# calculate percentage
+exp_cell.df$total <- ifelse(exp_cell.df$ident == "Ctrl", sum(exp_cell.df[exp_cell.df$ident == "Ctrl", ]$cells), 
+                            ifelse(exp_cell.df$ident == "AD", sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells),
+                                   sum(exp_cell.df[exp_cell.df$ident == "AD", ]$cells)))
+exp_cell.df$percentage <- round(100*(exp_cell.df$cells/exp_cell.df$total),2)
+
+#ggplot(exp_cell.df, aes(x = ident, y = cells, fill = factor(cluster)))+ geom_bar(position="fill", stat="identity")
+```
+
+The plot in here shows by cluster
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+#############
+# per sample 
+#############
+#data9set.SO$gemgroup
+
+sample <- c(1, 2, 3, 4, 5, 6, 7, 8 ,9)
+exp_cell.df2 <- data.frame(sample = as.character(), cluster = as.numeric(), cells = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in sample){
+  for(j in c(0:34)){
+    if(i == 1){
+      k <- j
+    }
+    if(i == 2){
+      k <- j + 35
+    }
+    if(i ==3){
+      k <- j + 70
+    }
+    if(i ==4){
+      k <- j + 105
+    }
+    if(i ==5){
+      k <- j + 140
+    }
+    if(i ==6){
+      k <- j + 175
+    }
+    if(i ==7){
+      k <- j + 210
+    }
+    if(i ==8){
+      k <- j + 245
+    }
+    if(i ==9){
+      k <- j + 280
+    }
+    exp_cell.df2[k+1, 1] <- i
+    exp_cell.df2[k+1, 2] <- j
+    exp_cell.df2[k+1, 3] <- table(data9set.SO@meta.data$gemgroup == i & data9set.SO@meta.data$seurat_clusters == j)[2]
+    exp_cell.df2[is.na(exp_cell.df2)] <- 0
+  }
+}
+
+# calculate percentage
+exp_cell.df2$total <- ifelse(exp_cell.df2$sample == 1, sum(exp_cell.df2[exp_cell.df2$sample == 1, ]$cells), 
+                            ifelse(exp_cell.df2$sample == 2, sum(exp_cell.df2[exp_cell.df2$sample == 2, ]$cells),
+                                   ifelse(exp_cell.df2$sample == 3, sum(exp_cell.df2[exp_cell.df2$sample == 3, ]$cells),
+                                          ifelse(exp_cell.df2$sample == 4, sum(exp_cell.df2[exp_cell.df2$sample == 4, ]$cells),
+                                                 ifelse(exp_cell.df2$sample == 5, sum(exp_cell.df2[exp_cell.df2$sample == 5, ]$cells),
+                                                        ifelse(exp_cell.df2$sample == 6, sum(exp_cell.df2[exp_cell.df2$sample == 6, ]$cells),
+                                                               ifelse(exp_cell.df2$sample == 7, sum(exp_cell.df2[exp_cell.df2$sample == 7, ]$cells),
+                                                                      ifelse(exp_cell.df2$sample == 8, sum(exp_cell.df2[exp_cell.df2$sample == 8, ]$cells), sum(exp_cell.df2[exp_cell.df2$sample == 9, ]$cells)))))))))
+
+exp_cell.df2$percentage <- round(100*(exp_cell.df2$cells/exp_cell.df2$total),2)
+
+exp_cell.df2$sample <- factor(exp_cell.df2$sample, levels = c(1,4,7,2,5,8,3,6,9))
+
+ggplot(exp_cell.df2, aes(x = sample, y = cells, fill = factor(cluster))) +
+  geom_bar(position="fill", stat="identity") + ylab("percentage of cells") + 
+  geom_text(x = 2, y = 1.02, label = "Ctrl") + 
+  geom_text(x = 5, y = 1.02, label = "AD") +
+  geom_text(x = 8, y = 1.02, label = "ADp40KO")
+
+```
+
+The plot in here shows by annotate cluster
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=8}
+data9set.SO$celltype <- Idents(data9set.SO)
+
+sample <- c(1, 2, 3, 4, 5, 6, 7, 8 ,9)
+exp_cell.df3 <- data.frame(sample = as.character(), cluster = as.numeric(), cells = as.numeric(), stringsAsFactors = FALSE)
+
+types = c("dentate", "Mature oligo", "CA1 subiculum", "Microglia", 
+          "Astrocytes","interneuron", "CA2/CA3", "subiculum",
+          "OPC", "interneuron/subiculum", "Fibroblast", "CA1 subiculum/interneuron",
+          "Chorid plexus", "Cajal-Retzius", "Endothelial", "polydendrocytes")
+
+for(i in sample){
+  for(j in c(1:16)){
+    if(i == 1){
+      k <- j
+    }
+    if(i == 2){
+      k <- j + 16
+    }
+    if(i ==3){
+      k <- j + 32
+    }
+    if(i ==4){
+      k <- j + 48
+    }
+    if(i ==5){
+      k <- j + 64
+    }
+    if(i ==6){
+      k <- j + 80
+    }
+    if(i ==7){
+      k <- j + 96
+    }
+    if(i ==8){
+      k <- j + 112
+    }
+    if(i ==9){
+      k <- j + 128
+    }
+    exp_cell.df3[k, 1] <- i
+    exp_cell.df3[k, 2] <- types[j]
+    exp_cell.df3[k, 3] <- table(data9set.SO@meta.data$gemgroup == i & data9set.SO@meta.data$celltype == types[j])[2]
+    exp_cell.df3[is.na(exp_cell.df3)] <- 0
+  }
+}
+
+
+#meta.df <- data9set.SO@meta.data
+#meta.df[which(meta.df$celltype == "Fibroblast" & meta.df$sample == "Ctrl"), ]
+# calculate percentage
+exp_cell.df3$total <- ifelse(exp_cell.df3$sample == 1, sum(exp_cell.df3[exp_cell.df3$sample == 1, ]$cells), 
+                            ifelse(exp_cell.df3$sample == 2, sum(exp_cell.df3[exp_cell.df3$sample == 2, ]$cells),
+                                   ifelse(exp_cell.df3$sample == 3, sum(exp_cell.df3[exp_cell.df3$sample == 3, ]$cells),
+                                          ifelse(exp_cell.df3$sample == 4, sum(exp_cell.df3[exp_cell.df3$sample == 4, ]$cells),
+                                                 ifelse(exp_cell.df3$sample == 5, sum(exp_cell.df3[exp_cell.df3$sample == 5, ]$cells),
+                                                        ifelse(exp_cell.df3$sample == 6, sum(exp_cell.df3[exp_cell.df3$sample == 6, ]$cells),
+                                                               ifelse(exp_cell.df3$sample == 7, sum(exp_cell.df3[exp_cell.df3$sample == 7, ]$cells),
+                                                                      ifelse(exp_cell.df3$sample == 8, sum(exp_cell.df3[exp_cell.df3$sample == 8, ]$cells), sum(exp_cell.df3[exp_cell.df3$sample == 9, ]$cells)))))))))
+
+exp_cell.df3$percentage <- round(100*(exp_cell.df3$cells/exp_cell.df3$total),2)
+
+exp_cell.df3$sample <- factor(exp_cell.df3$sample, levels = c(1,4,7,2,5,8,3,6,9))
+
+ggplot(exp_cell.df3, aes(x = sample, y = cells, fill = factor(cluster))) +
+  geom_bar(position="fill", stat="identity") + ylab("percentage of cells") + 
+  geom_text(x = 2, y = 1.02, label = "Ctrl") + 
+  geom_text(x = 5, y = 1.02, label = "AD") +
+  geom_text(x = 8, y = 1.02, label = "ADp40KO")
+
+```
+
+### 5. Intra-correlation (ICC)
+
+Here, I applied intraclass correlation (ICC)—a correlation metric that considers group structure in the data (clusters OR cell types) to the proportions produced by each experiment.
+
+Percentage distribution of cell types in above data has been analyzed. ICC near 1.0 indicates high agreement. [ref](https://www.nature.com/articles/s41586-019-1289-x.pdf)
+
+#### 5-1. based on cluster
+
+Ctrl, AD, ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+# oneway model with row effects random
+# twoway model with column and row effects random
+# subjects be considered as random effects (oneway model) or are subjectsand raters randomly chosen from a bigger pool of persons (twoway model)
+# If a oneway model is used, only consis-tency used
+
+icc_Ctrl.df <- data.frame(SP064_022 = exp_cell.df2[c(1:35), c(5)], SP064_025 = exp_cell.df2[c(106:140), c(5)], SP064_028 = exp_cell.df2[c(211:245), c(5)])
+icc_AD.df <- data.frame(SP064_023 = exp_cell.df2[c(36:70), c(5)], SP064_026 = exp_cell.df2[c(141:175), c(5)], SP064_029 = exp_cell.df2[c(246:280), c(5)])
+icc_ADp40KO.df <- data.frame(SP064_024 = exp_cell.df2[c(71:105), c(5)], SP064_027 = exp_cell.df2[c(176:210), c(5)], SP064_030 = exp_cell.df2[c(281:315), c(5)])
+
+
+#  creating a table of cell-type proportions across each individual organoid, and using the ICC command in the irr R package v0.84, with model = “twoway”, type = “agreement”, and unit = “single”
+i1 <- icc(icc_Ctrl.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+print("Ctrl ICC value")
+i1$value
+i2 <- icc(icc_AD.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+print("AD ICC value")
+i2$value
+print("ADp40KO ICC value")
+i3 <- icc(icc_ADp40KO.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+i3$value
+i1
+?icc
+```
+
+#### 5-2. based on cell type
+
+Ctrl, AD, ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+icc_Ctrl.df <- data.frame(SP064_022 = exp_cell.df3[c(1:16), c(5)], SP064_025 = exp_cell.df3[c(49:64), c(5)], SP064_028 = exp_cell.df3[c(97:112), c(5)])
+icc_AD.df <- data.frame(SP064_023 = exp_cell.df3[c(17:32), c(5)], SP064_026 = exp_cell.df3[c(65:80), c(5)], SP064_029 = exp_cell.df3[c(113:128), c(5)])
+icc_ADp40KO.df <- data.frame(SP064_024 = exp_cell.df3[c(33:48), c(5)], SP064_027 = exp_cell.df3[c(81:96), c(5)], SP064_030 = exp_cell.df3[c(129:144), c(5)])
+
+
+
+#  creating a table of cell-type proportions across each individual organoid, and using the ICC command in the irr R package v0.84, with model = “twoway”, type = “agreement”, and unit = “single”
+i4 <- icc(icc_Ctrl.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+print("Ctrl ICC value")
+i4$value
+i5 <- icc(icc_AD.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+print("AD ICC value")
+i5$value
+i6 <- icc(icc_ADp40KO.df, model = c("twoway"),type = c("agreement"),unit = c("single"), r0 = 0, conf.level = 0.95)
+print("ADp40KO ICC value")
+i6$value
+```
+
+```{r warning=FALSE, message=FALSE}
+#evaluate the performance of the clustering technique: NMI (Normalized Mutual Information) is a popular external measure. 
+```
+
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```

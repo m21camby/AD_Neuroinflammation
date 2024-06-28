@@ -1,0 +1,383 @@
+---
+title: "cellphoneDB_specific_pathways"
+author: "Skim"
+date: '2020 10 5 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(viridis)
+library(igraph)
+
+source("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New.R")
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# test <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+# 
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+
+pvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+# Ctrl_CB <- sigmeanvalue_Ctrl.df
+# # sigmeanvalue modification
+# Ctrl_CB[is.na(Ctrl_CB)] <- 0
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# 
+# Ctrl_CB <- data.frame(Ctrl_CB[, c(2, 13:373)])
+# 
+# Ctrl_CB <- Ctrl_CB %>% distinct()
+# 
+# rownames(Ctrl_CB) <- Ctrl_CB$interacting_pair
+# Ctrl_CB <- Ctrl_CB[, -c(1)]
+# 
+# colnames(Ctrl_CB)
+# 
+# ```
+# 
+# 
+# ```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# library(biomaRt)
+# 
+# convertHumanGeneList <- function(x){
+#  
+# require("biomaRt")
+# human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# mouse = useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+#  
+# genesV2 = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+#  
+# return(genesV2)
+# }
+# 
+# sigmeanvalue_Ctrl_celltype.df$complex <- str_count(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_")
+# sigmeanvalue_Ctrl_celltype.df$gene_a1 <- str_extract(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "[^_]+")
+# sigmeanvalue_Ctrl_celltype.df$gene_a2 <- ifelse(sigmeanvalue_Ctrl_celltype.df$complex %in% 2, qdapRegex::ex_between(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_", "_"), " ") %>% unlist
+# 
+# 
+# sigmeanvalue_Ctrl_celltype.df$gene_b1 <- sub(".*_", "", sigmeanvalue_Ctrl_celltype.df$interacting_pair)
+# 
+# genes_a1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a1)
+# colnames(genes_a1) <- c("gene_a1", "mouse_gene_a1")
+# 
+# genes_a2 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a2)
+# 
+# genes_b1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_b1)
+# colnames(genes_b1) <- c("gene_b1", "mouse_gene_b1")
+# 
+# 
+# # last
+# sub(".*_", "", Ctrl_CB$interacting_pair[200:210]) 
+# # first and second
+# sub('_[^_]*$', '', Ctrl_CB$interacting_pair[200:210])
+# # first
+# str_extract(Ctrl_CB$interacting_pair[200:210], "[^_]+") 
+# 
+# str_match("BMPR1B_BMPR2_BMPR1A", "^_\\s*(.*?)\\s_*")
+# 
+# genes <- convertHumanGeneList(sub(".*_", "", Ctrl_CB$interacting_pair))
+# 
+# grepl("_", Ctrl_CB$interacting_pair[200:210]) 
+# 
+# str_count(Ctrl_CB$interacting_pair[200:210], "_")
+# 
+# qdapRegex::ex_between(Ctrl_CB$interacting_pair[200:210], "_", "_")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_a1, by = "gene_a1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_b1, by = "gene_b1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1), ]
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1), ]
+cellphonedb_plot <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("Ctrl", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=Sender_receiver,
+                     colour=sigmeanvalue,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+} 
+
+cellphonedb_plot2 <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("WT", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=interacting_cells,
+                     colour=means,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+}  
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_Ctrl.csv", row.names = 1)
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+
+cellphone <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_Astrocytes.csv", row.names = 1)
+
+
+
+cellphone1 <- cellphone[cellphone$interacting_pair %in% "Bdnf_Ntrk2", ]
+
+cellphonedb_plot(cellphone1) + ggtitle("Bdnf-Ntrk2 pathway")
+
+
+#data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+
+#VlnPlot(data9set_sub.SO, features = "Ntrk2", group.by = "sample", pt.size = 0)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=3, fig.width=6}
+cellphone_Cell_pathway <- function(pathway = "BDNF_SORT1", cell_type = c("MFOL", "MOL")){
+  BDNF_SORT1_Ctrl <- sigmeanvalue_Ctrl.df[sigmeanvalue_Ctrl.df$interacting_pair	== pathway, c(13:373)] %>% t %>% as.data.frame
+  colnames(BDNF_SORT1_Ctrl) <- "WT_means"
+  BDNF_SORT1_Ctrl$interacting_cells <- rownames(BDNF_SORT1_Ctrl)
+
+  BDNF_SORT1_AD <- sigmeanvalue_AD.df[sigmeanvalue_AD.df$interacting_pair	== pathway, c(13:373)] %>% t %>% as.data.frame
+  colnames(BDNF_SORT1_AD) <- "AD_means"
+  BDNF_SORT1_AD$interacting_cells <- rownames(BDNF_SORT1_AD)
+
+  BDNF_SORT1_ADp40KO <- sigmeanvalue_ADp40KO.df[sigmeanvalue_ADp40KO.df$interacting_pair	== pathway, c(13:373)] %>% t %>% as.data.frame
+  colnames(BDNF_SORT1_ADp40KO) <- "ADp40KO_means"
+  BDNF_SORT1_ADp40KO$interacting_cells <- rownames(BDNF_SORT1_ADp40KO)
+
+  BDNF_SORT1 <- inner_join(BDNF_SORT1_Ctrl, BDNF_SORT1_AD, by = "interacting_cells")
+
+  BDNF_SORT1 <- inner_join(BDNF_SORT1, BDNF_SORT1_ADp40KO, by = "interacting_cells")
+ 
+  # subset MOL, MFOL
+  BDNF_SORT1 <- BDNF_SORT1[grepl(paste(cell_type, collapse="|"), BDNF_SORT1$interacting_cells), ]
+
+  # remove non informtive cell types 
+  BDNF_SORT1 <- BDNF_SORT1[!grepl(paste(c("Cajal", "Choroid", "Fibroblast", "Pericyte", "VLMC", "Vascular", "Macrophage"), collapse="|"), BDNF_SORT1$interacting_cells), ]
+
+  rownames(BDNF_SORT1) <- BDNF_SORT1$interacting_cells
+  BDNF_SORT1$interacting_cells <- NULL
+
+  BDNF_SORT1[is.na(BDNF_SORT1)] <- 0
+
+  #BDNF_SORT1 <- BDNF_SORT1[rowSums(BDNF_SORT1) != 0, ]
+
+  BDNF_SORT1$interacting_cells <- rownames(BDNF_SORT1)
+
+  BDNF_SORT1 <- BDNF_SORT1 %>% gather(exp, means, "WT_means":"ADp40KO_means")
+   
+  P_BDNF_SORT1_Ctrl <- pvalue_Ctrl.df[pvalue_Ctrl.df$interacting_pair	== pathway, c(12:372)] %>% t %>% as.data.frame
+  colnames(P_BDNF_SORT1_Ctrl) <- "WT_pvalue"
+  P_BDNF_SORT1_Ctrl$interacting_cells <- rownames(P_BDNF_SORT1_Ctrl)
+
+  P_BDNF_SORT1_AD <- pvalue_AD.df[pvalue_AD.df$interacting_pair	== pathway, c(12:372)] %>% t %>% as.data.frame
+  colnames(P_BDNF_SORT1_AD) <- "AD_pvalue"
+  P_BDNF_SORT1_AD$interacting_cells <- rownames(P_BDNF_SORT1_AD)
+
+  P_BDNF_SORT1_ADp40KO <- pvalue_ADp40KO.df[pvalue_ADp40KO.df$interacting_pair	== pathway, c(12:372)] %>% t %>% as.data.frame
+  colnames(P_BDNF_SORT1_ADp40KO) <- "ADp40KO_pvalue"
+  P_BDNF_SORT1_ADp40KO$interacting_cells <- rownames(P_BDNF_SORT1_ADp40KO)
+
+  P_BDNF_SORT1 <- inner_join(P_BDNF_SORT1_Ctrl, P_BDNF_SORT1_AD, by = "interacting_cells")
+
+  P_BDNF_SORT1 <- inner_join(P_BDNF_SORT1, P_BDNF_SORT1_ADp40KO, by = "interacting_cells")
+
+  rownames(P_BDNF_SORT1) <- P_BDNF_SORT1$interacting_cells
+  P_BDNF_SORT1$interacting_cells <- NULL
+
+  P_BDNF_SORT1[is.na(P_BDNF_SORT1)] <- 0
+
+  P_BDNF_SORT1 <- P_BDNF_SORT1[rownames(P_BDNF_SORT1) %in% BDNF_SORT1$interacting_cells, ]
+
+  P_BDNF_SORT1$interacting_cells <- rownames(P_BDNF_SORT1)
+
+  P_BDNF_SORT1 <- P_BDNF_SORT1 %>% gather(exp, pvalue, "WT_pvalue":"ADp40KO_pvalue")
+    
+  BDNF_SORT1_final <- cbind(BDNF_SORT1, P_BDNF_SORT1)
+  BDNF_SORT1_final$exp <- str_sub(BDNF_SORT1_final$exp, end = -7)
+
+  BDNF_SORT1_final <- BDNF_SORT1_final[, c(1,2,3,6)]
+  BDNF_SORT1_final$logpvalue <- -log10(BDNF_SORT1_final$pvalue)
+
+  BDNF_SORT1_final[sapply(BDNF_SORT1_final, is.infinite)] <- 3
+  
+  return(BDNF_SORT1_final)
+  
+}
+
+
+
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+BDNF_SORT1_final <- cellphone_Cell_pathway(pathway = "BDNF_SORT1", cell_type = c("MFOL", "MOL"))
+
+cellphonedb_plot2(BDNF_SORT1_final)  + ggtitle("Bdnf-sort1 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,8))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+BDNF_NTRK2_final <- cellphone_Cell_pathway(pathway = "BDNF_NTRK2", cell_type = c("Astrocytes"))
+
+cellphonedb_plot2(BDNF_NTRK2_final)  + ggtitle("Bdnf-ntrk2 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,8))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+BDNF_BDNF_final <- cellphone_Cell_pathway(pathway = "NCAM1_BDNF", cell_type = c("MOL", "MFOL"))
+
+cellphonedb_plot2(BDNF_BDNF_final)  + ggtitle("Ncam1-Bdnf pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,10))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6}
+FGF1_FGFR2_final <- cellphone_Cell_pathway(pathway = "FGF1_FGFR2", cell_type = c("MOL", "MFOL", "OPC", "Astrocytes"))
+
+cellphonedb_plot2(FGF1_FGFR2_final)  + ggtitle("FGF1_FGFR2 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,12))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6}
+FGF1_FGFR3_final <- cellphone_Cell_pathway(pathway = "FGF1_FGFR3", cell_type = c("MOL", "MFOL", "OPC", "Astrocytes"))
+
+cellphonedb_plot2(FGF1_FGFR3_final)  + ggtitle("FGF1_FGFR3 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,12))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6}
+ERBB3_NRG1_final <- cellphone_Cell_pathway(pathway = "ERBB3_NRG1", cell_type = c("MOL", "MFOL", "OPC", "Astrocytes"))
+
+cellphonedb_plot2(ERBB3_NRG1_final)  + ggtitle("ERBB3_NRG1 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,25))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+CADM1_CADM1_final <- cellphone_Cell_pathway(pathway = "CADM1_CADM1", cell_type = c("CA1", "CA2_3"))
+
+cellphonedb_plot2(CADM1_CADM1_final)  + ggtitle("	CADM1_CADM1 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,15))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+ADGRL1_NRG1_final <- cellphone_Cell_pathway(pathway = "ADGRL1_NRG1", cell_type = c("MOL", "MFOL", "OPC", "Astrocytes"))
+
+cellphonedb_plot2(CADM1_CADM1_final)  + ggtitle("	ADGRL1_NRG1 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,15))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+VEGFA_GRIN2B_final <- cellphone_Cell_pathway(pathway = "VEGFA_GRIN2B", cell_type = c("Inhibitory_Neurons"))
+
+cellphonedb_plot2(VEGFA_GRIN2B_final)  + ggtitle("VEGFA_GRIN2B pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,16))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+NRP1_VEGFA_final <- cellphone_Cell_pathway(pathway = "NRP1_VEGFA", cell_type = c("Inhibitory_Neurons"))
+
+cellphonedb_plot2(NRP1_VEGFA_final)  + ggtitle("NRP1_VEGFA pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,16))
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+NRP2_VEGFA_final <- cellphone_Cell_pathway(pathway = "NRP2_VEGFA", cell_type = c("Inhibitory_Neurons"))
+
+cellphonedb_plot2(NRP2_VEGFA_final)  + ggtitle("NRP2_VEGFA pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,16))
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+NRG2_ERBB4_final <- cellphone_Cell_pathway(pathway = "NRG2_ERBB4", cell_type = c("Astrocytes", "MOL"))
+
+cellphonedb_plot2(NRG2_ERBB4_final)  + ggtitle("NRG2_ERBB4 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,45))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+
+
+NRG1_LGR4_final <- cellphone_Cell_pathway(pathway = "NRG1_LGR4", cell_type = c("Astrocytes"))
+
+cellphonedb_plot2(NRG1_LGR4_final)  + ggtitle("NRG1_LGR4 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,25))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+EGFR_NRG1_final <- cellphone_Cell_pathway(pathway = "EGFR_NRG1", cell_type = c("Astrocytes"))
+
+cellphonedb_plot2(EGFR_NRG1_final)  + ggtitle("EGFR_NRG1 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,25))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+NRG1_ERBB4_final <- cellphone_Cell_pathway(pathway = "NRG1_ERBB4", cell_type = c("Astrocytes", "MOL", "MFOL"))
+
+cellphonedb_plot2(NRG1_ERBB4_final)  + ggtitle("NRG1_ERBB4 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,35))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+FGFR2_EPHA4_final <- cellphone_Cell_pathway(pathway = "FGFR2_EPHA4", cell_type = c("MOL", "MFOL"))
+
+cellphonedb_plot2(FGFR2_EPHA4_final)  + ggtitle("FGFR2_EPHA4 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,15))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+FGFR1_FGFR2_final <- cellphone_Cell_pathway(pathway = "FGFR1_FGFR2", cell_type = c("MOL", "MFOL"))
+
+cellphonedb_plot2(FGFR1_FGFR2_final)  + ggtitle("	FGFR1_FGFR2 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,15))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=6}
+FGF1_FGFR2_final <- cellphone_Cell_pathway(pathway = "FGF1_FGFR2", cell_type = c("MOL", "MFOL"))
+
+cellphonedb_plot2(FGF1_FGFR2_final)  + ggtitle("	FGF1_FGFR2 pathway") + scale_color_gradient(low="navyblue", high="darkorange1", limits = c(0,15))
+```
+
+

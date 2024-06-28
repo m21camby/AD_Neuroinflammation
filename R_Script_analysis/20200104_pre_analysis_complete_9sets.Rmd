@@ -1,0 +1,139 @@
+---
+title: "9sets_basic_analysis"
+author: "Skim"
+date: '2020 1 4 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(clustree)
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All_025_3p/outs/filtered_feature_bc_matrix/")
+```
+
+### 1. QC plots
+
+The number in here shows the median of each sample
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+data9set.SO <- CreateSeuratObject(counts =  data9set,  min.cells = 3, min.features = 200, project = "AD_Project")
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set.SO@meta.data), split="-"), "[[", 2)
+data9set.SO <- AddMetaData(object=data9set.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set.SO@meta.data)))
+
+# calculate MT genes
+data9set.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set.SO, pattern = "^mt-")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set.SO, features = c("nCount_RNA"), group.by = "gemgroup", pt.size = 0.2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set.SO, features = c("percent.mt"), group.by = "gemgroup", pt.size = 0.2)
+
+```
+
+Filter max = 30000, min 500
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height= 10}
+
+#FeatureScatter(data9set.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+
+data9set.SO <- subset(x = data9set.SO, subset = nCount_RNA < 30000 & nCount_RNA > 500 & percent.mt < 5)  
+
+data9set.SO <- NormalizeData(object = data9set.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+data9set.SO <- FindVariableFeatures(object = data9set.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+data9set.SO <- ScaleData(object = data9set.SO, vars.to.regress = c("percent.mt", "nCount_RNA", "gemgroup"))
+
+# PCA
+data9set.SO <- RunPCA(data9set.SO, features = VariableFeatures(object = data9set.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(data9set.SO, ndims = 50)
+#data9set.SO <- JackStraw(data9set.SO, num.replicate = 100)
+#data9set.SO <- ScoreJackStraw(data9set.SO, dims = 1:50)
+#JackStrawPlot(data9set.SO, dims = 1:20)
+
+
+data9set.SO <- FindNeighbors(object = data9set.SO, reduction = "pca", dims = 1:40)
+#data9set.SO <- FindClusters(object = data9set.SO, resolution =0.2 , verbose = FALSE)
+#data9set.SO <- FindClusters(object = data9set.SO, resolution =0.4 , verbose = FALSE)
+#data9set.SO <- FindClusters(object = data9set.SO, resolution =0.6 , verbose = FALSE)
+data9set.SO <- FindClusters(object = data9set.SO, resolution =0.8 , verbose = FALSE)
+
+#clustree(data9set.SO, prefix = "RNA_snn_res.")
+data9set.SO <- RunTSNE(object = data9set.SO, dims = 1:40, nthreads = 8, perplexity = 30)
+#d1 <- DimPlot(object = data9set.SO, reduction = "tsne")
+#d1
+
+data9set.SO <- RunUMAP(object = data9set.SO, dims = 1:40, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d2 <- DimPlot(object = data9set.SO, reduction = "umap")
+d2
+
+DimPlot(object = data9set.SO, reduction = "umap")
+data.umap <- DimPlot(data9set.SO, reduction = "umap")
+data.umap_cluster <- data.umap$data[data.umap$data$ident == 37, ]
+data.umap + geom_point(data = data.umap_cluster, aes(x = UMAP_1, y = UMAP_2), size = 1) 
+#grid.arrange(d1, d2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=5}
+FeaturePlot(data9set.SO, features = c("nCount_RNA", "Siglech"), by.col = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=6}
+DimPlot(object = data9set.SO, group.by = "gemgroup", pt.size = 0.05)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=6}
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+#table(data9set.SO$sample)
+data9set.SO.df <- as.data.frame(data9set.SO@meta.data)
+
+data9set.SO.markerAD_vs_ADp40KO <- FindMarkers(data9set.SO, ident.1 =  "AD", ident.2 = "ADp40KO", group.by = "sample", test.use = "MAST", logfc.threshold = 0.05, min.pct = 0.01)
+data9set.SO.markerAD_vs_ADp40KO$gene <- rownames(data9set.SO.markerAD_vs_ADp40KO)
+write.csv(data9set.SO.markerAD_vs_ADp40KO, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_complete_9sets_DE_Mast_AD_vs_ADp40KO.csv")
+
+DimPlot(object = data9set.SO, group.by = "sample", pt.size = 0.05, cols = c("#003333", "#FF6600", "#FFFF00"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+data9set.markers <- FindAllMarkers(data9set.SO, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+#data9set.markers_top10 <- data9set.markers %>% group_by(cluster) %>% top_n(n = 20, wt = avg_logFC)
+#datatable(data9set.markers_top10, options = list(pageLength = 10, dom = 'tip'))
+#write.csv(data9set.markers, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200105_data9set_marker.csv")
+#write.csv(data9set.markers_top10, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200105_data9set_marker_top20.csv")
+
+
+# Below is for resolution 0.6
+#save(data9set.SO, file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+# Below is for resolution 0.8
+#save(data9set.SO, file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```

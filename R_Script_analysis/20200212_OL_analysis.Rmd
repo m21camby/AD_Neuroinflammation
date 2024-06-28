@@ -1,0 +1,458 @@
+---
+title: "Oligo analysis"
+author: "Skim"
+date: "2/12/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(fgsea)
+library(MAST)
+library(ggrepel)
+library(biomaRt)
+library(topGO)
+library(viridis)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+
+```{r}
+DoMultiBarHeatmap <- function (object, 
+                               features = NULL, 
+                               cells = NULL, 
+                               group.by = "ident", 
+                               additional.group.by = NULL, 
+                               group.bar = TRUE, 
+                               disp.min = -2.5, 
+                               disp.max = NULL, 
+                               slot = "scale.data", 
+                               assay = NULL, 
+                               label = TRUE, 
+                               size = 5.5, 
+                               hjust = 0, 
+                               angle = 45, 
+                               raster = TRUE, 
+                               draw.lines = TRUE, 
+                               lines.width = NULL, 
+                               group.bar.height = 0.02, 
+                               combine = TRUE) 
+{
+  cells <- cells %||% colnames(x = object)
+  if (is.numeric(x = cells)) {
+    cells <- colnames(x = object)[cells]
+  }
+  assay <- assay %||% DefaultAssay(object = object)
+  DefaultAssay(object = object) <- assay
+  features <- features %||% VariableFeatures(object = object)
+  ## Why reverse???
+  features <- rev(x = unique(x = features))
+  disp.max <- disp.max %||% ifelse(test = slot == "scale.data", 
+                                   yes = 2.5, no = 6)
+  possible.features <- rownames(x = GetAssayData(object = object, 
+                                                 slot = slot))
+  if (any(!features %in% possible.features)) {
+    bad.features <- features[!features %in% possible.features]
+    features <- features[features %in% possible.features]
+    if (length(x = features) == 0) {
+      stop("No requested features found in the ", slot, 
+           " slot for the ", assay, " assay.")
+    }
+    warning("The following features were omitted as they were not found in the ", 
+            slot, " slot for the ", assay, " assay: ", paste(bad.features, 
+                                                             collapse = ", "))
+  }
+  data <- as.data.frame(x = as.matrix(x = t(x = GetAssayData(object = object, 
+                                                             slot = slot)[features, cells, drop = FALSE])))
+
+  object <- suppressMessages(expr = StashIdent(object = object, 
+                                               save.name = "ident"))
+  group.by <- group.by %||% "ident"
+  groups.use <- object[[c(group.by, additional.group.by)]][cells, , drop = FALSE]
+  plots <- list()
+  for (i in group.by) {
+    data.group <- data
+    group.use <- groups.use[, c(i, additional.group.by), drop = FALSE]
+    
+    for(colname in colnames(group.use)){
+      if (!is.factor(x = group.use[[colname]])) {
+        group.use[[colname]] <- factor(x = group.use[[colname]])
+      }  
+    }
+    
+    if (draw.lines) {
+      lines.width <- lines.width %||% ceiling(x = nrow(x = data.group) * 
+                                                0.0025)
+      placeholder.cells <- sapply(X = 1:(length(x = levels(x = group.use[[i]])) * 
+                                           lines.width), FUN = function(x) {
+                                             return(Seurat:::RandomName(length = 20))
+                                           })
+      placeholder.groups <- data.frame(foo=rep(x = levels(x = group.use[[i]]), times = lines.width))
+      placeholder.groups[additional.group.by] = NA
+      colnames(placeholder.groups) <- colnames(group.use)
+      rownames(placeholder.groups) <- placeholder.cells
+      
+      group.levels <- levels(x = group.use[[i]])
+
+      group.use <- sapply(group.use, as.vector)
+      rownames(x = group.use) <- cells
+      
+      group.use <- rbind(group.use, placeholder.groups)
+      
+      na.data.group <- matrix(data = NA, nrow = length(x = placeholder.cells), 
+                              ncol = ncol(x = data.group), dimnames = list(placeholder.cells, 
+                                                                           colnames(x = data.group)))
+      data.group <- rbind(data.group, na.data.group)
+    }
+    
+    #group.use = group.use[order(group.use[[i]]), , drop=F]
+    group.use <- group.use[with(group.use, eval(parse(text=paste('order(', paste(c(i, additional.group.by), collapse=', '), ')', sep='')))), , drop=F]
+    
+    plot <- Seurat:::SingleRasterMap(data = data.group, raster = raster, 
+                            disp.min = disp.min, disp.max = disp.max, feature.order = features, 
+                            cell.order = rownames(x = group.use), group.by = group.use[[i]])
+    
+    if (group.bar) {
+      pbuild <- ggplot_build(plot = plot)
+      group.use2 <- group.use
+      cols <- list()
+      na.group <- Seurat:::RandomName(length = 20)
+      for (colname in rev(x = colnames(group.use2))){
+        if (colname == group.by){
+          colid = paste0('Identity (', colname, ')')
+        } else {
+          colid = colname
+        }
+        
+        if (draw.lines) {
+          levels(x = group.use2[[colname]]) <- c(levels(x = group.use2[[colname]]), na.group)  
+          group.use2[placeholder.cells, colname] <- na.group
+          cols[[colname]] <- c(scales::hue_pal()(length(x = levels(x = group.use[[colname]]))), "#FFFFFF")
+        } else {
+          cols[[colname]] <- c(scales::hue_pal()(length(x = levels(x = group.use[[colname]]))))
+        }
+        names(x = cols[[colname]]) <- levels(x = group.use2[[colname]])
+        
+        
+        y.range <- diff(x = pbuild$layout$panel_params[[1]]$y.range)
+        y.pos <- max(pbuild$layout$panel_params[[1]]$y.range) + y.range * 0.015
+        y.max <- y.pos + group.bar.height * y.range
+        pbuild$layout$panel_params[[1]]$y.range <- c(pbuild$layout$panel_params[[1]]$y.range[1], y.max)
+        
+        plot <- suppressMessages(plot + 
+                                annotation_raster(raster = t(x = cols[[colname]][group.use2[[colname]]]),  xmin = -Inf, xmax = Inf, ymin = y.pos, ymax = y.max) + 
+                                annotation_custom(grob = grid::textGrob(label = colid, hjust = 0, gp = grid::gpar(cex = 0.75)), ymin = mean(c(y.pos, y.max)), ymax = mean(c(y.pos, y.max)), xmin = Inf, xmax = Inf) +
+                                coord_cartesian(ylim = c(0, y.max), clip = "off")) 
+        
+        #temp <- as.data.frame(cols[[colname]][levels(group.use[[colname]])])
+        #colnames(temp) <- 'color'
+        #temp$x <- temp$y <- 1
+        #temp[['name']] <- as.factor(rownames(temp))
+        
+        #temp <- ggplot(temp, aes(x=x, y=y, fill=name)) + geom_point(shape=21, size=5) + labs(fill=colname) + theme(legend.position = "bottom")
+        #legend <- get_legend(temp)
+        #multiplot(plot, legend, heights=3,1)
+        
+        if ((colname == group.by) && label) {
+          x.max <- max(pbuild$layout$panel_params[[1]]$x.range)
+          x.divs <- pbuild$layout$panel_params[[1]]$x.major
+          group.use$x <- x.divs
+          label.x.pos <- tapply(X = group.use$x, INDEX = group.use[[colname]],
+                                FUN = median) * x.max
+          label.x.pos <- data.frame(group = names(x = label.x.pos), 
+                                    label.x.pos)
+          plot <- plot + geom_text(stat = "identity", 
+                                   data = label.x.pos, aes_string(label = "group", 
+                                                                  x = "label.x.pos"), y = y.max + y.max * 
+                                     0.03 * 0.5, angle = angle, hjust = hjust, 
+                                   size = size)
+          plot <- suppressMessages(plot + coord_cartesian(ylim = c(0, 
+                                                                   y.max + y.max * 0.002 * max(nchar(x = levels(x = group.use[[colname]]))) * 
+                                                                     size), clip = "off"))
+        }
+      }
+    }
+    plot <- plot + theme(line = element_blank())
+    plots[[i]] <- plot
+  }
+  if (combine) {
+    plots <- CombinePlots(plots = plots)
+  }
+  return(plots)
+}
+
+```
+### 1. OL cluster analysis
+
+This analysis is done by subset 3 Oligodendrocytes clusters (1,5,6 from res 0.8) and I investigate more in here. It seems cluster 5 only exist AD and ADp40KO models and want to compare this to other cluster. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+data9set_cleaned_OL.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6))
+
+d1 <- DimPlot(object = data9set_cleaned_OL.SO, reduction = "umap", group.by = "seurat_clusters") + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))
+
+#data9set.SO_MG@meta.data$sample <- ifelse((data9set.SO_MG$gemgroup == 1 | data9set.SO_MG$gemgroup == 4 | data9set.SO_MG$gemgroup == 7), "Ctrl", ifelse((data9set.SO_MG$gemgroup == 2 | data9set.SO_MG$gemgroup == 5 | data9set.SO_MG$gemgroup == 8), "AD", "ADp40KO"))
+
+data9set_cleaned_OL.SO@meta.data$sample <- factor(data9set_cleaned_OL.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+d2 <- DimPlot(object = data9set_cleaned_OL.SO, group.by = "sample", pt.size = 0.05) 
+d2 <- d2 + scale_colour_viridis_d() + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))
+grid.arrange(d1, d2, ncol = 2, widths = c(1, 1.15))
+
+```
+
+C4b gene in Oligodendrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=4}
+f1 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("C4b"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "Ctrl", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15)) + ggtitle("C4b gene Ctrl") + theme(legend.position = "none")
+f2 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("C4b"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "AD", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))  + ggtitle("C4b gene AD") + theme(legend.position = "none")
+f3 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("C4b"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "ADp40KO", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))  + ggtitle("C4b gene ADp40KO")
+
+grid.arrange(f1, f2, f3, ncol = 3, widths = c(1, 1, 1.15))
+
+```
+
+Serpina3n gene in Oligodendrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=4}
+f1 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Serpina3n"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "Ctrl", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15)) + ggtitle("Serpina3n gene Ctrl") + theme(legend.position = "none")
+f2 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Serpina3n"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "AD", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))  + ggtitle("Serpina3n gene AD") + theme(legend.position = "none")
+f3 <- FeaturePlot(data9set_cleaned_OL.SO, features = c("Serpina3n"), cells =  rownames(data9set_cleaned_OL.SO@meta.data[data9set_cleaned_OL.SO@meta.data$sample == "ADp40KO", ]), order = TRUE) + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))  + ggtitle("Serpina3n gene ADp40KO")
+
+grid.arrange(f1, f2, f3, ncol = 3, widths = c(1, 1, 1.15))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+
+#data9set.SO_MG@meta.data$sample <- ifelse((data9set.SO_MG$gemgroup == 1 | data9set.SO_MG$gemgroup == 4 | data9set.SO_MG$gemgroup == 7), "Ctrl", ifelse((data9set.SO_MG$gemgroup == 2 | data9set.SO_MG$gemgroup == 5 | data9set.SO_MG$gemgroup == 8), "AD", "ADp40KO"))
+
+data9set_cleaned_OL.SO@meta.data$sample <- factor(data9set_cleaned_OL.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+d2 <- DimPlot(object = data9set_cleaned_OL.SO, group.by = "sample", pt.size = 0.05, split.by = "sample") 
+d2 <- d2 + scale_colour_viridis_d() + scale_x_continuous(limits = c(5,30)) + scale_y_continuous(limits = c(-10, 15))
+#grid.arrange(d1, d2, ncol = 2, widths = c(1, 1.15))
+d2
+```
+
+### 2. exp type composition in each cluster
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=5}
+# ref: http://oshlacklab.com/combes-organoid-paper/07_Combined_Clustering.html#conserved_markers
+
+plot.data <- data9set_cleaned_OL.SO@meta.data %>%
+    dplyr::select(sample, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cluster, sample) %>%
+    summarise(count = n()) %>%
+    mutate(clust_total = sum(count)) %>%
+    mutate(clust_prop = count / clust_total) %>%
+    group_by(sample) %>%
+    mutate(dataset_total = sum(count)) %>%
+    ungroup() %>%
+    mutate(dataset_prop = count / dataset_total)
+
+plot.data$sample <- factor(plot.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+ggplot(plot.data, aes(x = cluster, y = count, fill = sample)) +
+    geom_col() + 
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 15000), expand = c(0,0)) + 
+  scale_fill_viridis_d() + 
+  geom_text(aes(label = count), color = "darkgray", size = 4,  position = position_stack(0.5))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=5}
+ggplot(plot.data, aes(x = cluster, y = clust_prop, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d() + 
+  ylab("percentage") + 
+  geom_text(aes(label = round(clust_prop, 3)), color = "darkgray", size = 4,  position = position_stack(0.5))
+
+```
+
+### 3. DE analysis (cluster 5 vs 1)
+
+In here, I compare DE of cluster 5 vs 1
+
+red dots are padj < 0.01
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=4.5}
+#data9set_cleaned_OL.marker5vs1 <- FindMarkers(data9set_cleaned_OL.SO, ident.1 =  "5", ident.2 = "1", group.by = "seurat_clusters", test.use = "MAST", logfc.threshold = 0, min.pct = 0.01)
+#write.csv(data9set_cleaned_OL.marker5vs1, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster5_vs_1_marker.csv")
+data9set_cleaned_OL.marker5vs1 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster5_vs_1_marker.csv", row.names = 1)
+data9set_cleaned_OL.marker5vs1_padj <- data9set_cleaned_OL.marker5vs1[which(data9set_cleaned_OL.marker5vs1$p_val_adj < 0.01), ]
+
+ggplot(data9set_cleaned_OL.marker5vs1) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_cleaned_OL.marker5vs1_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("DE analysis cluster 5 vs 1") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_cleaned_OL.marker5vs1$p_val_adj) > 30 , rownames(data9set_cleaned_OL.marker5vs1),""))) + 
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(rownames(data9set_cleaned_OL.marker5vs1) %in% c("C4b", "Serpina3n"), rownames(data9set_cleaned_OL.marker5vs1),""))) + theme_classic()
+ 
+```
+
+
+### 4. DE analysis (cluster 5 vs 6)
+
+In here, I compare DE of cluster 5 vs 6
+
+red dots are padj < 0.01
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=4.5}
+#data9set_cleaned_OL.marker5vs6 <- FindMarkers(data9set_cleaned_OL.SO, ident.1 =  "5", ident.2 = "6", group.by = "seurat_clusters", test.use = "MAST", logfc.threshold = 0, min.pct = 0.01)
+#write.csv(data9set_cleaned_OL.marker5vs6, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster5_vs_6_marker.csv")
+data9set_cleaned_OL.marker5vs6 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster5_vs_6_marker.csv", row.names = 1)
+data9set_cleaned_OL.marker5vs6_padj <- data9set_cleaned_OL.marker5vs6[which(data9set_cleaned_OL.marker5vs6$p_val_adj < 0.01), ]
+
+ggplot(data9set_cleaned_OL.marker5vs6) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_cleaned_OL.marker5vs6_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("DE analysis cluster 5 vs 6") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_cleaned_OL.marker5vs6$p_val_adj) > 150 , rownames(data9set_cleaned_OL.marker5vs6),""))) +  
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(rownames(data9set_cleaned_OL.marker5vs6) %in% c("C4b"), rownames(data9set_cleaned_OL.marker5vs6),"")), nudge_y = 20) +  
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(rownames(data9set_cleaned_OL.marker5vs6) %in% c("Serpina3n"), rownames(data9set_cleaned_OL.marker5vs6),"")), nudge_y = 110, nudge_x = 0.1)+ theme_classic()
+ 
+```
+
+### 5. DE analysis (cluster 1 vs 6)
+
+In here, I compare DE of cluster 1 vs 6
+
+red dots are padj < 0.01
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=4.5}
+#data9set_cleaned_OL.marker1vs6 <- FindMarkers(data9set_cleaned_OL.SO, ident.1 =  "1", ident.2 = "6", group.by = "seurat_clusters", test.use = "MAST", logfc.threshold = 0, min.pct = 0.01)
+#write.csv(data9set_cleaned_OL.marker1vs6, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster1_vs_6_marker.csv")
+data9set_cleaned_OL.marker1vs6 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_analysis_Cluster1_vs_6_marker.csv", row.names = 1)
+data9set_cleaned_OL.marker1vs6_padj <- data9set_cleaned_OL.marker1vs6[which(data9set_cleaned_OL.marker1vs6$p_val_adj < 0.01), ]
+
+data9set_cleaned_OL.marker1vs6_C4b <- data9set_cleaned_OL.marker1vs6[rownames(data9set_cleaned_OL.marker1vs6) == "C4b", ]
+
+ggplot(data9set_cleaned_OL.marker1vs6) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_cleaned_OL.marker1vs6_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("DE analysis cluster 1 vs 6") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_cleaned_OL.marker1vs6$p_val_adj) > 150 , rownames(data9set_cleaned_OL.marker1vs6),""))) + theme_classic() + geom_text(data = data9set_cleaned_OL.marker1vs6_C4b, aes(x = avg_logFC, y = -log10(p_val_adj), label = rownames(data9set_cleaned_OL.marker1vs6_C4b))) 
+```
+
+### 6. DE analysis (cluster 5 AD vs ADp40KO)
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=4.5}
+data9set_cleaned_OL_C5.SO <- subset(data9set_cleaned_OL.SO, subset = seurat_clusters %in% c(5))
+
+#data9set_cleaned_OL_C5.markerADvsADp40KO <- FindMarkers(data9set_cleaned_OL_C5.SO, ident.1 =  "AD", ident.2 = "ADp40KO", group.by = "sample", test.use = "MAST", logfc.threshold = 0, min.pct = 0.01)
+#write.csv(data9set_cleaned_OL_C5.markerADvsADp40KO, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_C5_analysis_AD_vs_ADp40KO_marker.csv")
+data9set_cleaned_OL_C5.markerADvsADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200212_OL_C5_analysis_AD_vs_ADp40KO_marker.csv", row.names = 1)
+
+data9set_cleaned_OL_C5.markerADvsADp40KO_padj <- data9set_cleaned_OL_C5.markerADvsADp40KO[which(data9set_cleaned_OL_C5.markerADvsADp40KO$p_val_adj < 0.01), ]
+
+ggplot(data9set_cleaned_OL_C5.markerADvsADp40KO) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_cleaned_OL_C5.markerADvsADp40KO_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("DE analysis cluster 5 AD vs ADp40KO") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_cleaned_OL_C5.markerADvsADp40KO$p_val_adj) > 30 , rownames(data9set_cleaned_OL_C5.markerADvsADp40KO),""))) + 
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(rownames(data9set_cleaned_OL_C5.markerADvsADp40KO) %in% c("C4b", "Serpina3n"), rownames(data9set_cleaned_OL_C5.markerADvsADp40KO),"")), force = 1, nudge_y = 15) + theme_classic()
+```
+
+#### 6.2 GO analysis
+
+left: up, right: down
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+GO_data9set_cleaned_OL_C5.markerADvsADp40KO <- scRNA_topGO(data9set_cleaned_OL_C5.markerADvsADp40KO, InterestGenes = "up")
+
+  # genes for each GO term
+  for(j in 1:30){
+  ID <- GO_data9set_cleaned_OL_C5.markerADvsADp40KO$GO.ID[j]
+  GO_data9set_cleaned_OL_C5.markerADvsADp40KO[j, "genes"] <- ifelse(length(genesOfInterest %in% allGO_MF[ID][[1]]) > 0, paste(genesOfInterest[genesOfInterest %in% allGO_MF[ID][[1]]], collapse=', ' ), NA)
+  }
+
+  for(j in 31:60){
+  ID <- GO_data9set_cleaned_OL_C5.markerADvsADp40KO$GO.ID[j]
+  GO_data9set_cleaned_OL_C5.markerADvsADp40KO[j, "genes"] <- ifelse(length(genesOfInterest %in% allGO_BP[ID][[1]]) > 0, paste(genesOfInterest[genesOfInterest %in% allGO_BP[ID][[1]]], collapse=', '), NA)
+  }
+
+  for(j in 61:90){
+  ID <- GO_data9set_cleaned_OL_C5.markerADvsADp40KO$GO.ID[j]
+  GO_data9set_cleaned_OL_C5.markerADvsADp40KO[j, "genes"] <- ifelse(length(genesOfInterest %in% allGO_CC[ID][[1]]) > 0, paste(genesOfInterest[genesOfInterest %in% allGO_CC[ID][[1]]], collapse=', '), NA )
+  }
+
+GO_figure <- function(GO.df){
+  GO.df <- GO.df[c(31:60), ]
+  GO.df <- GO.df[GO.df$Annotated < 500 , ]
+  GO.df <- GO.df[c(1:10), ]
+  GO.df$Term <- factor(GO.df$Term, levels = GO.df$Term[order(GO.df$Fisher.elim, decreasing = TRUE)])
+
+  ggplot(GO.df, aes(x=gene_ratio, 
+               y=Term, 
+               colour=Fisher.elim, 
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="p value", size="Significant")
+}
+
+
+g1 <- GO_figure(GO_data9set_cleaned_OL_C5.markerADvsADp40KO)
+
+GO_data9set_cleaned_OL_C5.markerADvsADp40KO2 <- scRNA_topGO(data9set_cleaned_OL_C5.markerADvsADp40KO, InterestGenes = "down")
+
+g2 <- GO_figure(GO_data9set_cleaned_OL_C5.markerADvsADp40KO2)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+``````{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+sessionInfo()
+#data9set_cleaned_OL.SO_small <- subset(data9set_cleaned_OL.SO, downsample = 1000)
+
+#DoHeatmap(data9set_cleaned_OL.SO_small, features = c("Ttr", "Kirrel3"), group.by = c("sample")) + scale_fill_viridis()
+
+#DoMultiBarHeatmap(data9set_cleaned_OL.SO_small, features = c("Ttr", "Kirrel3"), group.by = c("sample"),  additional.group.by = "seurat_clusters") + scale_fill_viridis()
+
+
+```
+
+
+
+
+
+
+
+

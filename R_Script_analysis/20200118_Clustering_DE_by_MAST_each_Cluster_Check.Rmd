@@ -1,0 +1,44 @@
+---
+title: "DE_check_genes"
+author: "Skim"
+date: '2020 1 18 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(Seurat)
+
+# Cluster 3
+
+data9set_C3_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_3AD_Ctrl.csv", row.names = 1)
+data9set_C3_AD_Ctrl$gene <- rownames(data9set_C3_AD_Ctrl)
+
+data9set_C3_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_3AD_ADp40KO.csv", row.names = 1)
+data9set_C3_AD_ADp40KO$gene <- rownames(data9set_C3_AD_ADp40KO)
+
+# Cluster 8 
+data9set_C8_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_8AD_Ctrl.csv", row.names = 1)
+data9set_C8_AD_Ctrl$gene <- rownames(data9set_C8_AD_Ctrl)
+
+data9set_C8_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_8AD_ADp40KO.csv", row.names = 1)
+data9set_C8_AD_ADp40KO$gene <- rownames(data9set_C8_AD_ADp40KO)
+
+data9set_C8_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_8ADp40KO_Ctrl.csv", row.names = 1)
+data9set_C8_ADp40KO_Ctrl$gene <- rownames(data9set_C8_ADp40KO_Ctrl)
+
+# Cluster 0 Dentate
+data9set_C0_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_0AD_Ctrl.csv", row.names = 1)
+data9set_C0_AD_Ctrl$gene <- rownames(data9set_C0_AD_Ctrl)
+```
+
+```{r fig.height= 8 }
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+VlnPlot(object = data9set.SO, features = c("Il12b", "Il4", "Cxcl1", "Il1b"), group.by = "sample", ncol = 2)
+```
+
+```{r}
+
+
+```
+

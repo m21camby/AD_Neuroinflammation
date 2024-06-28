@@ -1,0 +1,87 @@
+---
+title: "Rmst in Subiculum"
+author: "Skim"
+date: '2020 6 4 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+Check Rmst in Subiculum cell types
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height= 5}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+
+data9set_cleaned_subi.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(14, 15, 17, 19, 20))
+FeaturePlot(data9set_cleaned.SO, features = "Sox2ot")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height= 5}
+data9set_cleaned_subi_ctrl.SO <- subset(data9set_cleaned_subi.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_subi_AD.SO <- subset(data9set_cleaned_subi.SO, subset = sample %in% "AD")
+data9set_cleaned_subi_ADp40KO.SO <- subset(data9set_cleaned_subi.SO, subset = sample %in% "ADp40KO")
+
+data9set_cleaned_subi_ctrl.SO@active.ident <- data9set_cleaned_subi_ctrl.SO$seurat_clusters
+data9set_cleaned_subi_AD.SO@active.ident <- data9set_cleaned_subi_AD.SO$seurat_clusters
+data9set_cleaned_subi_ADp40KO.SO@active.ident <- data9set_cleaned_subi_ADp40KO.SO$seurat_clusters
+
+
+d1 <- DimPlot(object = data9set_cleaned_subi_ctrl.SO, reduction = "umap") + xlim(-8, 10) + ylim(-8, 18) + ggtitle("WT subiculum")
+d2 <- DimPlot(object = data9set_cleaned_subi_AD.SO, reduction = "umap") + xlim(-8, 10) + ylim(-8, 18) + ggtitle("AD subiculum")
+d3 <- DimPlot(object = data9set_cleaned_subi_ADp40KO.SO, reduction = "umap") + xlim(-8, 10) + ylim(-8, 18) + ggtitle("ADp40KO subiculum")
+
+grid.arrange(d1, d2, d3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height= 5}
+data9set_cleaned_subi.SO@active.ident <- data9set_cleaned_subi.SO$seurat_clusters
+
+#DimPlot(object = data9set_cleaned_subi.SO, reduction = "umap") + xlim(-8, 10) + ylim(-8, 18)
+
+#FeaturePlot(data9set_cleaned_subi.SO, features = "Sox2ot") + xlim(-8, 10) + ylim(-8, 18)
+
+f1 <- FeaturePlot(data9set_cleaned_subi_ctrl.SO, features = "Rmst") + xlim(-8, 10) + ylim(-8, 18)
+f2 <- FeaturePlot(data9set_cleaned_subi_AD.SO, features = "Rmst") + xlim(-8, 10) + ylim(-8, 18)
+f3 <- FeaturePlot(data9set_cleaned_subi_ADp40KO.SO, features = "Rmst") + xlim(-8, 10) + ylim(-8, 18)
+
+grid.arrange(f1, f2, f3, ncol = 3)
+
+
+# data9set_cleaned_subi.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Nes", data9set_cleaned_subi.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height= 5}
+
+#FeaturePlot(data9set_cleaned_subi.SO, features = "Sox2ot") + xlim(-8, 10) + ylim(-8, 18)
+
+f1 <- FeaturePlot(data9set_cleaned_subi_ctrl.SO, features = "Sox2ot") + xlim(-8, 10) + ylim(-8, 18)
+f2 <- FeaturePlot(data9set_cleaned_subi_AD.SO, features = "Sox2ot") + xlim(-8, 10) + ylim(-8, 18)
+f3 <- FeaturePlot(data9set_cleaned_subi_ADp40KO.SO, features = "Sox2ot") + xlim(-8, 10) + ylim(-8, 18)
+
+grid.arrange(f1, f2, f3, ncol = 3)
+
+
+#data9set_cleaned_subi.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Sox", data9set_cleaned_subi.SO@assays$RNA@counts@Dimnames[[1]])]
+```
+
+

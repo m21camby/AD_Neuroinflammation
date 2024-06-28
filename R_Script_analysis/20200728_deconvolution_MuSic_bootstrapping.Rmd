@@ -1,0 +1,981 @@
+---
+title: "cell type proportion"
+author: "Skim"
+date: '2020 7 28 '
+output: html_document
+---
+
+bootstrapping = replacement from a set of data
+statistical method로 original sample에서 sampling with replacement로 sampling distribution을 estimating하는 방법이다. 주로 sample의 accuracy를 측정한다. (예로 bias, variance, confidence intervals, prediction error ) Bootstraping의 basic idea는 sample data에서 population을 inference하는 것이다. 즉, resample data을 통해서 true sample을 측정하는 것이다. 
+
+```{r warning=FALSE, message=FALSE}
+library(MuSiC)
+library(xbioc)
+library(dplyr)
+library(biomaRt)
+require(Biobase)
+source("/data/rajewsky/home/skim/Microglia_Heppner/R_Scripts/20190411_Source_Correlation.R")
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/Remove_duplicated_genes.R")
+```
+
+#### 1. loading Bulk data
+
+```{r warning=FALSE, message=FALSE}
+DGEm <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/Final_DF.csv", row.names = 1, check.names = FALSE, sep = "\t")
+
+
+mouse_genes <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200311_Bulk_Analysis_mouse_genes_biomaRt.txt", stringsAsFactors = FALSE)
+
+# remove duplicated ENSEMBL and mgi_symbol information
+mouse_genes_final.df <- Remove_duplicated(mouse_genes)
+
+
+DGEm$ensembl_gene_id_version <- rownames(DGEm)
+DGEm <- left_join(DGEm, mouse_genes_final.df, by = "ensembl_gene_id_version")
+# remove NA
+DGEm$mgi_symbol <- ifelse(is.na(DGEm$mgi_symbol), DGEm$ensembl_gene_id_version, DGEm$mgi_symbol)
+
+# renamed Cdr1as
+DGEm[DGEm$ensembl_gene_id_version == "ENSMUSG00000071753.12", "ensembl_gene_id_version"] <- "Cdr1os"
+DGEm[DGEm$ensembl_gene_id_version == "Cdr1os", "mgi_symbol"] <- "Cdr1os"
+
+# mgi to rownames and remove unnecessary columns
+rownames(DGEm) <- DGEm$mgi_symbol
+DGEm$mgi_symbol <- NULL
+DGEm$ensembl_gene_id_version <- NULL
+
+# remove genes where zero count is more than 2 out of 9 samples
+DGEm <- DGEm[apply(DGEm == 0, 1, sum) < 7, ]
+colnames(DGEm) <- c("WT-3", "ADp40KO-2", "WT-2", "ADp40KO-1", "AD-1", "AD-2", "WT-1", "AD-3", "ADp40KO-3")
+```
+
+#### 2. divide bulk transcriptome to CTRL and AD and ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+# CTRL
+DGEm_Ctrl <- DGEm[, c(1,3,7)]
+# AD
+DGEm_AD <- DGEm[, c(5,6,8)]
+# ADp40KO
+DGEm_ADp40KO <- DGEm[, c(2,4,9)]
+
+```
+
+#### 3. scRNA-seq data manipulation
+
+This data is from DroNc-seq Hippocampus. Meta data is created by Deconvolution_DroNc_seq_Meta_Data_Manipulation.py file
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_ctrl.SO <- subset(data9set_cleaned.SO, subset = sample %in% "Ctrl")
+data9set_AD.SO <- subset(data9set_cleaned.SO, subset = sample %in% "AD")
+data9set_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample %in% "ADp40KO")
+
+#rm(data9set_cleaned.SO)
+
+# Meta data with adding cell type
+# Ctrl
+data9set_ctrl.SO$cell_types <- data9set_ctrl.SO@active.ident
+
+cell_type <- data9set_ctrl.SO@meta.data %>% mutate(cell_type = case_when(cell_types %in% c("Dentate Gyrus", "CA2/CA3 Neuron", "Subiculum","CA1 Neurons", "Neurons") ~ "EX_Neurons",
+                                                                           cell_types %in% "Inhibitory Interneurons" ~ "IN_Neurons",
+                                                                           cell_types %in% "Oligo" ~ "Oligo",
+                                                                           cell_types %in% "Microglia" ~ "Microglia",
+                                                                           cell_types %in% "OPC" ~ "OPC",
+                                                                           cell_types %in% "Astrocytes" ~ "Astrocytes",
+                                                                           cell_types %in% c("Vascular Endothelial", "VLMC") ~ "Vascular",
+                                                                         cell_types %in% c("Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus") ~ "Rest"))
+
+
+data9set_ctrl.SO$cell_type <- cell_type$cell_type
+
+# AD
+data9set_AD.SO$cell_types <- data9set_AD.SO@active.ident
+
+cell_type <- data9set_AD.SO@meta.data %>% mutate(cell_type = case_when(cell_types %in% c("Dentate Gyrus", "CA2/CA3 Neuron", "Subiculum","CA1 Neurons", "Neurons") ~ "EX_Neurons",
+                                                                           cell_types %in% "Inhibitory Interneurons" ~ "IN_Neurons",
+                                                                           cell_types %in% "Oligo" ~ "Oligo",
+                                                                           cell_types %in% "Microglia" ~ "Microglia",
+                                                                           cell_types %in% "OPC" ~ "OPC",
+                                                                           cell_types %in% "Astrocytes" ~ "Astrocytes",
+                                                                           cell_types %in% c("Vascular Endothelial", "VLMC") ~ "Vascular",
+                                                                           cell_types %in% c("Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus") ~ "Rest"))
+
+data9set_AD.SO$cell_type <- cell_type$cell_type
+
+
+# ADp40KO
+data9set_ADp40KO.SO$cell_types <- data9set_ADp40KO.SO@active.ident
+
+cell_type <- data9set_ADp40KO.SO@meta.data %>% mutate(cell_type = case_when(cell_types %in% c("Dentate Gyrus", "CA2/CA3 Neuron", "Subiculum","CA1 Neurons", "Neurons") ~ "EX_Neurons",
+                                                                           cell_types %in% "Inhibitory Interneurons" ~ "IN_Neurons",
+                                                                           cell_types %in% "Oligo" ~ "Oligo",
+                                                                           cell_types %in% "Microglia" ~ "Microglia",
+                                                                           cell_types %in% "OPC" ~ "OPC",
+                                                                           cell_types %in% "Astrocytes" ~ "Astrocytes",
+                                                                           cell_types %in% c("Vascular Endothelial", "VLMC") ~ "Vascular",
+                                                                           cell_types %in% c("Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus") ~ "Rest"))
+
+
+data9set_ADp40KO.SO$cell_type <- cell_type$cell_type
+
+
+
+# Create meta
+meta_data9set_ctrl <- data9set_ctrl.SO@meta.data %>% as.data.frame
+meta_data9set_AD <- data9set_AD.SO@meta.data %>% as.data.frame
+meta_data9set_ADp40KO <- data9set_ADp40KO.SO@meta.data %>% as.data.frame
+
+```
+
+#### 4. Act-seq Hippocampus
+
+```{r warning=FALSE, message=FALSE}
+# scRNA-seq & Meta data loading
+
+MeA.data <- read.table("/data/rajewsky/home/skim/organoids_Aga/Deconvolution/Act-seq/GSE103976_MeA_AllCells_DGE.txt.gz", row.names = 1) # 20679 cells
+MeA.data_Meta_Data <- read.table("/data/rajewsky/home/skim/organoids_Aga/Deconvolution/Meta_data_Act_seq_MuSiC.txt", row.names = 1)
+
+MeA_manipulation <- function(MeA.data){
+  MeA.data.CTL <- MeA.data[, grep("CTL", colnames(MeA.data), value = TRUE)] # 6037 cells
+  MeA.data.OPC <- MeA.data.CTL[, grepl("*_OPC", colnames(MeA.data.CTL))]
+  MeA.data.OL <- MeA.data.CTL[, grepl("*_OL", colnames(MeA.data.CTL))]
+  MeA.data.AS <- MeA.data.CTL[, grepl("*_AS", colnames(MeA.data.CTL))]
+  MeA.data.N <- MeA.data.CTL[, grepl("*_N", colnames(MeA.data.CTL))]
+  MeA.data.MG <- MeA.data.CTL[, grepl("*_MG", colnames(MeA.data.CTL))]
+  MeA.data.EN <- MeA.data.CTL[, grepl("*_EN", colnames(MeA.data.CTL))]
+
+  MeA.data.df <- cbind(MeA.data.N, MeA.data.AS, MeA.data.OL, MeA.data.OPC, MeA.data.MG, MeA.data.EN)
+  return(MeA.data.df)
+}
+MeA.data.df <- MeA_manipulation(MeA.data)
+
+# Meta data col names change from - to .
+rownames(MeA.data_Meta_Data) <- gsub("-", ".", rownames(MeA.data_Meta_Data))
+  
+```
+
+#### 5. Normalized by library size (Optional)
+
+```{r warning=FALSE, message=FALSE}
+# bulk data normalization
+DGEm_Ctrl_Normal <- Library_size_Normalization(DGEm_Ctrl, 1e7)
+DGEm_AD_Normal <- Library_size_Normalization(DGEm_AD, 1e7)
+DGEm_ADp40KO_Normal <- Library_size_Normalization(DGEm_ADp40KO, 1e7)
+
+# scRNA-seq normalized
+data9set_ctrl.df <- GetAssayData(data9set_ctrl.SO, slot = "counts")
+data9set_ctrl.df_Normal <- Library_size_Normalization(data9set_ctrl.df, 1e3)
+
+data9set_AD.df <- GetAssayData(data9set_AD.SO, slot = "counts")
+data9set_AD.df_Normal <- Library_size_Normalization(data9set_AD.df, 1e3)
+
+data9set_ADp40KO.df <- GetAssayData(data9set_ADp40KO.SO, slot = "counts")
+data9set_ADp40KO.df_Normal <- Library_size_Normalization(data9set_ADp40KO.df, 1e3)
+
+MeA.data.df_Normal <- Library_size_Normalization(MeA.data.df, 1e3)
+
+
+```
+
+
+
+#### 6. Microglia bulk transcriptome ExpressionSet
+
+```{r warning=FALSE, message=FALSE}
+#DGEmM_Meta.data <- data.frame(sampleID = seq(1,45,1), 
+#                              SubjectName = colnames(DGEmM), 
+#                              age = round(runif(45, min=1, max=70)),
+#                              bmi = round(runif(45, min=1, max=5)),
+#                              hba1c = round(runif(45, min=1, max=20)),
+#                              gender = rep("Male", 45),
+#                              tissue = rep("Brain", 45))
+#rownames(DGEmM_Meta.data) <- colnames(DGEmM)
+#DGEmM_metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "Age", "Bmi", "Hba1c", "Gender", "Tissue"), 
+#                       row.names = c("sampleID", "SubjectName", "age", "bmi", "hba1c", "gender", "tissue"))
+
+#DGEmM_phenoData <- new("AnnotatedDataFrame", data = DGEmM_Meta.data, varMetadata = DGEmM_metadata)
+
+# Control only
+DGEmM_Ctrl_func <- function(Matrix_object){
+  DGEmM_Ctrl_Meta.data <- data.frame(sampleID = seq(1,3,1), 
+                                SubjectName = colnames(Matrix_object), 
+                                age = round(runif(3, min=1, max=70)),
+                                bmi = round(runif(3, min=1, max=5)),
+                                hba1c = round(runif(3, min=1, max=20)),
+                                gender = rep("Male", 3),
+                                tissue = rep("Brain", 3))
+  rownames(DGEmM_Ctrl_Meta.data) <- colnames(Matrix_object)
+
+  DGEmM_Ctrl_metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "Age", "Bmi", "Hba1c", "Gender", "Tissue"), 
+                       row.names = c("sampleID", "SubjectName", "age", "bmi", "hba1c", "gender", "tissue"))
+
+  DGEmM_Ctrl_phenoData <- new("AnnotatedDataFrame", data = DGEmM_Ctrl_Meta.data, varMetadata = DGEmM_Ctrl_metadata)
+  
+  return(DGEmM_Ctrl_phenoData)
+  
+}
+
+DGEm_Ctrl_phenoData <- DGEmM_Ctrl_func(DGEm_Ctrl_Normal)
+DGEm_AD_phenoData <- DGEmM_Ctrl_func(DGEm_AD_Normal)
+
+DGEm_ADp40KO_phenoData <- DGEmM_Ctrl_func(DGEm_ADp40KO_Normal)
+
+
+
+```
+
+### 7. intersect genes Bulk and scRNA-seq and create bulk expression Set 
+
+```{r warning=FALSE, message=FALSE}
+DGEm_Ctrl_Normal_2 <- DGEm_Ctrl_Normal[rownames(DGEm_Ctrl_Normal) %in% intersect(rownames(DGEm_Ctrl_Normal), rownames(data9set_ctrl.df)), ]
+DGEm_Set_Ctrl <- new("ExpressionSet", exprs = as.matrix(DGEm_Ctrl_Normal_2), phenoData = DGEm_Ctrl_phenoData)
+
+DGEm_AD_Normal_2 <- DGEm_AD_Normal[rownames(DGEm_AD_Normal) %in% intersect(rownames(DGEm_AD_Normal), rownames(data9set_AD.df)), ]
+DGEm_Set_AD <- new("ExpressionSet", exprs = as.matrix(DGEm_AD_Normal_2), phenoData = DGEm_AD_phenoData)
+
+
+DGEm_ADp40KO_Normal_2 <- DGEm_ADp40KO_Normal[rownames(DGEm_ADp40KO_Normal) %in% intersect(rownames(DGEm_ADp40KO_Normal), rownames(data9set_ADp40KO.df)), ]
+DGEm_Set_ADp40KO <- new("ExpressionSet", exprs = as.matrix(DGEm_ADp40KO_Normal_2), phenoData = DGEm_ADp40KO_phenoData)
+
+
+```
+
+
+#### 8. create scRNA-seq ExpressionSet  
+
+This is for DroNc-seq
+
+```{r warning=FALSE, message=FALSE}
+
+meta_data9set_ctrl$sampleID <- rownames(meta_data9set_ctrl)
+meta_data9set_ctrl2 <- meta_data9set_ctrl[,c(11, 8, 7, 10)]
+
+
+#table(meta_data9set_ctrl2$cell_type)
+
+meta_data9set_AD$sampleID <- rownames(meta_data9set_AD)
+meta_data9set_AD2 <- meta_data9set_AD[,c(11, 8, 7, 10)]
+
+meta_data9set_ADp40KO$sampleID <- rownames(meta_data9set_ADp40KO)
+meta_data9set_ADp40KO2 <- meta_data9set_ADp40KO[,c(11, 8, 7, 10)]
+
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ctrl <- new("AnnotatedDataFrame", data = meta_data9set_ctrl2, varMetadata = metadata)
+
+scRNA_Set_ctrl <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal), phenoData = phenoData_ctrl)
+
+scRNA_Set_ctrl_Not_normal <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df), phenoData = phenoData_ctrl)
+
+phenoData_AD <- new("AnnotatedDataFrame", data = meta_data9set_AD2, varMetadata = metadata)
+scRNA_Set_AD <- new("ExpressionSet", exprs = as.matrix(data9set_AD.df_Normal), phenoData = phenoData_AD)
+
+phenoData_ADp40KO <- new("AnnotatedDataFrame", data = meta_data9set_ADp40KO2, varMetadata = metadata)
+scRNA_Set_ADp40KO <- new("ExpressionSet", exprs = as.matrix(data9set_ADp40KO.df_Normal), phenoData = phenoData_ADp40KO)
+
+```
+
+#### 9. create Act-seq data set
+
+```{r warning=FALSE, message=FALSE}
+DGEm_Ctrl_Normal_Act <- DGEm_Ctrl_Normal[rownames(DGEm_Ctrl_Normal) %in% intersect(rownames(DGEm_Ctrl_Normal), rownames(MeA.data.df_Normal)), ]
+DGEm_Set_Ctrl_Act <- new("ExpressionSet", exprs = as.matrix(DGEm_Ctrl_Normal_Act), phenoData = DGEm_Ctrl_phenoData)
+
+
+# scRNA-seq data ExpressionSet create
+phenoData_Act <- new("AnnotatedDataFrame", data = MeA.data_Meta_Data, varMetadata = metadata)
+
+MeA.data.df_Normal <- MeA.data.df_Normal[rownames(MeA.data.df_Normal) %in% intersect(rownames(MeA.data.df_Normal), rownames(DGEm_Ctrl_Normal)), ]
+
+scRNA_Set_Act <- new("ExpressionSet", exprs = as.matrix(MeA.data.df_Normal), phenoData = phenoData_Act)
+
+# scRNA-seq data ExpressionSet create no normalization
+
+MeA.data.df <- MeA.data.df[rownames(MeA.data.df) %in% intersect(rownames(MeA.data.df), rownames(DGEm_Ctrl_Normal)), ]
+
+scRNA_Set_Act_no_normal <- new("ExpressionSet", exprs = as.matrix(MeA.data.df), phenoData = phenoData_Act)
+
+
+
+```
+
+Incorporating **"cell size"** parameters into RNA-based deconvolution algorithms can successfully recover cellular fractions in homogenate brain RNA-seq data. The MuSiC algorithm particularly has an interpretable "cell size" (see Methods) parameter used in the deconvolution process. In summary, when we used a region-matched appropriate dataset - NAc snRNA data - as the reference, or to derive estimates of the cell size, we observed that estimates of the cell type proportions generally improved
+
+Neuronal/glial ratio = 5.19 (NAc all genes)
+
+#### 10. Ctrl, broad cell type & without normalized & cell size
+
+```{r warning=FALSE}
+cell_size0 = data.frame(cell_type = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), 
+                       size = c(29930.025, 5778.202, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202))
+
+est.prop.set0 <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl_Not_normal, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), cell_size = cell_size0, verbose = T)
+
+
+saveRDS(est.prop.set0, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Not_normal.rda")
+
+est.prop.set0 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Not_normal.rda")
+
+est.prop.set0.df <- as.data.frame(est.prop.set0$Est.prop.weighted)
+
+```
+
+#### 11. Ctrl, broad cell type & with normalized & cell size or w/o
+
+```{r warning=FALSE}
+cell_size = data.frame(cell_type = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), 
+                       size = c(29930.025, 5778.202, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202))
+
+est.prop.set <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), verbose = T)
+
+
+
+saveRDS(est.prop.set, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_no_cell_size.rda")
+
+est.prop.set <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_no_cell_size.rda")
+
+est.prop.set.df <- as.data.frame(est.prop.set$Est.prop.weighted)
+# 100*(colMeans(est.prop.set.df))
+
+
+#################
+# including size
+#################
+est.prop.set2 <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), cell_size = cell_size, verbose = T)
+
+saveRDS(est.prop.set2, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size.rda")
+
+est.prop.set_2 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size.rda")
+est.prop.set2.df <- as.data.frame(est.prop.set_2$Est.prop.weighted)
+
+
+```
+
+## Different cell types test more broad
+
+```{r warning=FALSE, message=FALSE}
+# Meta data with adding cell type
+# Ctrl
+data9set_ctrl.SO$cell_types <- data9set_ctrl.SO@active.ident
+
+cell_type <- data9set_ctrl.SO@meta.data %>% mutate(cell_type = case_when(cell_types %in% c("Dentate Gyrus", "CA2/CA3 Neuron", "Subiculum","CA1 Neurons", "Neurons", "Inhibitory Interneurons") ~ "Neurons",
+                                                                           cell_types %in% c("Oligo", "OPC") ~ "Oligo",
+                                                                           cell_types %in% "Microglia" ~ "Microglia",
+                                                                           cell_types %in% "Astrocytes" ~ "Astrocytes",
+                                                                           cell_types %in% c("Vascular Endothelial", "VLMC", "Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus") ~ "Rest"))
+
+
+data9set_ctrl.SO$cell_type <- cell_type$cell_type
+
+# Create meta
+meta_data9set_ctrl <- data9set_ctrl.SO@meta.data %>% as.data.frame
+```
+
+```{r warning=FALSE, message=FALSE}
+
+meta_data9set_ctrl$sampleID <- rownames(meta_data9set_ctrl)
+meta_data9set_ctrl2 <- meta_data9set_ctrl[,c(11, 8, 7, 10)]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ctrl <- new("AnnotatedDataFrame", data = meta_data9set_ctrl2, varMetadata = metadata)
+scRNA_Set_ctrl <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal), phenoData = phenoData_ctrl)
+```
+
+#### 12. Ctrl, more broad cell type & with normalized & cell size 
+
+```{r warning=FALSE}
+cell_size2 = data.frame(cell_type = c("Neurons", "Oligo", "Microglia", "Astrocytes","Rest"), 
+                       size = c(29930.025, 5778.202, 5778.202,
+                                5778.202, 5778.202))
+
+#################
+# including size
+#################
+est.prop.set3 <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("Neurons", "Oligo", "Microglia", "Astrocytes","Rest"), 
+                           cell_size = cell_size2, verbose = T)
+
+
+saveRDS(est.prop.set3, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_2nd.rda")
+
+est.prop.set3 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_2nd.rda")
+
+est.prop.set3.df <- as.data.frame(est.prop.set3$Est.prop.weighted)
+
+
+```
+
+
+```{r}
+
+# Remove Rest
+meta_data9set_ctrl_sub <- meta_data9set_ctrl2[!meta_data9set_ctrl2$cell_type %in% "Rest", ]
+
+# Remove Rest
+data9set_ctrl.df_Normal_sub <- data9set_ctrl.df_Normal[, colnames(data9set_ctrl.df_Normal) %in% meta_data9set_ctrl_sub$sampleID]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ctrl <- new("AnnotatedDataFrame", data = meta_data9set_ctrl_sub, varMetadata = metadata)
+scRNA_Set_ctrl <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal_sub), phenoData = phenoData_ctrl)
+```
+
+#### 13. Ctrl, more broad cell type (no rest) & with normalized & cell size 
+
+```{r warning=FALSE}
+cell_size4 = data.frame(cell_type = c("Neurons", "Oligo", "Microglia", "Astrocytes"), 
+                       size = c(29930.025, 5778.202, 5778.202,5778.202))
+
+#################
+# including size
+#################
+est.prop.set4 <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("Neurons", "Oligo", "Microglia", "Astrocytes"), 
+                           cell_size = cell_size2, verbose = T)
+
+
+saveRDS(est.prop.set4, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_3rd.rda")
+
+est.prop.set4 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_3rd.rda")
+
+est.prop.set4.df <- as.data.frame(est.prop.set4$Est.prop.weighted)
+
+
+```
+
+## Different cell types test more precise 
+
+```{r warning=FALSE}
+# Meta data with adding cell type
+# Ctrl
+data9set_ctrl.SO$cell_types <- data9set_ctrl.SO@active.ident
+
+cell_type <- data9set_ctrl.SO@meta.data %>% mutate(cell_type = case_when(cell_types %in%  "Dentate Gyrus" ~ "Dentate Gyrus",
+                                                                         cell_types %in%  "CA2/CA3 Neuron" ~ "CA2/CA3 Neuron",
+                                                                         cell_types %in%  "Subiculum" ~ "Subiculum",
+                                                                         cell_types %in%  "CA1 Neurons" ~ "CA1 Neurons",
+                                                                         cell_types %in%  "Neurons" ~ "Neurons",
+
+                                                                         cell_types %in% "Inhibitory Interneurons" ~ "IN_Neurons",
+                                                                         cell_types %in% "Oligo" ~ "Oligo",
+                                                                         cell_types %in% "Microglia" ~ "Microglia",
+                                                                         cell_types %in% "OPC" ~ "OPC",
+                                                                         cell_types %in% "Astrocytes" ~ "Astrocytes",
+                                                                         cell_types %in% c("Vascular Endothelial", "VLMC") ~ "Vascular",
+                                                                         cell_types %in% c("Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus") ~ "Rest"))
+
+
+data9set_ctrl.SO$cell_type <- cell_type$cell_type
+
+# Create meta
+meta_data9set_ctrl <- data9set_ctrl.SO@meta.data %>% as.data.frame
+```
+
+```{r warning=FALSE, message=FALSE}
+
+meta_data9set_ctrl$sampleID <- rownames(meta_data9set_ctrl)
+meta_data9set_ctrl2 <- meta_data9set_ctrl[,c(11, 8, 7, 10)]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ctrl <- new("AnnotatedDataFrame", data = meta_data9set_ctrl2, varMetadata = metadata)
+scRNA_Set_ctrl <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal), phenoData = phenoData_ctrl)
+```
+
+#### 14. Ctrl, more precise cell type & with normalized & cell size 
+
+```{r warning=FALSE}
+cell_size5 = data.frame(cell_type = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                      "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                      "Astrocytes", "Microglia", "Oligo",
+                                      "OPC", "Vascular", "Rest"), 
+                       size = c(29930.025, 29930.025, 29930.025,
+                                29930.025, 29930.025, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202, 5778.202))
+
+
+#################
+# including size
+#################
+est.prop.set5 <- music_prop(bulk.eset = DGEm_Set_Ctrl, 
+                           sc.eset = scRNA_Set_ctrl, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                        "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                        "Astrocytes", "Microglia", "Oligo",
+                                        "OPC", "Vascular", "Rest"), 
+                           cell_size = cell_size5, verbose = T)
+
+saveRDS(est.prop.set5, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_4th.rda")
+
+est.prop.set5 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_4th.rda")
+
+
+est.prop.set5.df <- as.data.frame(est.prop.set5$Est.prop.weighted)
+```
+
+#### 15. Act_seq without cell size
+
+```{r warning=FALSE}
+est.prop.set_Act <- music_prop(bulk.eset = DGEm_Set_Ctrl_Act, 
+                           sc.eset = scRNA_Set_Act, 
+                           clusters = 'cellType', 
+                           samples = 'sampleID',
+                           select.ct = c("N", "AS", "OL", "OPC", "MG", "EN"), 
+                           verbose = T)
+
+
+
+saveRDS(est.prop.set_Act, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act.rda")
+
+est.prop.set_Act <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act.rda")
+
+est.prop.set_Act.df <- as.data.frame(est.prop.set_Act$Est.prop.weighted)
+
+#####################
+# Act with cell size
+#####################
+
+cell_size_Act = data.frame(cell_type = c("N", "AS", "OL", "OPC", "MG", "EN"), 
+                       size = c(29930.025, 5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202))
+
+est.prop.set_Act_cell_size <- music_prop(bulk.eset = DGEm_Set_Ctrl_Act, 
+                           sc.eset = scRNA_Set_Act, 
+                           clusters = 'cellType', 
+                           samples = 'sampleID',
+                           select.ct = c("N", "AS", "OL", "OPC", "MG", "EN"), 
+                           cell_size = cell_size_Act, verbose = T)
+
+
+saveRDS(est.prop.set_Act_cell_size, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size.rda")
+
+est.prop.set_Act_cell_size <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size.rda")
+
+
+est.prop.set_Act_cell_size.df <- as.data.frame(est.prop.set_Act_cell_size$Est.prop.weighted)
+
+##############################
+# scRNA-seq no normalization
+##############################
+
+est.prop.set_Act_no_normal <- music_prop(bulk.eset = DGEm_Set_Ctrl_Act, 
+                           sc.eset = scRNA_Set_Act_no_normal, 
+                           clusters = 'cellType', 
+                           samples = 'sampleID',
+                           select.ct = c("N", "AS", "OL", "OPC", "MG", "EN"), 
+                           verbose = T)
+
+saveRDS(est.prop.set_Act_no_normal, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size_no_normal.rda")
+
+est.prop.set_Act_no_normal <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size_no_normal.rda")
+
+
+est.prop.set_Act_no_normal.df <- as.data.frame(est.prop.set_Act_no_normal$Est.prop.weighted)
+
+```
+
+
+#### 16. comparison snRNA-seq vs Act-seq OPC
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+data9set_ctrl.df_Normal_OPC <- data9set_ctrl.df_Normal[, colnames(data9set_ctrl.df_Normal) %in% meta_data9set_ctrl2[meta_data9set_ctrl2$cell_type %in% "OPC", ]$sampleID]
+
+data9set_ctrl.df_Normal_OPC.df <- log(rowMeans(data9set_ctrl.df_Normal_OPC) + 1) %>% as.data.frame
+
+colnames(data9set_ctrl.df_Normal_OPC.df) <- "snRNA_seq"
+
+MeA.data.df_OPC <- MeA.data.df[, colnames(MeA.data.df) %in% rownames(MeA.data_Meta_Data[MeA.data_Meta_Data$cellType %in% "OPC", ])]
+
+MeA.data.df_OPC.df <- log(rowMeans(MeA.data.df_OPC) + 1) %>% as.data.frame
+
+colnames(MeA.data.df_OPC.df) <- "Act_seq"
+
+
+OPC.df <- inner_join(data9set_ctrl.df_Normal_OPC.df, MeA.data.df_OPC.df, by = row.names)
+
+OPC.df <- merge(data9set_ctrl.df_Normal_OPC.df, MeA.data.df_OPC.df, by=0, all=TRUE) 
+OPC.df2 <- OPC.df
+
+OPC.df <- OPC.df[!is.na(OPC.df$Act_seq), ]
+OPC.df <- OPC.df[!is.na(OPC.df$snRNA_seq), ]
+
+OPC.df2[is.na(OPC.df2)] <- 0   
+
+ggplot(OPC.df2) + theme_classic() + geom_point(aes(x = snRNA_seq, y = Act_seq), size = 1, color = "black") + ggtitle("OPC cell type 32066 genes") + xlab("snRNA-seq log2(avg CPM + 1)") + ylab("Act-seq log2(avg CPM + 1)")
+
+
+ggplot(OPC.df) + theme_classic() + geom_point(aes(x = snRNA_seq, y = Act_seq), size = 1, color = "black") + ggtitle("OPC cell type 12502 genes") + xlab("snRNA-seq log2(avg CPM + 1)") + ylab("Act-seq log2(avg CPM + 1)")
+
+```
+
+## variable genes
+
+#### 17. Ctrl, more broad cell type & with normalized & cell size & HVGs
+
+```{r}
+
+var_genes <- data9set_ctrl.SO@assays$RNA@var.features
+
+DGEm_Ctrl_Normal_3 <- DGEm_Ctrl_Normal[rownames(DGEm_Ctrl_Normal) %in% var_genes, ]
+DGEm_Set_Ctrl_3 <- new("ExpressionSet", exprs = as.matrix(DGEm_Ctrl_Normal_3), phenoData = DGEm_Ctrl_phenoData)
+
+###############
+# snRNA-seq
+###############
+
+# 1. using meta_data9set_ctrl2 
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+
+phenoData_ctrl <- new("AnnotatedDataFrame", data = meta_data9set_ctrl2, varMetadata = metadata)
+
+
+data9set_ctrl.df_Normal3 <- data9set_ctrl.df_Normal[rownames(data9set_ctrl.df_Normal) %in% var_genes,]
+
+scRNA_Set_ctrl3 <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal3), phenoData = phenoData_ctrl)
+
+
+
+
+cell_size = data.frame(cell_type = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), 
+                       size = c(29930.025, 5778.202, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202))
+
+est.prop.set6 <- music_prop(bulk.eset = DGEm_Set_Ctrl_3, 
+                           sc.eset = scRNA_Set_ctrl3, 
+                           clusters = 'cell_type', 
+                           samples = 'sampleID',
+                           select.ct = c("EX_Neurons", "Oligo", "IN_Neurons", 
+                                         "Microglia", "OPC", "Astrocytes",
+                                         "Vascular", "Rest"), verbose = T)
+
+saveRDS(est.prop.set6, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG.rda")
+
+est.prop.set6 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG.rda")
+
+est.prop.set6.df <- as.data.frame(est.prop.set6$Est.prop.weighted)
+
+
+```
+
+#### 18. Ctrl, more precise cell type & with normalized & cell size & HVGs
+
+```{r}
+meta_data9set_ctrl$sampleID <- rownames(meta_data9set_ctrl)
+meta_data9set_ctrl3 <- meta_data9set_ctrl[,c(11, 8, 7, 9)]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ctrl4 <- new("AnnotatedDataFrame", data = meta_data9set_ctrl3, varMetadata = metadata)
+
+
+scRNA_Set_ctrl4 <- new("ExpressionSet", exprs = as.matrix(data9set_ctrl.df_Normal3), phenoData = phenoData_ctrl4)
+
+
+
+
+###############
+# Precise without Rest
+###############
+
+cell_size7 = data.frame(cell_type = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                      "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                      "Astrocytes", "Microglia", "Oligo",
+                                      "OPC", "Vascular", "Rest"), 
+                       size = c(29930.025, 29930.025, 29930.025,
+                                29930.025, 29930.025, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202, 5778.202))
+
+
+#################
+# including size
+#################
+est.prop.set7 <- music_prop(bulk.eset = DGEm_Set_Ctrl_3, 
+                           sc.eset = scRNA_Set_ctrl4, 
+                           clusters = 'cell_types', 
+                           samples = 'sampleID',
+                           select.ct = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                        "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                        "Astrocytes", "Microglia", "Oligo",
+                                        "OPC", "Vascular", "Rest"), 
+                           cell_size = cell_size7, verbose = T)
+
+
+saveRDS(est.prop.set7, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad.rda")
+
+est.prop.set7 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad.rda")
+
+est.prop.set7.df <- as.data.frame(est.prop.set7$Est.prop.weighted)
+
+
+
+#########################
+# More precise cell type
+#########################
+
+cell_size8 = data.frame(cell_type = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                      "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                      "Astrocytes", "Microglia", "Oligo",
+                                      "OPC", "Vascular Endothelial", "VLMC",
+                                      "Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus"), 
+                       size = c(29930.025, 29930.025, 29930.025,
+                                29930.025, 29930.025, 29930.025,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202, 5778.202,
+                                5778.202, 5778.202, 5778.202, 5778.202))
+
+
+est.prop.set8 <- music_prop(bulk.eset = DGEm_Set_Ctrl_3, 
+                           sc.eset = scRNA_Set_ctrl4, 
+                           clusters = 'cell_types', 
+                           samples = 'sampleID',
+                           select.ct = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                        "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                        "Astrocytes", "Microglia", "Oligo",
+                                        "OPC", "Vascular Endothelial", "VLMC",
+                                      "Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus"), 
+                           cell_size = cell_size8, verbose = T)
+
+
+saveRDS(est.prop.set8, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad2.rda")
+
+est.prop.set8 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad2.rda")
+
+est.prop.set8.df <- as.data.frame(est.prop.set8$Est.prop.weighted)
+
+
+```
+
+
+## AD
+
+#### 19. AD, more precise cell type & with normalized & cell size & HVGs
+
+```{r}
+
+var_genes_AD <- data9set_AD.SO@assays$RNA@var.features
+
+DGEm_AD_Normal_3 <- DGEm_AD_Normal[rownames(DGEm_AD_Normal) %in% var_genes_AD, ]
+DGEm_Set_AD_3 <- new("ExpressionSet", exprs = as.matrix(DGEm_AD_Normal_3), phenoData = DGEm_AD_phenoData)
+
+###############
+# snRNA-seq
+###############
+
+meta_data9set_AD$sampleID <- rownames(meta_data9set_AD)
+meta_data9set_AD3 <- meta_data9set_AD[,c(11, 8, 7, 9)]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_AD3 <- new("AnnotatedDataFrame", data = meta_data9set_AD3, varMetadata = metadata)
+
+data9set_AD.df_Normal3 <- data9set_AD.df_Normal[rownames(data9set_AD.df_Normal) %in% var_genes_AD,]
+
+
+scRNA_Set_AD3 <- new("ExpressionSet", exprs = as.matrix(data9set_AD.df_Normal3), phenoData = phenoData_AD3)
+
+
+est.prop.set9 <- music_prop(bulk.eset = DGEm_Set_AD_3, 
+                           sc.eset = scRNA_Set_AD3, 
+                           clusters = 'cell_types', 
+                           samples = 'sampleID',
+                           select.ct = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                        "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                        "Astrocytes", "Microglia", "Oligo",
+                                        "OPC", "Vascular Endothelial", "VLMC",
+                                      "Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus"), 
+                           cell_size = cell_size8, verbose = T)
+
+
+
+
+saveRDS(est.prop.set9, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_AD.rda")
+
+est.prop.set9 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_AD.rda")
+
+est.prop.set9.df <- as.data.frame(est.prop.set9$Est.prop.weighted)
+
+```
+
+
+## ADp40KO
+
+#### 20. AD, more precise cell type & with normalized & cell size & HVGs
+
+```{r}
+
+var_genes_ADp40KO <- data9set_ADp40KO.SO@assays$RNA@var.features
+
+DGEm_ADp40KO_Normal_3 <- DGEm_ADp40KO_Normal[rownames(DGEm_ADp40KO_Normal) %in% var_genes_ADp40KO, ]
+DGEm_Set_ADp40KO_3 <- new("ExpressionSet", exprs = as.matrix(DGEm_ADp40KO_Normal_3), phenoData = DGEm_ADp40KO_phenoData)
+
+###############
+# snRNA-seq
+###############
+
+meta_data9set_ADp40KO$sampleID <- rownames(meta_data9set_ADp40KO)
+meta_data9set_ADp40KO3 <- meta_data9set_ADp40KO[,c(11, 8, 7, 9)]
+
+# scRNA-seq data ExpressionSet create
+metadata <- data.frame(labelDescription = c("sampleID", "SubjectName", "cellTypeID", "cellType"), 
+                       row.names = c("sampleID", "SubjectName", "cellTypeID", "cellType"))
+phenoData_ADp40KO3 <- new("AnnotatedDataFrame", data = meta_data9set_ADp40KO3, varMetadata = metadata)
+
+data9set_ADp40KO.df_Normal3 <- data9set_ADp40KO.df_Normal[rownames(data9set_ADp40KO.df_Normal) %in% var_genes_ADp40KO,]
+
+
+scRNA_Set_ADp40KO3 <- new("ExpressionSet", exprs = as.matrix(data9set_ADp40KO.df_Normal3), phenoData = phenoData_ADp40KO3)
+
+
+est.prop.set10 <- music_prop(bulk.eset = DGEm_Set_ADp40KO_3, 
+                           sc.eset = scRNA_Set_ADp40KO3, 
+                           clusters = 'cell_types', 
+                           samples = 'sampleID',
+                           select.ct = c("Subiculum", "CA1 Neurons", "Dentate Gyrus", 
+                                        "CA2/CA3 Neuron","Neurons", "IN_Neurons",
+                                        "Astrocytes", "Microglia", "Oligo",
+                                        "OPC", "Vascular Endothelial", "VLMC",
+                                      "Pericytes", "Fibroblast", "Cajal Retzius", "Choroid Plexus"), 
+                           cell_size = cell_size8, verbose = T)
+
+
+
+saveRDS(est.prop.set10, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_ADp40KO.rda")
+
+est.prop.set10 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_ADp40KO.rda")
+
+est.prop.set10.df <- as.data.frame(est.prop.set10$Est.prop.weighted)
+```
+
+## bootstrapping
+
+```{r setup, include=FALSE}
+Yvar <- c(8,9,10,13,12, 14,18,12,8,9, 1,3,2,3,4)
+
+#To generate a single bootstrap sample
+sample(Yvar, replace = TRUE)
+
+#generate 1000 bootstrap samples
+boot <- list() 
+for (i in 1:1000) {
+  boot[[i]] <- sample(Yvar,replace=TRUE)
+}
+summary(Yvar)
+```
+
+
+
+```{r pressure, echo=FALSE}
+summary(boot[[1]])
+boot[[1]]
+```
+
+```{r}
+cell_counts <- data.frame(dataset = c("reference", "reference", "reference", "reference", "reference", "reference", "data", "data", "data", "data", "data", "data"),
+                        cell_type = c("Neurons", "Astrocytes", "Microglia","Oligodendrocytes", "OPC","rest", "Neurons", "Astrocytes", "Microglia","Oligodendrocytes", "OPC","rest"), 
+                        percent = c(68, 7.5, 11.99, 12.01, 0, 0.4, 61, 4, 21, 9, 3, 2))
+
+```
+
+
+## MuSic by sample
+
+```{r pressure, echo=FALSE}
+packs <- c("data.table", "dplyr", "SummarizedExperiment","genefilter", "RColorBrewer", 
+           "mixtools","matrixStats", "MuSiC", "ggplot2", "sva", "plotly",
+           "doParallel", "parallel")
+libs_loaded <- sapply(packs, library, character.only = T)
+
+# Bulk RNA-seq
+bulk_rna <- fread(file.path("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/", "toy_bulk.txt"))
+# sn-RNA data. Rows are genes and columns are nuclei
+ref_data <-  fread(file.path("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/", "nac_ref.txt"))
+# Cell sizes per cell type (Neuron vs glial)
+cell_size <-  fread(file.path("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/", "nac_size.txt"))
+# Cell type  per cell in ref_data (Neuron vs glial)
+cell_type_data <-  fread(file.path("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/", "nac_cell_class.txt"))
+
+```
+
+
+```{r}
+# MuSiC + cell size -------------------------------------------------------------------
+
+# Reference and Bulk datasets have to be matrices then converted to ExpressionSet classes
+# Both datasets have to have the same row names
+
+sc_data <- data.matrix(ref_data[, -1])
+row.names(sc_data) <- ref_data[, 1] %>% unlist
+sc_data <- ExpressionSet(assayData = sc_data)
+bulk_data <- data.matrix(bulk_rna)
+row.names(bulk_data) <- ref_data[, 1] %>% unlist
+bulk_data <- ExpressionSet(assayData = bulk_data)
+
+# Default
+music_est <- music_prop(bulk.eset = bulk_data, sc.eset = sc_data, clusters = cell_type_data$Neurons, samples = cell_type_data$Cells,
+                        cell_size = NULL)
+
+# Custom cell size
+music_est_custom <- music_prop(bulk.eset = bulk_data, sc.eset = sc_data, clusters = cell_type_data$Neurons, samples = cell_type_data$Cells,
+                        cell_size = cell_size)
+```
+
+```{r}
+# Results
+music_est <- data.table(samples  = row.names(music_est$Est.prop.allgene), music_est$Est.prop.weighted)
+music_est_custom <- data.table(samples  = row.names(music_est_custom$Est.prop.allgene), music_est_custom$Est.prop.weighted)
+```
+
+
+

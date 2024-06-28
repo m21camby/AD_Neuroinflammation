@@ -1,0 +1,658 @@
+---
+title: "Wnt and catenin"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(tradeSeq)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(slingshot)
+library(monocle)
+library(mclust, quietly = TRUE)
+library(Seurat, lib.loc = "/data/rajewsky/home/skim/R/")
+library(gridExtra)
+library(dplyr)
+require(mgcv, quietly = TRUE)
+library(gridExtra)
+library(readxl)
+library(xlsx)
+library(cowplot)
+library(mgcv)
+library(nlme)
+# remotes::install_github("cardiomoon/ggGam", lib = "/data/rajewsky/shared_libs/R")
+# update.packages(c("mgcv"))
+#install.packages("visreg", lib = "/data/rajewsky/shared_libs/R")
+library(visreg)
+# install.packages("itsadug", repos = "https://cran.r-project.org/src/contrib/itsadug_2.4.tar.gz", type="source", lib = "/data/rajewsky/shared_libs/R")
+# 
+# library(itsadug)
+
+```
+
+```{r warning=FALSE, message=FALSE}
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+
+meta <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                          seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                          seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                          seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                          seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                          seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                          seurat_clusters %in% c(6) ~ "MOL",
+                                                                          seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                          seurat_clusters %in% c(38) ~ "NFOL",
+                                                                          seurat_clusters %in% c(12) ~ "OPC",
+                                                                          seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                          seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                          seurat_clusters %in% c(36) ~ "Vascular",
+                                                                          seurat_clusters %in% c(39) ~ "VLMC",
+                                                                          seurat_clusters %in% c(26) ~ "Choroid",
+                                                                          seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                          seurat_clusters %in% c(28) ~ "Cajal",
+                                                                          seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                          seurat_clusters %in% c(37) ~ "Macrophage"))
+
+#meta <- data9set_cleaned.SO@meta.data
+meta$cell_barcode <- names(data9set_cleaned.SO@active.ident)
+
+
+sub.meta <- dplyr::filter(meta, seurat_clusters %in% c(1,5,6,12,38))
+
+expression.df <- data9set_cleaned.SO@assays$RNA@data[,colnames(data9set_cleaned.SO@assays$RNA@data) %in% sub.meta$cell_barcode]
+expression.df <- expression.df %>% as.matrix %>% as.data.frame
+
+TF_list <- read.csv("/data/rajewsky/projects/cdr1as_ko_snRNA/3rd_sequencing_run/pyscenic/Mouse_TFs_list.txt", stringsAsFactors = FALSE)
+TF_list[725,1] <- "Auts2"
+colnames(TF_list) <- "TF"
+
+# Wnt negative
+GO_Wnt_negative <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20220323_061156_negative_Wnt.xlsx", sheetIndex = 1)
+# remove overlap genes 
+GO_Wnt_negative_genes <- as.vector(as.character(unique(GO_Wnt_negative$Symbol)))
+# remove genes not in the list
+GO_Wnt_negative_genes <- GO_Wnt_negative_genes[GO_Wnt_negative_genes %in% data9set_cleaned.SO@assays$RNA@data@Dimnames[[1]]]
+
+
+# Wnt positive
+GO_Wnt_positive <-  read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20220323_061137_positive_Wnt.xlsx", sheetIndex = 1)
+# remove overlap genes 
+GO_Wnt_positive_genes <- as.vector(as.character(unique(GO_Wnt_positive$Symbol)))
+# remove genes not in the list
+GO_Wnt_positive_genes <- GO_Wnt_positive_genes[GO_Wnt_positive_genes %in% data9set_cleaned.SO@assays$RNA@data@Dimnames[[1]]]
+
+# beta catenin binding
+GO_beta_catenin <-  read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20220323_061218_beta_catenin.xlsx", sheetIndex = 1)
+# remove overlap genes 
+GO_beta_catenin_genes <- as.vector(as.character(unique(GO_beta_catenin$Symbol)))
+# remove genes not in the list
+GO_beta_catenin_genes <- GO_beta_catenin_genes[GO_beta_catenin_genes %in% data9set_cleaned.SO@assays$RNA@data@Dimnames[[1]]]
+
+```
+
+```{r warning=FALSE, message=FALSE}
+traj <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_trajectory.rda")
+
+traj.df <- traj$time %>% as.data.frame
+colnames(traj.df) <- "pseudotime"
+
+traj.df <- cbind(traj.df, sub.meta)
+
+traj.df <- traj.df[, c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode")]
+
+expression.df <- data9set_cleaned.SO@assays$RNA@data[,colnames(data9set_cleaned.SO@assays$RNA@data) %in% sub.meta$cell_barcode]
+
+```
+
+```{r warning=FALSE, message=FALSE}
+pseudograph <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ]
+  #gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode",  "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph2 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode",  "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph3 <- function(gene = "Pdgfra"){
+  #gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ]
+
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.55, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode",  "gene")
+  return(traj_gene.df)  
+}
+
+pseudograph4 <- function(gene = c("Pdgfra", "Mbp")){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t %>% as.data.frame
+  gene.df$exp <- Matrix::rowMeans(gene.df)
+  gene.df <- gene.df[,c("exp"), drop = FALSE] %>% as.data.frame
+  
+  traj_gene.df <- cbind(traj.df, gene.df)
+  traj_gene.df <- traj_gene.df[traj_gene.df$pseudotime > 0.43, ]
+  colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode",  "gene")
+  return(traj_gene.df)  
+}
+
+graph_fig <- function(pseudo_graph = pseudo_graph, gene = gene, coord = c(0,1)){
+  ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = sample)) + 
+    geom_point(size = 0.1, alpha = 0.1) + 
+    geom_smooth(aes(fill = sample)) + 
+    stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + 
+    ggtitle(gene) + 
+    coord_cartesian(ylim = coord) +
+    theme_cowplot()
+}
+
+```
+
+## 1. Wnt negative
+
+### 1-1. Wnt negative (all genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+GO_Wnt_negative_genes[GO_Wnt_negative_genes %in% TF_list$TF]
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_Wnt_negative_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_Wnt_negative_genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Wnt negative 170 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.4))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+g1 <- ggplot(traj_gene.df[traj_gene.df$pseudotime > 0.55, ], aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Wnt negative 170 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df[traj.df$pseudotime > 0.55, ]) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = 0.55, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.4))
+
+```
+
+### 1-2. Wnt negative (high expressed genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_Wnt_negative_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_Wnt_negative_genes] %>% as.data.frame
+
+check <- colMeans(gene.df) %>% as.data.frame
+
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+gene.df$avg <- rowMeans(gene.df[, colnames(gene.df) %in% high_genes])
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Wnt negative genes (highly expressed 47 genes) gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+high_genes[high_genes %in% TF_list$TF]
+
+```
+
+1st
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(1:10)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,4)), g2, g3, g4, g5, g6, g7, g8, g9, g10, ncol = 2)
+```
+
+2nd
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(11:20)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-10, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3+ coord_cartesian(ylim = c(0,3)), g4 , g5 + coord_cartesian(ylim = c(0,2)), g6, g7, g8, g9, g10 + coord_cartesian(ylim = c(0,1.5)), ncol = 2)
+```
+
+3rd
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(21:30)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-20, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,1)), g3 + coord_cartesian(ylim = c(0,1)), g4 + coord_cartesian(ylim = c(0,1)), g5 + coord_cartesian(ylim = c(0,2)), g6, g7, g8, g9 + coord_cartesian(ylim = c(0,1)), g10 , ncol = 2)
+```
+
+4th
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(31:40)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-30, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3+ coord_cartesian(ylim = c(0,2)), g4+ coord_cartesian(ylim = c(0,2)) , g5 , g6 + coord_cartesian(ylim = c(0,2)), g7+ coord_cartesian(ylim = c(0,3)), g8 + coord_cartesian(ylim = c(0,3)), g9, g10 + coord_cartesian(ylim = c(0,1)), ncol = 2)
+```
+
+5th
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height = 12}
+for(i in c(41:47)){
+  #print(i)
+  #print(GO_ERK_positive_genes[i])
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-40, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,2)), g3, g4 , g5 + coord_cartesian(ylim = c(0,1)), g6, g7+ coord_cartesian(ylim = c(0,2)), ncol = 2)
+```
+
+## 2. Wnt positive
+
+### 2-1. Wnt positive (all genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+GO_Wnt_positive_genes[GO_Wnt_positive_genes %in% TF_list$TF]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_Wnt_positive_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_Wnt_positive_genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Wnt positive 137 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.4))
+
+```
+
+### 2-2. Wnt positive (high expressed genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_Wnt_positive_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_Wnt_positive_genes] %>% as.data.frame
+
+check <- colMeans(gene.df) %>% as.data.frame
+
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+gene.df$avg <- rowMeans(gene.df[, colnames(gene.df) %in% high_genes])
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("Wnt positive genes (highly expressed 48 genes) gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+high_genes[high_genes %in% TF_list$TF]
+
+```
+
+1st group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(1:10)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,4)), g2, g3, g4, g5, g6, g7, g8, g9+ coord_cartesian(ylim = c(0,2)), g10, ncol = 2)
+```
+
+2nd group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(11:20)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-10, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3+ coord_cartesian(ylim = c(0,3)), g4 , g5 + coord_cartesian(ylim = c(0,2)), g6, g7, g8, g9+ coord_cartesian(ylim = c(0,3)), g10 + coord_cartesian(ylim = c(0,1.5)), ncol = 2)
+```
+
+
+3rd group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(21:30)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-20, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,4)), g3 + coord_cartesian(ylim = c(0,1)), g4 + coord_cartesian(ylim = c(0,1)), g5 + coord_cartesian(ylim = c(0,4)), g6, g7, g8, g9 + coord_cartesian(ylim = c(0,1)), g10 , ncol = 2)
+```
+
+4th group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(31:40)){
+ 
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-30, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2, g3+ coord_cartesian(ylim = c(0,2)), g4 + coord_cartesian(ylim = c(0,3)) , g5 + coord_cartesian(ylim = c(0,3)), g6 + coord_cartesian(ylim = c(0,2)), g7+ coord_cartesian(ylim = c(0,3)), g8 + coord_cartesian(ylim = c(0,2)), g9, g10 + coord_cartesian(ylim = c(0,1)), ncol = 2)
+```
+
+5th group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height = 12}
+for(i in c(41:48)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-40, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,2)), g3 + coord_cartesian(ylim = c(0,4)), g4 , g5 + coord_cartesian(ylim = c(0,1)), g6, g7+ coord_cartesian(ylim = c(0,2)), g8, ncol = 2)
+```
+
+
+## 3. beta catenin
+
+### 3-1. beta catenin (all genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+GO_beta_catenin_genes[GO_beta_catenin_genes %in% TF_list$TF]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_beta_catenin_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_beta_catenin_genes] %>% as.data.frame
+
+gene.df$avg <- rowMeans(gene.df)
+
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("beta catenin 92 genes gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,0.6))
+
+```
+
+### 3-2. beta catenin (high expressed genes)
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+gene.df <- expression.df[rownames(expression.df) %in% GO_beta_catenin_genes, ] %>% t
+gene.df <- gene.df[, colnames(gene.df) %in% GO_beta_catenin_genes] %>% as.data.frame
+
+check <- colMeans(gene.df) %>% as.data.frame
+
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+gene.df$avg <- rowMeans(gene.df[, colnames(gene.df) %in% high_genes])
+
+gene.df <- gene.df[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, gene.df)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "gene")
+
+g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + geom_point(size = 0.1, alpha = 0.1) + stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + ggtitle("beta catenin genes (highly expressed 37 genes) gam") + ylim(c(-1, 2)) + theme_cowplot()
+
+g2 <- ggplot(data = traj.df) + geom_segment(
+                 mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type),
+                 size=0.2, show.legend = FALSE) + theme_void()
+
+g2_grob = ggplotGrob(g2)
+g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = c(-0.25,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+
+high_genes[high_genes %in% TF_list$TF]
+
+```
+
+1st group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(1:10)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,4)), g2, g3+ coord_cartesian(ylim = c(0,4)), g4, g5, g6, g7, g8, g9, g10+ coord_cartesian(ylim = c(0,4)), ncol = 2)
+```
+
+2nd group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(11:20)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-10, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1, g2+ coord_cartesian(ylim = c(0,2)), g3+ coord_cartesian(ylim = c(0,3)), g4 , g5 + coord_cartesian(ylim = c(0,4)), g6, g7, g8, g9+ coord_cartesian(ylim = c(0,4)), g10 + coord_cartesian(ylim = c(0,1.5)), ncol = 2)
+```
+
+3rd group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(21:30)){
+
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-20, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1 + coord_cartesian(ylim = c(0,2)), g2 + coord_cartesian(ylim = c(0,1)), g3 + coord_cartesian(ylim = c(0,1)), g4 + coord_cartesian(ylim = c(0,4)), g5 + coord_cartesian(ylim = c(0,2)), g6, g7+ coord_cartesian(ylim = c(0,3)), g8, g9 + coord_cartesian(ylim = c(0,1)), g10 + coord_cartesian(ylim = c(0,2)), ncol = 2)
+```
+
+4th group
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=16}
+for(i in c(31:37)){
+ 
+  pseudo_graph <- pseudograph(gene = high_genes[i])
+  assign(paste("g", i-30, sep = ""),
+         graph_fig(pseudo_graph = pseudo_graph, gene = high_genes[i], coord = c(0,1)))
+  
+}
+
+grid.arrange(g1+ coord_cartesian(ylim = c(0,2)), g2, g3+ coord_cartesian(ylim = c(0,4)), g4 + coord_cartesian(ylim = c(0,2)) , g5 + coord_cartesian(ylim = c(0,2)), g6 + coord_cartesian(ylim = c(0,2)), g7+ coord_cartesian(ylim = c(0,2)), ncol = 2)
+```
+
+## 4. interesting gene
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph3(gene = "Rnf220")
+graph_fig(pseudo_graph = p1, gene = "Rnf220", coord = c(0,4))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph3(gene = "Sox10")
+graph_fig(pseudo_graph = p1, gene = "Sox10", coord = c(0,2))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph3(gene = "Ctnna3")
+graph_fig(pseudo_graph = p1, gene = "Ctnna3", coord = c(0,3))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph3(gene = "Ptprk")
+graph_fig(pseudo_graph = p1, gene = "Ptprk", coord = c(0,3))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph(gene = "Olig2")
+graph_fig(pseudo_graph = p1, gene = "Olig2", coord = c(0,1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=4}
+p1 <- pseudograph(gene = "Daam2")
+graph_fig(pseudo_graph = p1, gene = "Daam2", coord = c(0,3))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+
+```
+
+

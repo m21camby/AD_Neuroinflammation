@@ -1,0 +1,96 @@
+---
+title: "cellphonedb 2nd"
+author: "Skim"
+date: '2020 7 26 '
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+#### spliting Ctrl, AD, ADp40KO
+
+
+
+```{r}
+###############################
+# 2. Assign specific cell type
+###############################
+# assign cell type
+# Dentate_Gyrus = 0, 10
+# CA1 = 2, 13, 18, 40
+# CA2_3 = 9, 21, 27, 32
+# subiculum = 11, 14, 15, 17, 19, 20
+# Unidentified_Neurons = 24, 29
+# Inhibitory_Neurons = 7, 16, 22, 30
+# Oligo = 1, 5, 6 (MOL = 6, MFOL = 1, 5)
+# OPC = 12, 38 (NFOL = 38)
+# MG = 3, 8
+# AS = 4
+# Vascular = 36
+# VLMC = 39
+# Choroid = 26
+# Fibroblast = 23
+# Cajal = 28
+# Pericyte = 35
+# Macrophage = 37
+# Removed cluster = 25, 31, 33, 34, 41, 42, 43, 44
+
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set_cleaned_Ctrl.SO <- subset(data9set_cleaned.SO, subset = sample == c("Ctrl"))
+data9set_cleaned_AD.SO <- subset(data9set_cleaned.SO, subset = sample == c("AD"))
+data9set_cleaned_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample == c("ADp40KO"))
+
+
+bm_gene_final.df <- read.table( "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_bm_gene_final.df", stringsAsFactors = FALSE)
+
+
+data9set_cleaned_Ctrl_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_Ctrl.SO@meta.data), cell_type = data9set_cleaned_Ctrl.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_Ctrl_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200726_CellphoneDB_Create_2nd_analysis_Cellphonedb_meta_Ctrl_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+
+
+data9set_cleaned_AD_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_AD.SO@meta.data), cell_type = data9set_cleaned_AD.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_AD_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200726_CellphoneDB_Create_2nd_analysis_Cellphonedb_meta_AD_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+
+data9set_cleaned_ADp40KO_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_ADp40KO.SO@meta.data), cell_type = data9set_cleaned_ADp40KO.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_ADp40KO_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200726_CellphoneDB_Create_2nd_analysis_Cellphonedb_meta_ADp40KO_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+```

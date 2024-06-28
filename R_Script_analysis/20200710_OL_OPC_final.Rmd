@@ -1,0 +1,963 @@
+---
+title: "OL and OPC"
+author: "Skim"
+date: '2020 7 10 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+Although implementing subclustering Oligo & OPC cell type, no meaningful cluster was identified from the data. So better to use original clustering data. However, cluster 1 and 5 seems MFOL 
+
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(gridExtra)
+library(viridis)
+library(destiny)
+library(SCORPIUS)
+library(DT)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(reshape2)
+library(tidyr)
+library(RColorBrewer)
+library(scales)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+```
+
+```{r}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+# export GO ID from BP
+if(i == 1){
+  allGO_MF <- genesInTerm(GOdata)
+}
+if(i == 2){
+  allGO_BP <- genesInTerm(GOdata)
+}
+
+if(i == 3){
+  allGO_CC <- genesInTerm(GOdata)
+}
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+for(i in 1:30){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_MF[ID][[1]]], collapse=', ' )
+}
+for(i in 31:60){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_BP[ID][[1]]], collapse=', ' )
+}
+for(i in 61:90){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_CC[ID][[1]]], collapse=', ' )
+}
+
+return(topGOResults.df)
+}
+
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") +
+  theme_minimal() + theme(axis.text = element_text(size = 10))
+
+}
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set_OL_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6, 12, 38))
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+data9set_subcluster_OL_OPC.SO <- CreateSeuratObject(counts =  GetAssayData(data9set_OL_OPC.SO, slot = 'counts'),  min.cells = 3, min.features = 200, project = "ADp40KO")
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set_subcluster_OL_OPC.SO@meta.data), split="-"), "[[", 2)
+data9set_subcluster_OL_OPC.SO <- AddMetaData(object=data9set_subcluster_OL_OPC.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set_subcluster_OL_OPC.SO@meta.data)))
+
+#table(data9set_subcluster_OL_OPC.SO@meta.data$gemgroup)
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+
+# calculate MT genes
+data9set_subcluster_OL_OPC.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set_subcluster_OL_OPC.SO, pattern = "^mt-")
+data9set_subcluster_OL_OPC.SO <- subset(x = data9set_subcluster_OL_OPC.SO, subset = nCount_RNA < 30000 & nCount_RNA > 500 & percent.mt < 5)  
+
+data9set_subcluster_OL_OPC.SO <- NormalizeData(object = data9set_subcluster_OL_OPC.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+
+data9set_subcluster_OL_OPC.SO <- FindVariableFeatures(object = data9set_subcluster_OL_OPC.SO, nfeatures = 500, selection.method = "vst", verbose = FALSE)
+
+data9set_subcluster_OL_OPC.SO <- ScaleData(object = data9set_subcluster_OL_OPC.SO, vars.to.regress = c("percent.mt", "nCount_RNA", "gemgroup"))
+data9set_subcluster_OL_OPC.SO <- RunPCA(data9set_subcluster_OL_OPC.SO, features = VariableFeatures(object = data9set_subcluster_OL_OPC.SO), verbose = FALSE, ndims.print = "None")
+
+#ElbowPlot(data9set_subcluster_OL_OPC.SO, ndims = 20) # 5
+```
+
+
+```{r warning=FALSE, message=FALSE}
+data9set_subcluster_OL_OPC.SO <- FindNeighbors(object = data9set_subcluster_OL_OPC.SO, reduction = "pca", dims = 1:5, verbose = FALSE)
+data9set_subcluster_OL_OPC.SO <- FindClusters(object = data9set_subcluster_OL_OPC.SO, resolution = 0.4, verbose = FALSE)
+
+data9set_subcluster_OL_OPC.SO <- RunUMAP(object = data9set_subcluster_OL_OPC.SO, dims = 1:5, n.neighbors = 25, min.dist = 0.1, n.epochs = 500, spread = 1)
+```
+
+### Reclustering Oligo & OPC
+
+```{r warning=FALSE, message=FALSE}
+data9set_subcluster_OL_OPC.SO@meta.data$sample <- ifelse((data9set_subcluster_OL_OPC.SO$gemgroup == 1 | data9set_subcluster_OL_OPC.SO$gemgroup == 4 | data9set_subcluster_OL_OPC.SO$gemgroup == 7), 
+                                               "Ctrl", ifelse((data9set_subcluster_OL_OPC.SO$gemgroup == 2 | data9set_subcluster_OL_OPC.SO$gemgroup == 5 | data9set_subcluster_OL_OPC.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+DimPlot(object = data9set_subcluster_OL_OPC.SO, reduction = "umap")
+
+```
+
+### MFOL, NFOL, MOL markers in subclustering
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+f3 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Tcf7l2")) + ggtitle("NFOL (Tcf7l2)")
+f4 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Opalin")) + ggtitle("MFOL (Opalin)")
+f5 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Apod")) + ggtitle("MOL (Apod)")
+grid.arrange(f3, f4, f5, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+f3 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Birc2")) + ggtitle("MFOL (Birc2)")
+f4 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Ninj2")) + ggtitle("MOL (Ninj2)")
+f5 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Mal")) + ggtitle("MOL (Mal)")
+grid.arrange(f3, f4, f5, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+f3 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Pdgfra")) + ggtitle("OPC (Tcf7l2)")
+f4 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("C1ql1")) + ggtitle("OPC (Opalin)")
+f5 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Neu4")) + ggtitle("COP (Neu4)")
+grid.arrange(f3, f4, f5, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+f3 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Brca1")) + ggtitle("COP (Brca1)")
+f4 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("H2-Ab1")) + ggtitle("NFOL (H2-Ab1)")
+f5 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = c("Cnksr3")) + ggtitle("NFOL (Cnksr3)")
+grid.arrange(f3, f4, f5, ncol = 3)
+
+```
+
+### Batch effects check in subclustering
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+d1 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "1", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d2 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "2", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d3 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "3", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d4 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "4", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d5 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "5", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d6 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "6", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d7 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "7", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d8 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "8", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d9 <- DimPlot(data9set_subcluster_OL_OPC.SO, cells =  rownames(data9set_subcluster_OL_OPC.SO@meta.data[data9set_subcluster_OL_OPC.SO@meta.data$gemgroup %in% "9", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+grid.arrange(d1, d4, d7, d3, d6, d9, d2, d5, d8,  ncol = 3)
+
+```
+
+### marker genes
+
+```{r warning=FALSE, message=FALSE}
+
+# OLOPC_markers <- FindAllMarkers(data9set_subcluster_OL_OPC.SO, min.pct = 0.05, logfc.threshold = 0.1)
+# write.csv(OLOPC_markers, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_top20_markers.csv")
+
+
+OLOPC_markers <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_top20_markers.csv")
+
+
+OLOPC_markers_top20 <- OLOPC_markers %>% group_by(cluster) %>% top_n(20)
+datatable(OLOPC_markers_top20)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+f1 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = "Zswim3")
+f2 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = "Zmat4")
+grid.arrange(f1, f2, ncol = 2)
+```
+
+Zhou et al., Nature medicine 202 showed they identified Serpina3n+ C4b+ reactive oligodendrocyte population in mice. Check those genes in our oligo population
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+f1 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = "Serpina3n")
+f2 <- FeaturePlot(data9set_subcluster_OL_OPC.SO, features = "C4b")
+grid.arrange(f1, f2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+OL_OPC_c0.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(0))
+# OL_OPC_c1.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(1))
+# OL_OPC_c2.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(2))
+# OL_OPC_c3.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(3))
+# OL_OPC_c4.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(4))
+# OL_OPC_c7.SO <- subset(data9set_subcluster_OL_OPC.SO, subset = seurat_clusters %in% c(7))
+# 
+# 
+# sub_c0_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c0.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# sub_c1_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c1.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# sub_c2_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c2.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# sub_c3_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c3.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# sub_c4_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c4.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# sub_c7_DE_AD_ADp40KO <- FindMarkers(OL_OPC_c7.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+
+#sub_c0_DE_AD_ADp40KO[rownames(sub_c0_DE_AD_ADp40KO) %in% "Apod", ]
+```
+
+C4b and Serpina3n in Cluster 0 in subclustering oligodendrocytes 
+
+C4b is upregulated in cluster 0,1,2,3,4 (So no specific reactive oligodenddrocytes)
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+f1 <- VlnPlot(OL_OPC_c0.SO, features = "C4b", group.by = "sample")
+f2 <- VlnPlot(OL_OPC_c0.SO, features = "Serpina3n", group.by = "sample")
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### cell type proportion (original)
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+ggplot(plot.data[plot.data$cluster %in% c(1, 5, 6, 12, 38),], aes(x=cluster, y=cell_prop, fill=sample)) +
+  geom_boxplot(position=position_dodge(1)) + ylim(c(0, 0.2))
+
+```
+
+### cell type proportion (original but cell type)
+
+cluster 1 and 5 become MFOL and 6 is MOL and 12 is 
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+plot.data$cell_type <- ifelse(plot.data$cluster %in% c(6), "MOL", 
+                              ifelse(plot.data$cluster %in% c(1, 5), "MFOL", 
+                                     ifelse(plot.data$cluster %in% c(12), "OPC", 
+                                            ifelse(plot.data$cluster %in% c(38), "NFOL_COP", "rest"))))
+
+
+ggplot(plot.data[plot.data$cell_type %in% c("MOL", "MFOL", "NFOL_COP", "OPC"),], aes(x=cell_type, y=cell_prop, fill=sample)) +
+  geom_boxplot(position=position_dodge(1)) + ylim(c(0, 0.3))
+```
+
+### MFOL AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE}
+data9set_OL_OPC.SO$cell_type <- ifelse(data9set_OL_OPC.SO$seurat_clusters %in% c(6), "MOL", 
+                              ifelse(data9set_OL_OPC.SO$seurat_clusters %in% c(1, 5), "MFOL", 
+                                     ifelse(data9set_OL_OPC.SO$seurat_clusters %in% c(12), "NFOL_COP", 
+                                            ifelse(data9set_OL_OPC.SO$seurat_clusters %in% c(38), "OPC", "rest"))))
+
+data9set_MFOL.SO <- subset(data9set_OL_OPC.SO, subset = cell_type %in% c("MFOL"))
+
+MFOL_DE_AD_Ctrl <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_DE_AD_Ctrl.csv")
+
+MFOL_DE_AD_Ctrl2 <- MFOL_DE_AD_Ctrl[abs(MFOL_DE_AD_Ctrl$avg_logFC) > 0.1, ]
+# remove Ttr
+MFOL_DE_AD_Ctrl2 <- MFOL_DE_AD_Ctrl2[MFOL_DE_AD_Ctrl2$X != "Ttr", ]
+
+# only logFC > 0.1
+MFOL_DE_AD_Ctrl_padj <- MFOL_DE_AD_Ctrl[abs(MFOL_DE_AD_Ctrl$avg_logFC) > 0.1, ]
+# remove Ttr
+MFOL_DE_AD_Ctrl_padj <- MFOL_DE_AD_Ctrl_padj[MFOL_DE_AD_Ctrl_padj$X != "Ttr", ]
+
+MFOL_DE_AD_Ctrl_padj <- MFOL_DE_AD_Ctrl_padj[which(MFOL_DE_AD_Ctrl_padj$p_val_adj < 0.05), ]
+
+datatable(MFOL_DE_AD_Ctrl_padj, options = list(pageLength = 5, dom = 'tip'))
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+ggplot(MFOL_DE_AD_Ctrl2) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = MFOL_DE_AD_Ctrl_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("MFOL DE analysis AD vs Ctrl") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = MFOL_DE_AD_Ctrl_padj[MFOL_DE_AD_Ctrl_padj$p_val_adj < 1e-10, ], aes(x = avg_logFC, y = -log10(p_val_adj), label = MFOL_DE_AD_Ctrl_padj[MFOL_DE_AD_Ctrl_padj$p_val_adj < 1e-10, ]$X))
+
+```
+
+### MFOL GO of AD vs Ctrl up-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+geneUniverse <- rownames(data9set_MFOL.SO@assays$RNA@counts[rowSums(data9set_MFOL.SO@assays$RNA@counts) > 0, ]) %>% as.character
+
+# genesOfInterest <- MFOL_DE_AD_Ctrl_padj[MFOL_DE_AD_Ctrl_padj$avg_logFC > 0, ]$X %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_analysis_GO_AD_Ctrl_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_Ctrl_UP.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### MFOL GO of AD vs Ctrl down-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+
+# genesOfInterest <- MFOL_DE_AD_Ctrl_padj[MFOL_DE_AD_Ctrl_padj$avg_logFC < 0, ]$X %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_analysis_GO_AD_Ctrl_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_Ctrl_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### MFOL AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+#data9set_OL_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6, 12, 38))
+
+# MFOL_DE_AD_Ctrl <- FindMarkers(data9set_MFOL.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# write.csv(MFOL_DE_AD_Ctrl, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_DE_AD_Ctrl.csv")
+
+# MFOL_DE_AD_ADp40KO <- FindMarkers(data9set_MFOL.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# write.csv(MFOL_DE_AD_ADp40KO, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_DE_AD_ADp40KO.csv")
+
+MFOL_DE_AD_ADp40KO <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_DE_AD_ADp40KO.csv")
+
+MFOL_DE_AD_ADp40KO2 <- MFOL_DE_AD_ADp40KO[abs(MFOL_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+MFOL_DE_AD_ADp40KO2 <- MFOL_DE_AD_ADp40KO2[MFOL_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+MFOL_DE_AD_ADp40KO_padj <- MFOL_DE_AD_ADp40KO[abs(MFOL_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+MFOL_DE_AD_ADp40KO_padj <- MFOL_DE_AD_ADp40KO_padj[MFOL_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+MFOL_DE_AD_ADp40KO_padj <- MFOL_DE_AD_ADp40KO_padj[which(MFOL_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(MFOL_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+ggplot(MFOL_DE_AD_ADp40KO2) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = MFOL_DE_AD_ADp40KO_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("MFOL DE analysis AD vs ADp40KO") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = MFOL_DE_AD_ADp40KO_padj[MFOL_DE_AD_ADp40KO_padj$p_val_adj < 1e-10, ], aes(x = avg_logFC, y = -log10(p_val_adj), label = MFOL_DE_AD_ADp40KO_padj[MFOL_DE_AD_ADp40KO_padj$p_val_adj < 1e-10, ]$X))
+
+```
+
+C4b and Serpina3n in MFOL
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+f1 <- VlnPlot(data9set_MFOL.SO, features = "C4b", group.by = "sample")
+f2 <- VlnPlot(data9set_MFOL.SO, features = "Serpina3n", group.by = "sample")
+grid.arrange(f1, f2, ncol = 2)
+```
+
+
+### GO of AD vs ADp40KO up-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+geneUniverse <- rownames(data9set_MFOL.SO@assays$RNA@counts[rowSums(data9set_MFOL.SO@assays$RNA@counts) > 0, ]) %>% as.character
+
+# genesOfInterest <- MFOL_DE_AD_ADp40KO_padj[MFOL_DE_AD_ADp40KO_padj$avg_logFC > 0, ]$X %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### GO of AD vs ADp40KO down-regulated genes
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+# geneUniverse <- rownames(data9set_MFOL.SO@assays$RNA@counts[rowSums(data9set_MFOL.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- MFOL_DE_AD_ADp40KO_padj[MFOL_DE_AD_ADp40KO_padj$avg_logFC < 0, ]$X %>% as.character
+# # 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# # 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### Cluster 6 (from original) AD vs ADp40KO 
+
+```{r}
+c6_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_6ADp40KO_AD_corrected.csv")
+
+# reverse logFC2
+c6_DE_AD_ADp40KO$avg_logFC <- c6_DE_AD_ADp40KO$avg_logFC * -1
+
+c6_DE_AD_ADp40KO2 <- c6_DE_AD_ADp40KO[abs(c6_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c6_DE_AD_ADp40KO2 <- c6_DE_AD_ADp40KO2[c6_DE_AD_ADp40KO2$X != "Ttr", ]
+
+# only logFC > 0.1
+c6_DE_AD_ADp40KO_padj <- c6_DE_AD_ADp40KO[abs(c6_DE_AD_ADp40KO$avg_logFC) > 0.1, ]
+# remove Ttr
+c6_DE_AD_ADp40KO_padj <- c6_DE_AD_ADp40KO_padj[c6_DE_AD_ADp40KO_padj$X != "Ttr", ]
+
+c6_DE_AD_ADp40KO_padj <- c6_DE_AD_ADp40KO_padj[which(c6_DE_AD_ADp40KO_padj$p_val_adj < 0.05), ]
+
+datatable(c6_DE_AD_ADp40KO_padj, options = list(pageLength = 5, dom = 'tip'))
+```
+
+### GO of AD vs ADp40KO up-regulated genes (Cluster 6 MOL)
+
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+# data9set_MOL.SO <- subset(data9set_OL_OPC.SO, subset = cell_type %in% c("MOL"))
+# 
+# geneUniverse <- rownames(data9set_MOL.SO@assays$RNA@counts[rowSums(data9set_MOL.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- c6_DE_AD_ADp40KO_padj[c6_DE_AD_ADp40KO_padj$avg_logFC > 0, ]$X %>% as.character
+#  
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# # 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MOL_analysis_GO_AD_ADp40KO_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MOL_analysis_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### GO of AD vs ADp40KO down-regulated genes (Cluster 6 MOL)
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=5}
+
+genesOfInterest <- c6_DE_AD_ADp40KO_padj[c6_DE_AD_ADp40KO_padj$avg_logFC < 0, ]$X %>% as.character
+
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# #
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_MOL_analysis_GO_AD_ADp40KO_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MOL_analysis_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df, options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=5}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+### AD specific GO (but common) in MFOL
+
+Thought AD specific but common AD and ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+topGO1.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_Ctrl_UP.csv", row.names = 1)
+
+topGO2.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+topGO3.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_MFOL_analysis_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+AD_GO <- setdiff(topGO1.df$GO.ID , topGO2.df$GO.ID)
+
+topGO1.df[which(topGO1.df$GO.ID %in% AD_GO & topGO1.df$Annotated < 1000 & topGO1.df$Annotated > 30), ]
+```
+
+```{r warning=FALSE, message=FALSE}
+PDZ_domain_binding <- c("Plekha1", "Grid2", "Kirrel3", "Prkn")
+amyloid_beta_binding <- c("Cst3", "Apoe", "Trem2")
+actin_binding <- c("Ctnna3", "Mobp", "Tmod2", "Kcnma1", "Ctnna2", "Prkn", "Ablim2")
+cytokine_activity <- c("Csf1", "Il12b", "Il33", "Tafa5")
+
+microglial_cell_activation <-c ("Tyrobp", "C1qa", "Trem2", "Il33")
+negative_regulation_of_synaptic_transmission <- c("Grid2", "Dgki", "Mtmr2", "Prkn", "Slc6a1")
+
+genes <- c(PDZ_domain_binding, amyloid_beta_binding, actin_binding, cytokine_activity, microglial_cell_activation, negative_regulation_of_synaptic_transmission) %>% unique
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=3}
+##########################
+# z-score for each sample
+##########################
+data9set_MFOL_1.SO <- subset(data9set_MFOL.SO, subset = sample %in% "Ctrl")
+data9set_MFOL_2.SO <- subset(data9set_MFOL.SO, subset = sample %in% "AD")
+data9set_MFOL_3.SO <- subset(data9set_MFOL.SO, subset = sample %in% "ADp40KO")
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+OL1.df <- z_score_from_gene_list(data9set_MFOL_1.SO, genes)
+colnames(OL1.df) <- c("Ctrl", "gene")
+OL2.df <- z_score_from_gene_list(data9set_MFOL_2.SO, genes)
+colnames(OL2.df) <- c("AD", "gene")
+OL3.df <- z_score_from_gene_list(data9set_MFOL_3.SO, genes)
+colnames(OL3.df) <- c("ADp40KO", "gene")
+
+# merge all data frame
+MFOL.df <- merge(OL1.df, c(OL2.df, OL3.df), by = "gene")
+
+MFOL.df$gene.1 <- NULL
+rownames(MFOL.df) <- MFOL.df$gene
+MFOL.df$gene <- NULL
+
+MFOL_zs.df <- apply(MFOL.df, 1, function(x) (x - mean(x)) / sd(x))
+MFOL_zs.df <- data.frame(t(MFOL_zs.df))
+MFOL_zs.df$gene <- rownames(MFOL_zs.df)
+
+MFOL_zs.df$GO <- ifelse(MFOL_zs.df$gene %in% amyloid_beta_binding, "amyloid\nbeta\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(cytokine_activity, amyloid_beta_binding), "cytokine\nactivity", ifelse(MFOL_zs.df$gene %in% setdiff(PDZ_domain_binding, c(cytokine_activity, amyloid_beta_binding)), "PDZ\ndomain\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(actin_binding, c(PDZ_domain_binding, cytokine_activity, amyloid_beta_binding)), "actin\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(microglial_cell_activation, c(actin_binding, PDZ_domain_binding, cytokine_activity, amyloid_beta_binding)), "microglial\ncell\nactivation", "negative\nregulation\nof\nsynaptic\ntransmission")))))
+
+MFOL_zs.df <- gather(MFOL_zs.df, sample, z_score, Ctrl:ADp40KO)
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+
+ggplot(data = MFOL_zs.df, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+
+
+### AD specific GO in MFOL
+
+```{r warning=FALSE, message=FALSE}
+ADp40KO_GO <- setdiff(topGO2.df$GO.ID , topGO1.df$GO.ID)
+
+topGO2.df[which(topGO2.df$GO.ID %in% ADp40KO_GO & topGO2.df$Annotated < 1000 & topGO2.df$Annotated > 30), ]
+```
+
+```{r warning=FALSE, message=FALSE}
+peroxidase_activity <- c("Hbb-bs", "Hbb-bt", "Hba-a1", "Hba-a2")
+potassium_channel_regulator_activity <- c("Kcnab1", "Sgk3")
+zinc_ion_binding <- c("Otud7a", "Zfand4", "Dtnb", "Gli2", "Trim36") 
+protein_serine_threonine_kinase_activity <- c("Mast4", "Cdc42bpa", "Sgk3", "Cab39l")
+
+axon_guidance <- c("Tenm2", "Dscaml1", "Gli2", "Unc5c")
+sodium_ion_transport <- c("Slc8a1", "Hecw2", "Slc24a3")
+response_to_oxidative_stress <- c("Slc8a1", "Ptprk", "Oxr1", "Cst3")
+
+genes <- c(peroxidase_activity, potassium_channel_regulator_activity, zinc_ion_binding, protein_serine_threonine_kinase_activity, axon_guidance, sodium_ion_transport, response_to_oxidative_stress) %>% unique
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=3}
+OL1.df <- z_score_from_gene_list(data9set_MFOL_1.SO, genes)
+colnames(OL1.df) <- c("Ctrl", "gene")
+OL2.df <- z_score_from_gene_list(data9set_MFOL_2.SO, genes)
+colnames(OL2.df) <- c("AD", "gene")
+OL3.df <- z_score_from_gene_list(data9set_MFOL_3.SO, genes)
+colnames(OL3.df) <- c("ADp40KO", "gene")
+
+# merge all data frame
+MFOL.df <- merge(OL1.df, c(OL2.df, OL3.df), by = "gene")
+
+MFOL.df$gene.1 <- NULL
+rownames(MFOL.df) <- MFOL.df$gene
+MFOL.df$gene <- NULL
+
+MFOL_zs.df <- apply(MFOL.df, 1, function(x) (x - mean(x)) / sd(x))
+MFOL_zs.df <- data.frame(t(MFOL_zs.df))
+MFOL_zs.df$gene <- rownames(MFOL_zs.df)
+
+MFOL_zs.df$GO <- ifelse(MFOL_zs.df$gene %in% peroxidase_activity, "peroxidase\nactivity", ifelse(MFOL_zs.df$gene %in% setdiff(potassium_channel_regulator_activity, peroxidase_activity), "potassium\nchannel\nregulator\nactivity", ifelse(MFOL_zs.df$gene %in% setdiff(zinc_ion_binding, c(potassium_channel_regulator_activity, peroxidase_activity)), "zinc\nion\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(protein_serine_threonine_kinase_activity, c(zinc_ion_binding, potassium_channel_regulator_activity, peroxidase_activity)), "protein\nserine\nthreonine\nkinase\nactivity", ifelse(MFOL_zs.df$gene %in% setdiff(axon_guidance, c(protein_serine_threonine_kinase_activity, zinc_ion_binding, potassium_channel_regulator_activity, peroxidase_activity)), "axon\nguidance", ifelse(MFOL_zs.df$gene %in% setdiff(sodium_ion_transport, c(axon_guidance, protein_serine_threonine_kinase_activity, zinc_ion_binding, potassium_channel_regulator_activity, peroxidase_activity)),"sodium\nion\ntransport", "response\nto\noxidative\nstress"))))))
+
+MFOL_zs.df <- gather(MFOL_zs.df, sample, z_score, Ctrl:ADp40KO)
+
+ggplot(data = MFOL_zs.df, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+
+
+```
+
+### ADp40KO specific GO in MFOL
+
+```{r warning=FALSE, message=FALSE}
+ADp40KO_2_GO <- setdiff(topGO3.df$GO.ID , topGO1.df$GO.ID)
+
+topGO3.df[which(topGO3.df$GO.ID %in% ADp40KO_2_GO & topGO3.df$Annotated < 1000 & topGO3.df$Annotated > 30), ]
+```
+
+```{r warning=FALSE, message=FALSE}
+actin_filament_binding <- c("Shtn1", "Gas7", "Myo1d", "Syne1")
+protein_domain_specific_binding <- c("Pttg1", "Dtna", "Myo1d", "Hsp90ab1", "Tcf12", "Nlgn1", "Sh3kbp1")
+positive_regulation_of_synapse_assembly <- c("Ephb1", "Nlgn1", "Il1rapl1", "Prkca") 
+regulation_of_phosphatase_activity <- c("Anks1b", "Stxbp6", "Syne1", "Nlgn1")
+
+
+genes <- c(actin_filament_binding, protein_domain_specific_binding, positive_regulation_of_synapse_assembly, regulation_of_phosphatase_activity) %>% unique
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=3}
+OL1.df <- z_score_from_gene_list(data9set_MFOL_1.SO, genes)
+colnames(OL1.df) <- c("Ctrl", "gene")
+OL2.df <- z_score_from_gene_list(data9set_MFOL_2.SO, genes)
+colnames(OL2.df) <- c("AD", "gene")
+OL3.df <- z_score_from_gene_list(data9set_MFOL_3.SO, genes)
+colnames(OL3.df) <- c("ADp40KO", "gene")
+
+# merge all data frame
+MFOL.df <- merge(OL1.df, c(OL2.df, OL3.df), by = "gene")
+
+MFOL.df$gene.1 <- NULL
+rownames(MFOL.df) <- MFOL.df$gene
+MFOL.df$gene <- NULL
+
+MFOL_zs.df <- apply(MFOL.df, 1, function(x) (x - mean(x)) / sd(x))
+MFOL_zs.df <- data.frame(t(MFOL_zs.df))
+MFOL_zs.df$gene <- rownames(MFOL_zs.df)
+
+MFOL_zs.df$GO <- ifelse(MFOL_zs.df$gene %in% actin_filament_binding, "actin\nfilament\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(protein_domain_specific_binding, actin_filament_binding), "protein\ndomain\nspecific\nbinding", ifelse(MFOL_zs.df$gene %in% setdiff(positive_regulation_of_synapse_assembly, c(protein_domain_specific_binding, actin_filament_binding)), "positive\nregulation\nof synapse\nassembly", "regulation of\nphosphatase\nactivity")))
+
+MFOL_zs.df <- gather(MFOL_zs.df, sample, z_score, Ctrl:ADp40KO)
+
+ggplot(data = MFOL_zs.df, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+
+
+```
+
+
+### pseudotime trajectory analysis
+
+The underlying idea **Diffusion maps** is to assume that the data are samples from a diffusion process. The method infers the low-dimensional manifold by estimating the eigenvalues and eigenvectors for the diffusion operator related to the data. Angerer et al have applied the diffusion maps concept to the analysis of single-cell RNA-seq data to create an R package called destiny.
+
+```{r warning=FALSE, message=FALSE}
+#data9set_subcluster_OL_OPC.df <- GetAssayData(data9set_subcluster_OL_OPC.SO, slot = "data")
+
+data9set_subcluster_OL_OPC.df <- GetAssayData(data9set_OL_OPC.SO, slot = "data")
+
+
+hsv_genes <- rownames(data9set_subcluster_OL_OPC.SO@reductions$pca@feature.loadings)
+
+sub_OL_OPC.df <- data9set_subcluster_OL_OPC.df[rownames(data9set_subcluster_OL_OPC.df) %in% hsv_genes, ]
+
+sub_OL_OPC.df <- t(sub_OL_OPC.df) %>% as.data.frame
+
+ct <- as.ExpressionSet(sub_OL_OPC.df)
+# dm <- DiffusionMap(ct)
+# saveRDS(dm, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_destiny_dm.rda")
+dm <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_destiny_dm.rda")
+
+
+plot(dm, c(1,2))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+#dm@transitions
+
+meta <- data9set_OL_OPC.SO@meta.data
+
+psedo.df <- data.frame(DC1 = dm$DC1, DC3 = dm$DC3, cluster = meta$seurat_clusters, sample = meta$sample)
+
+ggplot(psedo.df, aes(x = DC1, y = DC3, color=cluster)) + geom_point()
+```
+
+### Scorpius trajectory analysis
+
+```{r warning=FALSE, message=FALSE}
+expression <- t(as.matrix(data9set_OL_OPC.SO@assays$RNA@data))
+group_name <- data9set_OL_OPC.SO@meta.data$seurat_clusters
+#space <- reduce_dimensionality(expression, "spearman", ndim = 3)
+#saveRDS(space, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_scorpius_space.rda")
+space <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_space.rda")
+
+draw_trajectory_plot(space, progression_group = group_name)
+#traj <- infer_trajectory(space)
+
+
+#saveRDS(traj, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_scorpius_trajectory.rda")
+traj <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_trajectory.rda")
+#traj$time
+
+
+draw_trajectory_plot(
+  space, 
+  progression_group = group_name,
+  path = traj$path,
+  point_size = 1,
+  contour = FALSE) + ggtitle("Oligodendrocytes trajectory") + scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "red", "green")) +  
+  scale_color_discrete(name = "Group", labels = c("MFOL(cluster 1)", "MFOL(cluster 5)", "MOL(cluster 6)", "OPC(cluster 12)","NFOL(cluster 38)")) + 
+  theme(axis.text = element_text(size  = 12),
+        plot.title = element_text(hjust = 0.5))
+
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# gimp <- gene_importances(expression, traj$time, num_permutations = 0, num_threads = 24)
+# saveRDS(gimp, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_scorpius_gimp.rda")
+gimp <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_gimp.rda")
+
+gene_sel <- gimp[1:90,]
+expr_sel <- expression[,gene_sel$gene]
+#draw_trajectory_heatmap(expr_sel, traj$time, group_name)
+
+# modules <- extract_modules(scale_quantile(expr_sel), traj$time, verbose = FALSE)
+# saveRDS(modules, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final_scorpius_modules.rda")
+modules <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_modules.rda")
+
+
+draw_trajectory_heatmap(expr_sel, traj$time, group_name, modules)
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE}
+traj.df <- traj$time %>% as.data.frame
+traj.df <- cbind(traj.df, meta$seurat_clusters)
+
+expression.df <- as.data.frame(data9set_OL_OPC.SO@assays$RNA@data)
+
+pseudograph <- function(gene = "Pdgfra"){
+  gene.df <- expression.df[rownames(expression.df) %in% gene, ] %>% t 
+  traj_gene.df <- cbind(traj.df, gene.df)
+  colnames(traj_gene.df) <- c("pseudotime", "cluster", "gene")
+  return(traj_gene.df)  
+}
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=12}
+pseudo_graph <- pseudograph(gene = "Apod")
+g1 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = cluster)) + geom_point() + stat_smooth(method = "loess", formula = y ~ x, size = 1, se = FALSE) + ggtitle("APOD gene")
+pseudo_graph <- pseudograph(gene = "Pdgfra")
+g2 <- ggplot(pseudo_graph, aes(x = pseudotime, y = gene, color = cluster)) + geom_point() + stat_smooth(method = "lm", formula = y ~ x + I(x^2), size = 1, se = FALSE) + ggtitle("Pdgfra gene")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```

@@ -1,0 +1,1429 @@
+---
+title: "edgeR test"
+author: "Skim"
+date: '2020 7 21 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+In this report, I tested DE as edgeR method. Previous MAST method didn't find many DE as expected. Below is explanation how I analyzed. I analyzed by edgeRQLFDetRate by previous DE review paper. **edgeRQLFDetRate** means using edgeR with empirical Bayes quasi-likelihood F-tests (QLF) and Cellular detection rate (CDR). The definition of CDR is the faction of genes that are detectably expressed in each cell (proportion of genes detected in each cell). CDR is like drop-out technical factor that is extrinsic factor which explains covariate
+
+Following edgeRQLFDetRate tutotial [ref](https://github.com/csoneson/conquer_comparison/blob/master/scripts/apply_edgeRQLFDetRate.R)
+
+edgeRQLF tutorial
+[ref](https://github.com/csoneson/conquer_comparison/blob/master/scripts/apply_edgeRQLF.R)
+
+Seurat to singlecellexperiment conversion [ref](https://satijalab.org/seurat/v3.0/conversion_vignette.html)  
+singlecellexperiment to edgeR DGElist conversion [ref](https://github.com/csoneson/conquer_comparison/blob/master/scripts/apply_edgeRQLFDetRate.R) 
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+library(scran)
+library(edgeR)
+library(topGO)
+library(scales)
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+```{r warning=FALSE, message=FALSE}
+Volcano_plot_MAST <- function(DE_DF, DE_DF_padj, title = "title", lable_padj = 1e-10){
+  ggplot(DE_DF) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = DE_DF_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle(title) + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = DE_DF_padj[DE_DF_padj$p_val_adj < lable_padj, ], aes(x = avg_logFC, y = -log10(p_val_adj), label = rownames(DE_DF_padj[DE_DF_padj$p_val_adj < lable_padj, ]))) 
+}
+
+Volcano_plot_edgeR <- function(DE_DF, DE_DF_padj, title = "title", lable_padj = 1e-10){
+  ggplot(DE_DF) + geom_point(aes(x = logFC, y = -log10(FDR))) + 
+  geom_point(data = DE_DF_padj, aes(x = logFC, y = -log10(FDR)), color = "red") + theme_classic() +
+  ggtitle(title) + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = DE_DF_padj[DE_DF_padj$FDR < lable_padj, ], aes(x = logFC, y = -log10(FDR), label = rownames(DE_DF_padj[DE_DF_padj$FDR < lable_padj, ]))) 
+}
+```
+
+```{r warning=FALSE, message=FALSE}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+# export GO ID from BP
+if(i == 1){
+  allGO_MF <- genesInTerm(GOdata)
+}
+if(i == 2){
+  allGO_BP <- genesInTerm(GOdata)
+}
+
+if(i == 3){
+  allGO_CC <- genesInTerm(GOdata)
+}
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+for(i in 1:30){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_MF[ID][[1]]], collapse=', ' )
+}
+for(i in 31:60){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_BP[ID][[1]]], collapse=', ' )
+}
+for(i in 61:90){
+ ID <- topGOResults.df$GO.ID[i]
+ #print(ID)
+ #print(paste(genesOfInterest[genesOfInterest %in% allGO[ID][[1]]], collapse=', ' ))
+ topGOResults.df[i, "genes"] <- paste(genesOfInterest[genesOfInterest %in% allGO_CC[ID][[1]]], collapse=', ' )
+}
+
+return(topGOResults.df)
+}
+
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") +
+  theme_minimal() + theme(axis.text = element_text(size = 10))
+
+}
+
+```
+### cluster 29
+
+```{r warning=FALSE, message=FALSE}
+data9set_29.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(29))
+```
+
+```{r warning=FALSE, message=FALSE}
+# # convert Seurat object to sce object
+# sce <- as.SingleCellExperiment(data9set_29.SO)
+# 
+# # convert to dge by edgeR
+# dge <- scran::convertTo(sce, type = "edgeR")
+# 
+# dge$samples$group <- dge$samples$sample
+# 
+# #table(dge$samples$group)
+# 
+# dge <- calcNormFactors(dge)
+# 
+# 
+# meta <- data.frame(id = rownames(data9set_29.SO@meta.data), 
+#                    group = data9set_29.SO$sample,
+#                    stringsAsFactors = FALSE)
+# 
+# cdr <- scale(colMeans(data9set_29.SO@assays$RNA@counts))
+# 
+# design <- model.matrix(~ cdr + meta$group)
+# 
+# #design2 <- model.matrix(~0+meta$group)
+# 
+# dge <- estimateDisp(dge, design = design)
+# 
+# dge$samples$group <- relevel(dge$samples$group, ref="Ctrl")
+# 
+# fit <- glmQLFit(dge, design = design)
+
+# # plotting
+# plotBCV(dge)
+# plotQLDisp(fit)
+# hist(tt$table$PValue, 50)
+# hist(tt$table$FDR, 50)
+# limma::plotMDS(dge, col = as.numeric(as.factor(meta$group)), pch = 19)
+# plotSmear(qlf)
+```
+
+### Cluster 29 AD vs Ctrl
+
+Tmsb4x, Gm42418 are not statistically significant in edgeR while rest 6 genes are statistically significant
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,0))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_AD_Ctrl.csv")
+
+
+c29_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_AD_Ctrl.csv", row.names = 1)
+
+c29_DE_AD_Ctrl_padj <- c29_DE_AD_Ctrl[c29_DE_AD_Ctrl$FDR < .05, ]
+
+
+c29_DE_AD_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_29AD_Ctrl_corrected.csv", row.names = 1)
+
+c29_DE_AD_Ctrl_MAST_padj <- c29_DE_AD_Ctrl_MAST[c29_DE_AD_Ctrl_MAST$p_val_adj < .05, ]
+
+v1 <- Volcano_plot_MAST(c29_DE_AD_Ctrl_MAST, c29_DE_AD_Ctrl_MAST_padj, title = "cluster29 AD vs Ctrl by MAST(8 sig genes)", lable_padj = 1e-3)
+
+v2 <- Volcano_plot_edgeR(c29_DE_AD_Ctrl, c29_DE_AD_Ctrl_padj, title = "cluster29 AD vs Ctrl by edgeR(80 sig genes)", lable_padj = 1e-3)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+v1 <- VlnPlot(data9set_29.SO, features = "Tmsb4x", group.by = "sample")
+v2 <- VlnPlot(data9set_29.SO, features = "Gm42418", group.by = "sample")
+v3 <- VlnPlot(data9set_29.SO, features = "Kcnq5", group.by = "sample")
+v4 <- VlnPlot(data9set_29.SO, features = "Phactr1", group.by = "sample")
+
+grid.arrange(v1, v2, v3, v4, ncol = 2)
+```
+
+### Cluster 29 AD40KO vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# qlf <- glmQLFTest(fit, contrast = c(0,0,0,1))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_ADp40KO_Ctrl.csv")
+
+
+c29_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_ADp40KO_Ctrl.csv", row.names = 1)
+
+c29_DE_ADp40KO_Ctrl_padj <- c29_DE_ADp40KO_Ctrl[c29_DE_ADp40KO_Ctrl$FDR < .05, ]
+
+
+c29_DE_ADp40KO_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_29ADp40KO_Ctrl_corrected.csv", row.names = 1)
+
+c29_DE_ADp40KO_Ctrl_MAST_padj <- c29_DE_ADp40KO_Ctrl_MAST[c29_DE_ADp40KO_Ctrl_MAST$p_val_adj < .05, ]
+
+
+v1 <- Volcano_plot_MAST(c29_DE_ADp40KO_Ctrl_MAST, c29_DE_ADp40KO_Ctrl_MAST_padj, title = "cluster29 ADp40KO vs Ctrl by MAST(0 sig genes)", lable_padj = 1e-3)
+
+v2 <- Volcano_plot_edgeR(c29_DE_ADp40KO_Ctrl, c29_DE_ADp40KO_Ctrl_padj, title = "cluster29 ADp40KO vs Ctrl by edgeR(32 sig genes)", lable_padj = 1e-3)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### Cluster 29 AD vs ADp40KO
+
+Gm42418 and Cst3 are not statistically significant in edgeR but Apoe is statistically significant
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,-1))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_AD_ADp40KO.csv")
+
+
+c29_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cluster/20200721_edgeR_DE_test_clster29_cluster29_AD_ADp40KO.csv", row.names = 1)
+
+c29_DE_AD_ADp40KO_padj <- c29_DE_AD_ADp40KO[c29_DE_AD_ADp40KO$FDR < .05, ]
+
+c29_DE_AD_ADp40KO_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_29ADp40KO_AD_corrected.csv", row.names = 1)
+
+# convert logFC
+c29_DE_AD_ADp40KO_MAST$avg_logFC <- c29_DE_AD_ADp40KO_MAST$avg_logFC * -1
+
+c29_DE_AD_ADp40KO_MAST_padj <- c29_DE_AD_ADp40KO_MAST[c29_DE_AD_ADp40KO_MAST$p_val_adj < .05, ]
+
+
+
+v1 <- Volcano_plot_MAST(c29_DE_AD_ADp40KO_MAST, c29_DE_AD_ADp40KO_MAST_padj, title = "cluster29 AD vs ADp40KO by MAST(3 sig genes)", lable_padj = 1e-3)
+
+v2 <- Volcano_plot_edgeR(c29_DE_AD_ADp40KO, c29_DE_AD_ADp40KO_padj, title = "cluster29 AD vs ADp40KO by edgeR(43 sig genes)", lable_padj = 1e-3)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### Microglia (cluster 3 & 8)
+
+```{r warning=FALSE, message=FALSE}
+data9set_3_8.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(3, 8))
+
+# # edgeR 
+# # convert Seurat object to sce object
+# sce <- as.SingleCellExperiment(data9set_3_8.SO)
+# 
+# # convert to dge by edgeR
+# dge <- scran::convertTo(sce, type = "edgeR")
+# 
+# dge$samples$group <- dge$samples$sample
+# 
+# table(dge$samples$group)
+# 
+# dge <- calcNormFactors(dge)
+# 
+# meta <- data.frame(id = rownames(data9set_3_8.SO@meta.data), 
+#                    group = data9set_3_8.SO$sample,
+#                    stringsAsFactors = FALSE)
+# 
+# 
+# cdr <- scale(colMeans(data9set_3_8.SO@assays$RNA@counts))
+# 
+# design <- model.matrix(~ cdr + meta$group)
+# #design2 <- model.matrix(~0+meta$group)
+# 
+# dge <- estimateDisp(dge, design = design)
+# 
+# dge$samples$group <- relevel(dge$samples$group, ref="Ctrl")
+# 
+# fit <- glmQLFit(dge, design = design)
+```
+
+### Microglia AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# # EdgeR 
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,0))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_AD_Ctrl.csv")
+
+MG_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_AD_Ctrl.csv", row.names = 1)
+
+MG_DE_AD_Ctrl_padj <- MG_DE_AD_Ctrl[MG_DE_AD_Ctrl$FDR < .05, ]
+
+
+MG_DE_AD_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+
+MG_DE_AD_Ctrl_MAST_padj <- MG_DE_AD_Ctrl_MAST[MG_DE_AD_Ctrl_MAST$p_val_adj < .05, ]
+
+v1 <- Volcano_plot_MAST(MG_DE_AD_Ctrl_MAST, MG_DE_AD_Ctrl_MAST_padj, title = "MG AD vs Ctrl by MAST(286 sig genes)", lable_padj = 1e-50)
+
+v2 <- Volcano_plot_edgeR(MG_DE_AD_Ctrl, MG_DE_AD_Ctrl_padj, title = "MG AD vs Ctrl by edgeR(867 sig genes)", lable_padj = 1e-50)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### GO up-regulated AD vs Ctrl MG by MAST 
+
+190 genes (190 genes if logFC > 0.1 & 182 genes if logFC > 0.2) as genes of interest out of 23901 background genes
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(data9set_3_8.SO@assays$RNA@counts[rowSums(data9set_3_8.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_Ctrl_MAST_padj[MG_DE_AD_Ctrl_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_Ctrl_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_Ctrl_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO up-regulated AD vs Ctrl MG by edgeR
+
+354 genes (logFC > 0.2) as genes of interest out of 31790 background genes
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(MG_DE_AD_Ctrl) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_Ctrl_padj[MG_DE_AD_Ctrl_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_Ctrl_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_Ctrl_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### Microglia ADp40KO vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# qlf <- glmQLFTest(fit, contrast = c(0,0,0,1))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_ADp40KO_Ctrl.csv")
+
+# load edgeR results
+MG_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_ADp40KO_Ctrl.csv", row.names = 1)
+# padj subset DF
+MG_DE_ADp40KO_Ctrl_padj <- MG_DE_ADp40KO_Ctrl[MG_DE_ADp40KO_Ctrl$FDR < .05, ]
+
+# load MAST results
+MG_DE_ADp40KO_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaADp40KO_Ctrl.csv", row.names = 1)
+# padj subset DF
+MG_DE_ADp40KO_Ctrl_MAST_padj <- MG_DE_ADp40KO_Ctrl_MAST[MG_DE_ADp40KO_Ctrl_MAST$p_val_adj < .05, ]
+
+v1 <- Volcano_plot_MAST(MG_DE_ADp40KO_Ctrl_MAST, MG_DE_ADp40KO_Ctrl_MAST_padj, title = "MG ADp40KO vs Ctrl by MAST(280 sig genes)", lable_padj = 1e-50)
+
+v2 <- Volcano_plot_edgeR(MG_DE_ADp40KO_Ctrl, MG_DE_ADp40KO_Ctrl_padj, title = "MG ADp40KO vs Ctrl by edgeR(872 sig genes)", lable_padj = 1e-50)
+
+grid.arrange(v1, v2, ncol =2)
+
+```
+
+### GO up-regulated ADp40KO vs Ctrl MG by MAST
+
+189 genes of genes of interest (logFC > 0.1: 189 genes, logFC > 0.2: 180 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_3_8.SO@assays$RNA@counts[rowSums(data9set_3_8.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_ADp40KO_Ctrl_MAST_padj[MG_DE_ADp40KO_Ctrl_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_ADp40KO_Ctrl_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_ADp40KO_Ctrl_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### GO up-regulated ADp40KO vs Ctrl CA1 by edgeR
+
+395 genes (logFC > 0.2) as genes of interest 
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(MG_DE_ADp40KO_Ctrl) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_ADp40KO_Ctrl_padj[MG_DE_ADp40KO_Ctrl_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_ADp40KO_Ctrl_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_ADp40KO_Ctrl_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### Microglia AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,-1))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_AD_ADp40KO.csv")
+
+# load edgeR results
+MG_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_Microglia_AD_ADp40KO.csv", row.names = 1)
+# padj subset DF
+MG_DE_AD_ADp40KO_padj <- MG_DE_AD_ADp40KO[MG_DE_AD_ADp40KO$FDR < .05, ]
+
+# load MAST results
+MG_DE_AD_ADp40KO_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv", row.names = 1)
+# padj subset DF
+MG_DE_AD_ADp40KO_MAST_padj <- MG_DE_AD_ADp40KO_MAST[MG_DE_AD_ADp40KO_MAST$p_val_adj < .05, ]
+
+v1 <- Volcano_plot_MAST(MG_DE_AD_ADp40KO_MAST, MG_DE_AD_ADp40KO_MAST_padj, title = "MG AD vs ADp40KO by MAST(26 sig genes)", lable_padj = 1e-50)
+
+v2 <- Volcano_plot_edgeR(MG_DE_AD_ADp40KO, MG_DE_AD_ADp40KO_padj, title = "MG AD vs ADp40KO by edgeR(99 sig genes)", lable_padj = 1e-50)
+
+grid.arrange(v1, v2, ncol =2)
+
+
+```
+
+### GO up-regulated AD vs ADp40KO MG by MAST
+
+18 genes as gene of interest (logFC > 0.1: 18 genes,  logFC > 0.2: 13 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_3_8.SO@assays$RNA@counts[rowSums(data9set_3_8.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_ADp40KO_MAST_padj[MG_DE_AD_ADp40KO_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### GO up-regulated AD vs ADp40KO MG by edgeR
+
+29 genes as genes of interest(logFC > 0.2)
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(MG_DE_AD_ADp40KO) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_ADp40KO_padj[MG_DE_AD_ADp40KO_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO down-regulated AD vs ADp40KO MG by MAST
+
+8 genes as gene of interest (logFC < -0.1: 8 genes,  logFC < -0.2: 4 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_3_8.SO@assays$RNA@counts[rowSums(data9set_3_8.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_ADp40KO_MAST_padj[MG_DE_AD_ADp40KO_MAST_padj$avg_logFC < -0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO down-regulated AD vs ADp40KO MG by edgeR
+
+33 genes as genes of interest(logFC < - 0.2)
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(MG_DE_AD_ADp40KO) %>% as.character
+# 
+# genesOfInterest <- rownames(MG_DE_AD_ADp40KO_padj[MG_DE_AD_ADp40KO_padj$logFC < -0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_DOWN_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_DOWN_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### Microglia GO heatmap 
+
+```{r warning=FALSE, message=FALSE}
+GO_AD_ctrl_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_Ctrl_UP.csv", row.names = 1)
+
+GO_ADp40KO_ctrl_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_ADp40KO_Ctrl_UP_edgeR.csv", row.names = 1)
+
+GO_ADp40KO_AD_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_MG_GO_AD_ADp40KO_DOWN_edgeR.csv", row.names = 1)
+
+AD_GO <- intersect(GO_AD_ctrl_up[which(GO_AD_ctrl_up$Annotated < 1000 & GO_AD_ctrl_up$Annotated > 30), ]$GO.ID, GO_ADp40KO_ctrl_up[which(GO_ADp40KO_ctrl_up$Annotated < 1000 & GO_ADp40KO_ctrl_up$Annotated > 30), ]$GO.ID)
+
+
+AD_ADp40KO_GO <- rbind(GO_AD_ctrl_up[GO_AD_ctrl_up$GO.ID %in% AD_GO, ], GO_ADp40KO_ctrl_up[GO_ADp40KO_ctrl_up$GO.ID %in% AD_GO, ])
+
+ADp40KO_GO <- setdiff(GO_ADp40KO_AD_up[which(GO_ADp40KO_AD_up$Annotated < 1000 & GO_ADp40KO_AD_up$Annotated > 30), ]$GO.ID,GO_AD_ctrl_up[which(GO_AD_ctrl_up$Annotated < 1000 & GO_AD_ctrl_up$Annotated > 30), ]$GO.ID)
+
+ADp40KO_specific_GO <- GO_ADp40KO_AD_up[GO_ADp40KO_AD_up$GO.ID %in% ADp40KO_GO, ]
+
+
+#AD_ADp40KO_GO[AD_ADp40KO_GO$GO.ID %in% "GO:0008201", ]$genes
+```
+
+```{r warning=FALSE, message=FALSE}
+# AD & ADp40KO common
+amyloid_beta_binding <- c("Apbb2", "Apoe", "Ldlrad3", "Ldlr", "Apbb2", "Apoe", "Ldlrad3", "Ldlr", "Gsap", "Fcgr2b", "Col25a1", "Trem2", "Scarb1") %>% unique
+
+heparin_binding <- c("Nrp1", "Apoe", "Serpine2", "Ptprc", "Lpl", "Nrp2", "Fgf1", "Nrp1", "Serpine2", "Apoe", "Ptprc", "Lpl", "Aplp2", "Fgf1", "Col25a1", "Nrp2") %>% unique
+
+innate_immune_response <- c("Cadm1", "Apoe", "Rftn1", "Axl", "Otulin", "Ccl4", "Ccl3", "Csf1", "Cd300lf", "Oasl2", "Lyst", "Myo1f", "Rab7b", "Cd244a", "Kynu", 'Il12b', "Zc3hav1", "Nlrc5", "Ly86", "Cd180", "Colec12", "Cd84", "Ifi204", "Cadm1", "Rftn1", "Cd300lf", "Apoe", "Ccl4", "Axl", "Lyst", "Otulin", "Myo1f", "Oasl2", "Cd244a", "Csf1", "Ccl3", "Colec12", "Trim30a", "Rab7b", "Ifi204", "Nlrc5", "Ly86", "Parp14", "Ly9", "Kynu", "Cd84", "Rab11fip5", "Mx2", "Eif2ak2", "Masp1", "Zc3hav1", "Mpeg1", "Mfhas1", "Trem2", "Slc11a1", "Trim25", "Fcer1g", "Havcr2", "Stat2", "Mapkapk2", "Grn", "Cd180", "Parp9", "Ddx3x", "C1qb", "Apobec3") %>% unique
+
+
+# AD specific
+SH3_domain_binding <- c("Pttg1", "Picalm", "Dnm1")
+
+transition_metal_ion_binding <- c("Fth1", "Prkcb", "Mycbp2", "P3h2", "Smad3", "Apobec3")
+
+regulation_of_locomotion <- c("Ssh2", "Mycbp2", "Gna12", "Smad3", "Ctsh", "Fermt3")
+
+
+genes <- c(amyloid_beta_binding, heparin_binding, innate_immune_response, SH3_domain_binding, transition_metal_ion_binding, regulation_of_locomotion) %>% unique
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+df <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_3_8.SO, slot = "data")))
+df$gene <- rownames(df)
+colnames(df) <- c("expression", "gene")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=4}
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+
+##########################
+# z-score for each sample
+##########################
+data9set_3_8_1.SO <- subset(data9set_3_8.SO, subset = sample %in% "Ctrl")
+data9set_3_8_2.SO <- subset(data9set_3_8.SO, subset = sample %in% "AD")
+data9set_3_8_3.SO <- subset(data9set_3_8.SO, subset = sample %in% "ADp40KO")
+
+
+MG.df1 <- z_score_from_gene_list(data9set_3_8_1.SO, genes)
+colnames(MG.df1) <- c("Ctrl", "gene")
+MG.df2 <- z_score_from_gene_list(data9set_3_8_2.SO, genes)
+colnames(MG.df2) <- c("AD", "gene")
+MG.df3 <- z_score_from_gene_list(data9set_3_8_3.SO, genes)
+colnames(MG.df3) <- c("ADp40KO", "gene")
+
+# merge all data frame
+MG.df <- merge(MG.df1, c(MG.df2, MG.df3), by = "gene")
+
+MG.df$gene.1 <- NULL
+rownames(MG.df) <- MG.df$gene
+MG.df$gene <- NULL
+
+MG_zs.df <- apply(MG.df, 1, function(x) (x - mean(x)) / sd(x))
+MG_zs.df <- data.frame(t(MG_zs.df))
+MG_zs.df$gene <- rownames(MG_zs.df)
+
+MG_zs.df <- MG_zs.df %>% mutate(GO = case_when(gene %in% amyloid_beta_binding ~ "amyloid\nbeta\nbinding",
+                                                     gene %in% heparin_binding ~ "heparin\nbinding",
+                                                     gene %in% innate_immune_response ~ "innate immune response",
+                                                     gene %in% SH3_domain_binding ~ "SH3\ndomain\nbinding",
+                                                     gene %in% transition_metal_ion_binding ~ "transition\nmetal ion binding",
+                                                     gene %in% regulation_of_locomotion ~ "regulation of\nlocomotion"))
+
+
+MG_zs.df <- gather(MG_zs.df, sample, z_score, Ctrl:ADp40KO)
+
+MG_zs.df$GO <- factor(MG_zs.df$GO, levels = c("amyloid\nbeta\nbinding", "heparin\nbinding", "innate immune response", "SH3\ndomain\nbinding", "transition\nmetal ion binding", "regulation of\nlocomotion"))
+
+
+MG_zs.df <- left_join(MG_zs.df, df, by = "gene")
+
+MG_zs.df$all <- "ADp40KO"
+
+g1 <- ggplot(data = MG_zs.df, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+```
+
+I showed with expression levels. amyloid beta binding, heparin_binding, innate_immune_response are AD & ADp4pKO common GO. SH3_domain_binding, transition_metal_ion_binding and regulation_of_locomotion are resucued GO
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+g2 <- ggplot(data = MG_zs.df, mapping = aes(x = all, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "white"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#999999", "#FF9900", "#FF0000"), limits = c(0, 4), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,1))
+```
+
+
+### CA1 edgeR
+
+```{r warning=FALSE, message=FALSE}
+data9set_CA1.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(2, 13, 18, 40))
+
+# edgeR
+# convert Seurat object to sce object
+# sce <- as.SingleCellExperiment(data9set_CA1.SO)
+# 
+# # convert to dge by edgeR
+# dge <- scran::convertTo(sce, type = "edgeR")
+# 
+# dge$samples$group <- dge$samples$sample
+# 
+# #table(dge$samples$group)
+# 
+# dge <- calcNormFactors(dge)
+# 
+# meta <- data.frame(id = rownames(data9set_CA1.SO@meta.data),
+#                    group = data9set_CA1.SO$sample,
+#                    stringsAsFactors = FALSE)
+# 
+# 
+# cdr <- scale(colMeans(data9set_CA1.SO@assays$RNA@counts))
+# 
+# design <- model.matrix(~ cdr + meta$group)
+# #design2 <- model.matrix(~0+meta$group)
+# 
+# dge <- estimateDisp(dge, design = design)
+# 
+# dge$samples$group <- relevel(dge$samples$group, ref="Ctrl")
+# #
+# fit <- glmQLFit(dge, design = design)
+
+```
+
+### CA1 AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# # EdgeR
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,0))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+#  
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_CA1_AD_Ctrl.csv")
+
+CA1_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_CA1_AD_Ctrl.csv", row.names = 1)
+
+CA1_DE_AD_Ctrl_padj <- CA1_DE_AD_Ctrl[CA1_DE_AD_Ctrl$FDR < .05, ]
+
+# # MAST calculation
+# CA1_DE_AD_Ctrl_MAST <- FindMarkers(data9set_CA1.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# write.csv(CA1_DE_AD_Ctrl_MAST, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_AD_Ctrl.csv")
+
+CA1_DE_AD_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_AD_Ctrl.csv", row.names = 1)
+
+CA1_DE_AD_Ctrl_MAST_padj <- CA1_DE_AD_Ctrl_MAST[CA1_DE_AD_Ctrl_MAST$p_val_adj < .05, ]
+
+v1 <- Volcano_plot_MAST(CA1_DE_AD_Ctrl_MAST, CA1_DE_AD_Ctrl_MAST_padj, title = "CA1 AD vs Ctrl by MAST(266 sig genes)", lable_padj = 1e-30)
+
+v2 <- Volcano_plot_edgeR(CA1_DE_AD_Ctrl, CA1_DE_AD_Ctrl_padj, title = "CA1 AD vs Ctrl by edgeR(1386 sig genes)", lable_padj = 1e-30)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### GO up-regulated AD vs Ctrl CA1 by MAST
+
+184 genes (59 genes if logFC > 0.1 & 6 genes if logFC > 0.2) as genes of interest out of 30066 background genes
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(data9set_CA1.SO@assays$RNA@counts[rowSums(data9set_CA1.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_Ctrl_MAST_padj[CA1_DE_AD_Ctrl_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+#  write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_Ctrl_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_Ctrl_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO up-regulated AD vs Ctrl CA1 by edgeR
+
+169 genes (logFC > 0.2) as genes of interest out of 31790 background genes
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(CA1_DE_AD_Ctrl) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_Ctrl_padj[CA1_DE_AD_Ctrl_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_Ctrl_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_Ctrl_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### CA1 ADp40KO vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# # EdgeR
+# qlf <- glmQLFTest(fit, contrast = c(0,0,0,1))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_CA1_ADp40KO_Ctrl.csv")
+
+CA1_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_CA1_ADp40KO_Ctrl.csv", row.names = 1)
+
+CA1_DE_ADp40KO_Ctrl_padj <- CA1_DE_ADp40KO_Ctrl[CA1_DE_ADp40KO_Ctrl$FDR < .05, ]
+
+# # MAST calculation
+# CA1_DE_ADp40KO_Ctrl_MAST <- FindMarkers(data9set_CA1.SO, ident.1 = "ADp40KO", ident.2 = "Ctrl", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# write.csv(CA1_DE_ADp40KO_Ctrl_MAST, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_ADp40KO_Ctrl.csv")
+
+
+CA1_DE_ADp40KO_Ctrl_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_ADp40KO_Ctrl.csv", row.names = 1)
+
+CA1_DE_ADp40KO_Ctrl_MAST_padj <- CA1_DE_ADp40KO_Ctrl_MAST[CA1_DE_ADp40KO_Ctrl_MAST$p_val_adj < .05, ]
+
+
+v1 <- Volcano_plot_MAST(CA1_DE_ADp40KO_Ctrl_MAST, CA1_DE_ADp40KO_Ctrl_MAST_padj, title = "CA1 ADp40KO vs Ctrl by MAST(419 sig genes)", lable_padj = 1e-30)
+
+v2 <- Volcano_plot_edgeR(CA1_DE_ADp40KO_Ctrl, CA1_DE_ADp40KO_Ctrl_padj, title = "CA1 AD vs Ctrl by edgeR(2018 sig genes)", lable_padj = 1e-30)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### GO up-regulated ADp40KO vs Ctrl CA1 by MAST
+
+282 genes of genes of interest (logFC > 0.1: 88 genes, logFC > 0.2: 7 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_CA1.SO@assays$RNA@counts[rowSums(data9set_CA1.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_ADp40KO_Ctrl_MAST_padj[CA1_DE_ADp40KO_Ctrl_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_ADp40KO_Ctrl_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_ADp40KO_Ctrl_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### GO up-regulated ADp40KO vs Ctrl CA1 by edgeR
+
+266 genes (logFC > 0.2) as genes of interest 
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(CA1_DE_ADp40KO_Ctrl) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_ADp40KO_Ctrl_padj[CA1_DE_ADp40KO_Ctrl_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_ADp40KO_Ctrl_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_ADp40KO_Ctrl_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### CA1 AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+# # MAST calculation
+# CA1_DE_AD_ADp40KO_MAST <- FindMarkers(data9set_CA1.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", min.pct = 0.01, logfc.threshold = 0.01)
+# 
+# write.csv(CA1_DE_AD_ADp40KO_MAST, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_AD_ADp04KO.csv")
+
+CA1_DE_AD_ADp40KO_MAST <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/20200721_edgeR_DE_test_clster29_MAST_CA1_AD_ADp04KO.csv", row.names = 1)
+
+CA1_DE_AD_ADp40KO_MAST_padj <- CA1_DE_AD_ADp40KO_MAST[CA1_DE_AD_ADp40KO_MAST$p_val_adj < .05, ]
+
+# edgeR
+CA1_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_ADp40KO.csv", row.names = 1)
+
+CA1_DE_AD_ADp40KO_padj <- CA1_DE_AD_ADp40KO[CA1_DE_AD_ADp40KO$FDR < .05, ]
+
+
+v1 <- Volcano_plot_MAST(CA1_DE_AD_ADp40KO_MAST, CA1_DE_AD_ADp40KO_MAST_padj, title = "CA1 AD vs ADp40KO by MAST(279 sig genes)", lable_padj = 1e-30)
+
+v2 <- Volcano_plot_edgeR(CA1_DE_AD_ADp40KO, CA1_DE_AD_ADp40KO_padj, title = "CA1 AD vs ADp40KO by edgeR(1502 sig genes)", lable_padj = 1e-30)
+
+grid.arrange(v1, v2, ncol =2)
+```
+
+### GO up-regulated AD vs ADp40KO CA1 by MAST
+
+143 genes as gene of interest (logFC > 0.1: 88 genes,  logFC > 0.2: 17 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_CA1.SO@assays$RNA@counts[rowSums(data9set_CA1.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_ADp40KO_MAST_padj[CA1_DE_AD_ADp40KO_MAST_padj$avg_logFC > 0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_UP.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_UP.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### GO up-regulated AD vs ADp40KO CA1 by edgeR
+
+131 genes as genes of interest(logFC > 0.2)
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(CA1_DE_AD_ADp40KO) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_ADp40KO_padj[CA1_DE_AD_ADp40KO_padj$logFC > 0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_UP_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_UP_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO down-regulated AD vs ADp40KO CA1 by MAST
+
+136 genes as gene of interest (logFC < -0.1: 65 genes,  logFC < -0.2: 6 genes)
+
+```{r warning=FALSE, message=FALSE}
+# geneUniverse <- rownames(data9set_CA1.SO@assays$RNA@counts[rowSums(data9set_CA1.SO@assays$RNA@counts) > 0, ]) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_ADp40KO_MAST_padj[CA1_DE_AD_ADp40KO_MAST_padj$avg_logFC < -0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO down-regulated AD vs ADp40KO CA1 by edgeR
+
+170 genes as genes of interest(logFC < - 0.2)
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(CA1_DE_AD_ADp40KO) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_ADp40KO_padj[CA1_DE_AD_ADp40KO_padj$logFC < -0.2, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+#  
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### GO down-regulated AD vs ADp40KO CA1 by edgeR
+
+892 genes as genes of interest(logFC < - 0)
+
+```{r warning=FALSE, message=FALSE}
+#  # background genes
+# geneUniverse <- rownames(CA1_DE_AD_ADp40KO) %>% as.character
+# 
+# genesOfInterest <- rownames(CA1_DE_AD_ADp40KO_padj[CA1_DE_AD_ADp40KO_padj$logFC < -0, ]) %>% as.character
+# 
+# topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+# 
+# write.csv(topGOResults.df, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN_0_edgeR.csv")
+
+topGOResults.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN_0_edgeR.csv", row.names = 1)
+
+datatable(topGOResults.df[which(topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 1000 & topGOResults.df$Annotated > 30), ][c(1:15), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### CA1 GO heatmap 
+
+```{r warning=FALSE, message=FALSE}
+GO_AD_ctrl_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_Ctrl_UP_edgeR.csv", row.names = 1)
+
+GO_ADp40KO_ctrl_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_ADp40KO_Ctrl_UP_edgeR.csv", row.names = 1)
+
+GO_ADp40KO_AD_up <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200721_edgeR_DE_test_cluster29_CA1_GO_AD_ADp40KO_DOWN_0_edgeR.csv", row.names = 1)
+
+AD_GO <- intersect(GO_AD_ctrl_up[which(GO_AD_ctrl_up$Annotated < 1000 & GO_AD_ctrl_up$Annotated > 30), ]$GO.ID, GO_ADp40KO_ctrl_up[which(GO_ADp40KO_ctrl_up$Annotated < 1000 & GO_ADp40KO_ctrl_up$Annotated > 30), ]$GO.ID)
+
+
+AD_ADp40KO_GO <- rbind(GO_AD_ctrl_up[GO_AD_ctrl_up$GO.ID %in% AD_GO, ], GO_ADp40KO_ctrl_up[GO_ADp40KO_ctrl_up$GO.ID %in% AD_GO, ])
+
+ADp40KO_GO <- setdiff(GO_ADp40KO_AD_up[which(GO_ADp40KO_AD_up$Annotated < 1000 & GO_ADp40KO_AD_up$Annotated > 30), ]$GO.ID,GO_AD_ctrl_up[which(GO_AD_ctrl_up$Annotated < 1000 & GO_AD_ctrl_up$Annotated > 30), ]$GO.ID)
+
+ADp40KO_specific_GO <- GO_ADp40KO_AD_up[GO_ADp40KO_AD_up$GO.ID %in% ADp40KO_GO, ]
+
+
+ADp40KO_specific_GO[ADp40KO_specific_GO$GO.ID %in% "GO:0007411", ]$genes
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# AD & ADp40KO common
+amyloid_beta_binding <- c("Cst3","Ldlr","Apoe","Ldlr","Olfm1","Itm2c","Cst3","Scarb1") %>% unique
+ion_channel_binding <- c("Snap25", "Camk2d", "Kcnh1", "Dpp10", "Scn3b", "Homer1", "Fkbp1a", "Ywhaz", "Flna") %>% unique
+sterol_biosynthetic_process <- c("Apoe", "Msmo1", "Sqle", "Sc5d", "Hmgcr", "Hmgcs1", "Erg28", "Hmgcr", "Msmo1", "Sc5d", "Hmgcs1", "Cyp51", "Sqle", "Nsdhl", "Insig1", "Fdft1", "Por", "Lss", "Dhcr24", "Pmvk") %>% unique
+response_to_fatty_acid <- c("Ldlr", "Tgfbr3", "Scd2", "Ldlr", "Scd2", "Acaca", "Aacs", "Tgfbr3") %>% unique
+
+
+# AD specific
+protein_serine_threonine_kinase_activity <- c("Prpf4b", "Prkca", "Sik2", "Sik3", "Rock2", "Camk2a", "Hunk", "Csnk1a1", "Mast3", "Map4k3", "Camkk1", "Mapk10", "Pak1", "Stk38l", "Nuak1", "Ern1", "Camk2g", "Slk", "Prkd1", "Ptk2b", "Taf1", "Map3k2", "Cdk9", "Ikbkb", "Akt3", "Clk4", "Map3k13", "Prkg1", "Cdc7", "Bcr", "Taok1", "Stk25", "Camk4", "Csnk1e", "Mark4", "Sik1", "Dapk1", "Mark3", "Mapk7", "Prkx", "Sbk1", "Mink1", "Rps6kb2", "Csnk1g2", "Alpk1", "Syk", "Mast2", "Brsk2", "Ercc2", "Trio", "Kalrn", "Wnk3", "Prkab2")
+
+axon_guidance <- c("Epha5", "Zswim6",  "Nr4a3", "Sema6d", "Robo3", "Mycbp2", "Epha7", "Flrt2", "Epha4", "Epha10", "Dvl1", "Cyfip2", "Nrp1", "Ext1", "Dcc", "Dpysl5", "Plxna1", "Robo2", "Cntn2", "Epha3", "Crmp1", "Agrn", "Crppa", "Dscaml1", "Cntn6", "Sema3e", "Lrp1", "Kif5c", "Epha6", "Sema4f", "Cdk5r1", "Scn1b", "Sema4d", "Bcl11b")
+
+genes <- c(amyloid_beta_binding, ion_channel_binding, sterol_biosynthetic_process, response_to_fatty_acid, protein_serine_threonine_kinase_activity, axon_guidance) %>% unique
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+df <- as.data.frame(Matrix::rowMeans(GetAssayData(data9set_CA1.SO, slot = "data")))
+df$gene <- rownames(df)
+colnames(df) <- c("expression", "gene")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=4}
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+
+##########################
+# z-score for each sample
+##########################
+data9set_CA1_1.SO <- subset(data9set_CA1.SO, subset = sample %in% "Ctrl")
+data9set_CA1_2.SO <- subset(data9set_CA1.SO, subset = sample %in% "AD")
+data9set_CA1_3.SO <- subset(data9set_CA1.SO, subset = sample %in% "ADp40KO")
+
+
+CA1.df1 <- z_score_from_gene_list(data9set_CA1_1.SO, genes)
+colnames(CA1.df1) <- c("Ctrl", "gene")
+CA1.df2 <- z_score_from_gene_list(data9set_CA1_2.SO, genes)
+colnames(CA1.df2) <- c("AD", "gene")
+CA1.df3 <- z_score_from_gene_list(data9set_CA1_3.SO, genes)
+colnames(CA1.df3) <- c("ADp40KO", "gene")
+
+# merge all data frame
+CA1.df <- merge(CA1.df1, c(CA1.df2, CA1.df3), by = "gene")
+
+CA1.df$gene.1 <- NULL
+rownames(CA1.df) <- CA1.df$gene
+CA1.df$gene <- NULL
+
+CA1_zs.df <- apply(CA1.df, 1, function(x) (x - mean(x)) / sd(x))
+CA1_zs.df <- data.frame(t(CA1_zs.df))
+CA1_zs.df$gene <- rownames(CA1_zs.df)
+
+CA1_zs.df <- CA1_zs.df %>% mutate(GO = case_when(gene %in% amyloid_beta_binding ~ "amyloid\nbeta\nbinding",
+                                                     gene %in% ion_channel_binding ~ "ion_channel\nbinding",
+                                                     gene %in% response_to_fatty_acid ~ "response\nto fatty\nacid",
+                                                     gene %in% sterol_biosynthetic_process ~ "sterol\nbiosynthetic\nprocess",
+                                                     gene %in% axon_guidance ~ "axon\nguidance",
+                                                     gene %in% protein_serine_threonine_kinase_activity ~ "protein\nserine threonine\nkinase activity"))
+
+
+CA1_zs.df <- gather(CA1_zs.df, sample, z_score, Ctrl:ADp40KO)
+
+CA1_zs.df$GO <- factor(CA1_zs.df$GO, levels = c("amyloid\nbeta\nbinding", "ion_channel\nbinding", "response\nto fatty\nacid", "sterol\nbiosynthetic\nprocess", "axon\nguidance", "protein\nserine threonine\nkinase activity"))
+
+
+CA1_zs.df <- left_join(CA1_zs.df, df, by = "gene")
+
+CA1_zs.df$all <- "ADp40KO"
+
+g1 <- ggplot(data = CA1_zs.df, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x.top = element_text(angle = 90, vjust = 0.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "white"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = .2, color = "white")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#003366", "#FFCC66", "#990000"), limits = c(-1, 1), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+```
+
+I showed with expression levels. amyloid beta binding, ion_channel binding, response to fatty acid, sterol biosynthetic process are AD & ADp4pKO common GO. axon guidance and protein serine threonine kinase activity are resucued Go
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+g2 <- ggplot(data = CA1_zs.df, mapping = aes(x = all, y = gene, fill = expression)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() +
+  theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_blank(),
+                                         axis.text.y = element_text(size = 12, color = "white"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_text(size = 11, color = "black"),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1.1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10, color = "black")) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn("expression", colours = c("#999999", "#FF9900", "#FF0000"), limits = c(0, 4), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x') 
+
+grid.arrange(g1, g2, ncol = 1, heights=c(3,1))
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```

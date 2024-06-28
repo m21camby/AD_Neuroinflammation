@@ -1,0 +1,101 @@
+---
+title: "Intro_Exon_by_cell_type create DF"
+author: "Skim"
+date: '2020 2 22 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+```
+
+```{r warning=FALSE, message=FALSE}
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+data9set.meta <- data9set.SO@meta.data
+data9set.meta$cell_barcode <- rownames(data9set.meta)
+
+calculate_exon_intron <- function(sample){
+  print("start 1st")
+  ds_exon <- read.table(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/drop_seq_pipeline/out_gene_exon_tagged.dge_exon_",sample,".txt.gz"),row.names = 1, header = TRUE)
+  print("done 1st")
+  print("start 2nd")
+ds_intron <- read.table(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/drop_seq_pipeline/out_gene_exon_tagged.dge_intron_",sample,".txt.gz"),row.names = 1, header = TRUE)
+   print("done 2nd")
+ds_exon_sum <- as.data.frame(colSums(ds_exon))
+ds_intron_sum <- as.data.frame(colSums(ds_intron))
+
+ds_sum <- cbind(ds_exon_sum, ds_intron_sum)
+colnames(ds_sum) <- c("exon_sum", "intron_sum")
+
+ds_sum$sum <- ds_sum$exon_sum + ds_sum$intron_sum 
+ds_sum$exon_prop <- ds_sum$exon_sum/ds_sum$sum
+ds_sum$intron_prop <- ds_sum$intron_sum/ds_sum$sum
+return(ds_sum)
+}
+
+ds022_sum <- calculate_exon_intron(sample = "SP064_022")
+ds022_sum$cell_barcode <- paste0(rownames(ds022_sum),"-1")
+ds023_sum <- calculate_exon_intron(sample = "SP064_023")
+ds023_sum$cell_barcode <- paste0(rownames(ds023_sum),"-2")
+ds024_sum <- calculate_exon_intron(sample = "SP064_024")
+ds024_sum$cell_barcode <- paste0(rownames(ds024_sum),"-3")
+ds025_sum <- calculate_exon_intron(sample = "SP064_025")
+ds025_sum$cell_barcode <- paste0(rownames(ds025_sum),"-4")
+ds026_sum <- calculate_exon_intron(sample = "SP064_026")
+ds026_sum$cell_barcode <- paste0(rownames(ds026_sum),"-5")
+ds027_sum <- calculate_exon_intron(sample = "SP064_027")
+ds027_sum$cell_barcode <- paste0(rownames(ds027_sum),"-6")
+ds028_sum <- calculate_exon_intron(sample = "SP064_028")
+ds028_sum$cell_barcode <- paste0(rownames(ds028_sum),"-7")
+ds029_sum <- calculate_exon_intron(sample = "SP064_029")
+ds029_sum$cell_barcode <- paste0(rownames(ds029_sum),"-8")
+ds030_sum <- calculate_exon_intron(sample = "SP064_030")
+ds030_sum$cell_barcode <- paste0(rownames(ds030_sum),"-9")
+
+ds_sum <- rbind(ds022_sum, ds023_sum, ds024_sum, ds025_sum, ds026_sum, ds027_sum, ds028_sum, ds029_sum, ds030_sum)
+
+ds_sum <- ds_sum[, c(4:6)]
+
+```
+
+```{r}
+data9set_cleaned.SO  <- subset(data9set.SO, subset = seurat_clusters %in% c(seq(0,24), seq(26,30), 32, seq(35,40)))
+
+
+data9set_cleaned.SO <- RenameIdents(data9set_cleaned.SO, '0' = "Dentate Gyrus", '1' = "Oligo", '2' = "CA1 Neurons", '3' = "Microglia", 
+                            '4' = "Astrocytes", '5' = "Oligo", '6' = "Oligo", '7' = "Inhibitory Interneurons", '8' = "Microglia", 
+                            '9' = "CA2/CA3 Neuron", '10' = "Dentate Gyrus", '11' = "Subiculum", '12' = "OPC", 
+                            '13' = "CA1 Neurons", '14' = "Subiculum", '15' = "Subiculum", 
+                            '16' = "Inhibitory Interneurons", '17' = "Subiculum", '18' = "CA1 Neurons",
+                            '19' = "Subiculum", '20' = "Subiculum", '21' = "CA2/CA3 Neuron", '22' = "Inhibitory Interneurons",
+                            '23' = "Fibroblast", '24' = "Neurons", '26' = "Choroid Plexus", 
+                            '27' = "CA2/CA3 Neuron", '28' = "Cajal Retzius", '29' = "Neurons", '30' = "Inhibitory Interneurons",
+                            '32' = "Neurons", 
+                            '35' = "Pericytes", '36' = "Vascular Endothelial",'37' = "Microglia", '38' = "OPC",
+                            '39' = "VLMC", '40' = "Neurons")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set_cleaned.meta <- as.data.frame(data9set_cleaned.SO@meta.data)
+data9set_cleaned.meta$cell_barcode <- rownames(data9set_cleaned.meta)
+
+data9set_cleaned.meta_final <- left_join(data9set_cleaned.meta, ds_sum, by = "cell_barcode")
+
+write.csv(data9set_cleaned.meta_final, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200222_exon_intron_cell_type_by_drop_seq_meta_results_DF.csv")
+```

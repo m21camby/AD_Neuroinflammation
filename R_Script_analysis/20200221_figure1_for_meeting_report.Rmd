@@ -1,0 +1,471 @@
+---
+title: "Figure 1"
+author: "Skim"
+date: "2/21/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(tidyverse)
+library("ggpubr")
+library(viridis)
+library(ggsignif)
+library(ggpubr)
+library(lme4)
+library(broom)
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 10, fig.width= 10}
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+data9set_cleaned.SO  <- subset(data9set.SO, subset = seurat_clusters %in% c(seq(0,24), seq(26,30), 32, seq(35,40)))
+
+data9set_cleaned.SO <- RenameIdents(data9set_cleaned.SO, '0' = "Excitatory Neurons", '1' = "Oligodendrocytes", '2' = "Excitatory Neurons", '3' = "Microglia", 
+                            '4' = "Astrocytes", '5' = "Oligodendrocytes", '6' = "Oligodendrocytes", '7' = "Inhibitory Interneurons", '8' = "Microglia", 
+                            '9' = "Excitatory Neurons", '10' = "Excitatory Neurons", '11' = "Excitatory Neurons", '12' = "OPC", 
+                            '13' = "Excitatory Neurons", '14' = "Excitatory Neurons", '15' = "Excitatory Neurons", 
+                            '16' = "Inhibitory Interneurons", '17' = "Excitatory Neurons", '18' = "Excitatory Neurons",
+                            '19' = "Excitatory Neurons", '20' = "Excitatory Neurons", '21' = "Excitatory Neurons", '22' = "Inhibitory Interneurons",
+                            '23' = "Fibroblast", '24' = "Excitatory Neurons", '26' = "Choroid Plexus", 
+                            '27' = "Excitatory Neurons", '28' = "Cajal Retzius", '29' = "Excitatory Neurons", '30' = "Inhibitory Interneurons",
+                            '32' = "Excitatory Neurons", 
+                            '35' = "Vascular cells", '36' = "Vascular cells",'37' = "Macrophages", '38' = "OPC",
+                            '39' = "Vascular cells", '40' = "Excitatory Neurons")
+
+data9set_cleaned.SO@active.ident <- factor(data9set_cleaned.SO@active.ident, 
+                                           levels = c("Excitatory Neurons", "Inhibitory Interneurons", "Cajal Retzius", "Choroid Plexus",
+                                                      "Astrocytes", "Microglia", "Macrophages", "Oligodendrocytes", "OPC", "Fibroblast", 
+                                                      "Vascular cells"))
+#save(data9set_cleaned.SO, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+d1 <- DimPlot(data9set_cleaned.SO, reduction = "umap", 
+        label = TRUE, label.size = 6, 
+        cols = c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033")) + theme(legend.position = "none")
+d1
+ggsave(filename = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Fig1_whole_UMAP.png", 
+       plot = d1, 
+  scale = 1, width = 10, height = 10, units = "in", device = "png",
+  dpi = 300)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width= 15}
+
+
+data9set_cleaned_Ctrl.SO <- subset(data9set_cleaned.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_AD.SO <- subset(data9set_cleaned.SO, subset = sample %in% "AD")
+data9set_cleaned_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample %in% "ADp40KO")
+
+
+
+f1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Il12b", order = TRUE, pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f1 <- f1 + scale_colour_gradientn(colours = c("#003366","003366"), values = c(0.1, 0), na.value = "#003366") + ggtitle("Ctrl") + labs(y = "Il12b") + 
+  theme(legend.position = "none", 
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title.x = element_blank())
+
+
+f2 <- FeaturePlot(data9set_cleaned_AD.SO, features = "Il12b", sort.cell =  TRUE, pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f2 <- f2 + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("AD") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank())
+
+f3 <- FeaturePlot(data9set_cleaned_ADp40KO.SO, features = "Il12b", order = TRUE, pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f3 <- f3 + scale_color_gradient2(low="#003366", high='#003366', mid="#003366", midpoint = 1.5, na.value = "#003366") + ggtitle("ADp40KO") + theme(legend.position = "none",axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank())
+
+
+g1 <- arrangeGrob(f1, f3, f2, ncol = 3, widths= c(1,1,1.2))
+g1
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 15, fig.width= 15}
+
+d1 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "1", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d2 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "2", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d3 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "3", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d4 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "4", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d5 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "5", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d6 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "6", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d7 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "7", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d8 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "8", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d9 <- DimPlot(data9set.SO, cells =  rownames(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "9", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d1 <- d1 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "Ctrl-1") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "1", ])))
+
+d2 <- d2 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "AD-1") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "2", ])))
+
+d3 <- d3 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "ADp40KO-1") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "3", ])))
+
+d4 <- d4 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "Ctrl-2") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "4", ])))
+
+d5 <- d5 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "AD-2") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "5", ])))
+
+d6 <- d6 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "ADp40KO-2") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "6", ])))
+
+d7 <- d7 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "Ctrl-3") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "7", ])))
+
+d8 <- d8 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "AD-3") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "8", ])))
+
+d9 <- d9 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 18, y = 25), label = "ADp40KO-3") +
+  geom_text(geom = "text", aes(x = 18, y = 23), 
+            label = paste0("cells: ",nrow(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup %in% "9", ])))
+
+
+grid.arrange(d1, d4, d7, d2, d5, d8, d3, d6, d9, ncol = 3)
+
+#g1 <- arrangeGrob(d1, d1, d1, d1, d1, d1, d1, d1, d1, ncol = 3)
+#g1
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=8}
+# ref: http://oshlacklab.com/combes-organoid-paper/07_Combined_Clustering.html#conserved_markers
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(gemgroup, cell_type) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total) 
+
+#%>%group_by(sample) %>%
+#    mutate(dataset_total = sum(count)) %>%
+#    ungroup() %>%
+#    mutate(dataset_prop = count / dataset_total)
+#sum(plot.data$dataset_prop)
+
+#plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "3", "6", "9", "2", "5", "8"))
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 11), rep("AD-1", 10), rep("ADp40KO-1", 10),
+                              rep("Ctrl-2", 11), rep("AD-2", 11), rep("ADp40KO-2", 11),
+                              rep("Ctrl-3", 11), rep("AD-3", 11), rep("ADp40KO-3", 11)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cell_type)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  
+  scale_fill_manual(values=c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=5}
+# ref: http://oshlacklab.com/combes-organoid-paper/07_Combined_Clustering.html#conserved_markers
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(sample, cell_type) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total) 
+
+#%>%group_by(sample) %>%
+#    mutate(dataset_total = sum(count)) %>%
+#    ungroup() %>%
+#    mutate(dataset_prop = count / dataset_total)
+#sum(plot.data$dataset_prop)
+
+#plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "3", "6", "9", "2", "5", "8"))
+
+ggplot(plot.data, aes(x = sample, y = cell_prop, fill = cell_type)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + theme(axis.text.x = element_text(size =10)) +  scale_fill_manual(values=c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033"))
+```
+
+I used Kruskal-Wallis which compare multiple groups (non-parametric) and showed non-significant difference in MG and OL. Kruskal-Wallis test is used when the assumptions of one-way ANOVA are not met.
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=8}
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(gemgroup, cell_type, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+#plot.data <- data9set_cleaned.SO@meta.data %>%
+#    dplyr::select(sample, cell_type = cell_type) %>%
+#    mutate(cell_type = cell_type) %>%
+#    group_by(sample, cell_type) %>%
+#  summarise(count = n()) %>%
+#    mutate(sample_total = sum(count)) %>%
+#    mutate(cell_prop = count / sample_total) 
+#%>%group_by(sample) %>%
+#    mutate(dataset_total = sum(count)) %>%
+#    ungroup() %>%
+#    mutate(dataset_prop = count / dataset_total)
+#sum(plot.data$dataset_prop)  
+
+#ggboxplot(plot.data, x = "cell_type", y = "cell_prop", 
+#          color = "sample", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+#          order = c("Ctrl", "AD", "ADp40KO"),
+#          ylab = "cell_prop", xlab = "exp", add = "dotplot")
+
+plot.data <- plot.data[which(plot.data$cell_type %in% c("Excitatory Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Inhibitory Interneurons", "OPC")),]
+
+#######################
+# linear modeling test
+#######################
+# ref: https://ase.tufts.edu/gsc/gradresources/guidetomixedmodelsinr/mixed%20model%20guide.html
+# ref: https://biologyforfun.wordpress.com/2017/06/19/adding-group-level-predictors-in-glmm-using-lme4/
+# ref: https://aosmith.rbind.io/2018/03/26/unstandardizing-coefficients/
+
+
+mod <- lmer(cell_prop ~ sample + (1 | gemgroup), data = plot.data_MG, family = poisson)
+
+mod <- glmer(plot.data$cell_type=="Microglia" ~ 
+               plot.data$sample +   
+               plot.data$cell_prop + 
+                 (1 | plot.data$gemgroup), 
+               family=binomial)
+
+plot(mod)
+
+higlance(mod)
+
+coef_st = tidy(mod, effects = "fixed",
+     conf.int = TRUE,
+     conf.method = "profile")
+
+summary(mod)
+
+
+
+mod <- glmer(plot.data$cell_prop ~ 
+                 plot.data$sample + 
+                 plot.data$cell_type + 
+                 (1 | plot.data$gemgroup))
+
+coef <- summary(mod)$coefficients
+
+
+mod2 <- lmer(plot.data$cell_prop ~ 
+                 #plot.data$sample + 
+                 plot.data$cell_type + 
+                 (1 | plot.data$gemgroup))
+
+summary(mod2)
+anova(mod2)
+#coef <- summary(mod)$coefficients
+
+
+# Compute the analysis of variance
+# lm for fitting linear models to balanced or unbalanced experimental designs.
+# aov is designed for balanced designs, and the results can be hard to interpret without balance
+plot.data_MG <- plot.data[which(plot.data$cell_type %in% c("Microglia")),]
+res.aov <- aov(cell_prop ~ sample, data = plot.data_MG)
+
+mod <- glmer(plot.data_MG$cell_prop ~ plot.data_MG$sample +
+                 (1 | plot.data_MG$gemgroup), family = gaussian)
+
+?glmer
+
+coef <- summary(mod)$coefficients
+
+coef_st = tidy(mod, effects = "fixed",
+     conf.int = TRUE,
+     conf.method = "profile")
+
+coef_st
+
+summary(mod)
+anova(mod)
+
+
+mod <- lmer(plot.data_MG$cell_prop ~ plot.data_MG$sample +
+                 (1 | plot.data_MG$gemgroup))
+
+
+mod <- lm(plot.data_MG$cell_prop ~ plot.data_MG$sample)
+anova(mod)
+
+# Summary of the analysis
+#summary(res.aov)
+# normality test
+# http://www.sthda.com/english/wiki/one-way-anova-test-in-r#check-the-normality-assumption
+#aov_residuals <- residuals(object = res.aov )
+#shapiro.test(x = aov_residuals )
+#TukeyHSD(res.aov)
+
+ggplot(plot.data, aes(x=cell_type, y=cell_prop, fill=sample)) +
+  geom_boxplot(position=position_dodge(1)) + scale_fill_viridis_d() + theme_classic() +  theme(axis.text.x = element_text(angle = 90), axis.title.x = element_blank()) + ylim(0, 0.6) + stat_compare_means(aes(group = sample), label = "p.signif", method = "kruskal.test")
+
+```
+
+I used anova which compare multiple groups (parametric) and showed significant difference in MG and OL. I tested Shapiro-Wilk test on the ANOVA residuals (W = 0.91, p = 0.31) which finds no indication that normality is violated.
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=8}
+ggplot(plot.data, aes(x=cell_type, y=cell_prop, fill=sample)) +
+  geom_boxplot(position=position_dodge(1)) + scale_fill_viridis_d() + theme_classic() +  theme(axis.text.x = element_text(angle = 90), axis.title.x = element_blank()) + ylim(0, 0.6) + stat_compare_means(aes(group = sample), label = "p.signif", method = "anova")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 6, fig.width=9}
+ggplot(plot.data, aes(x=cell_type, y=cell_prop, fill = sample, color=sample)) +
+  geom_point(position=position_dodge(0.8), size = 2, pch = 19) + scale_color_viridis_d() + scale_fill_viridis_d() + theme_classic() +  ylab("percentage") +
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"), axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) + ylim(0, 0.6) + stat_compare_means(aes(group = sample), label = "p.signif", method = "anova", show.legend = FALSE)
+
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 6, fig.width=8}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data2 <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cell_type, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cell_type, sample) %>% 
+    summarise(count = n()) %>% mutate(type_total = sum(count)) %>%
+  mutate(total = sum(plot.data2$type_total)/3) %>% 
+  mutate(sample_prop = count / total) %>% 
+  mutate(type_prop = type_total /total) %>% 
+  mutate(sample_type_prop = count /type_total)
+
+plot.data2 <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cell_type, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cell_type, sample) %>% 
+    summarise(count = n()) %>% mutate(type_total = sum(count)) 
+
+plot.data2 <- plot.data2 %>%
+  mutate(total = sum(plot.data2$type_total)/3) %>% 
+  mutate(sample_prop = count / total) %>% 
+  mutate(type_prop = type_total /total) %>% 
+  mutate(sample_type_prop = count /type_total)
+
+plot.data2 <- as.data.frame(plot.data2)
+plot.data2$sample <- factor(plot.data2$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+plot.data2$type_prop2 <- round(100*plot.data2$type_prop,2)
+
+
+ggplot(plot.data2, aes(x = 2, y= type_prop2, fill = factor(type_prop2, levels = c(52.98, 7.00, 0.58, 0.69, 4.45, 8.33, 0.30, 20.85, 3.11, 0.89, 0.83)))) + 
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar(theta = "y", start=0) + 
+  theme_void() + theme(legend.text = element_text(size = 12), legend.title = element_blank()) + 
+  scale_fill_manual(values=c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033"), 
+                    labels = c("Excitatory Neurons: 52.98%", "Inhibitory Interneurons: 7.00%", "Cajal Retzius: 0.58%",
+                               "Choroid Plexus: 0.69%", "Astrocytes: 4.45%", "Microglia: 8.33%",
+                               "Macrophages: 0.30%", "Oligodendrocytes: 20.85%", "OPC: 3.11%",
+                               "Fibroblast: 0.89%", "Vascular cells: 0.83%")) + 
+  geom_text(data =  plot.data2, aes(x = 2.1, y = 220, label = "Ex Neurons"), size = 4) + 
+  geom_text(data =  plot.data2, aes(x = 2.1, y = 130, label = "In Neurons"), size = 4) + 
+  geom_text(data =  plot.data2, aes(x = 2.2, y = 110, label = "AS"), size = 4) +
+  geom_text(data =  plot.data2, aes(x = 2.2, y = 90, label = "MG"), size = 4) + 
+  geom_text(data =  plot.data2, aes(x = 2.2, y = 50, label = "Oligo"), size = 4) + 
+  geom_text(data =  plot.data2, aes(x = 2.2, y = 10, label = "OPC"), size = 4)  
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=8}
+sessionInfo()
+```
