@@ -1,0 +1,49 @@
+
+
+###########################
+# run BigWig
+# start 29 Feb 2020
+###########################
+
+./BigWig_Create.sh SP064_022_premrna/outs/possorted_genome_bam.bam SP064_022
+./BigWig_Create.sh SP064_023_premrna/outs/possorted_genome_bam.bam SP064_023
+./BigWig_Create.sh SP064_024_premrna/outs/possorted_genome_bam.bam SP064_024
+./BigWig_Create.sh SP064_025_multilanes_chemistry3p/outs/possorted_genome_bam.bam SP064_025
+./BigWig_Create.sh SP064_026_premrna/outs/possorted_genome_bam.bam SP064_026
+./BigWig_Create.sh SP064_027_premrna/outs/possorted_genome_bam.bam SP064_027
+./BigWig_Create.sh SP064_028_premrna/outs/possorted_genome_bam.bam SP064_028
+./BigWig_Create.sh SP064_029_premrna/outs/possorted_genome_bam.bam SP064_029
+./BigWig_Create.sh SP064_030_premrna/outs/possorted_genome_bam.bam SP064_030
+
+
+#############################
+# split BAM file by cell type
+#############################
+# preprocessed CB from NR_005 for split BAM
+# cat NR_005_CB.txt |cut -d " " -f2 |awk 'FNR > 1 {print}' > NR_005_CB_preprocessed.txt
+#
+# # preprocessed CB from NR_009 for split BAM
+# cat NR_009_CB.txt |cut -d " " -f2 |awk 'FNR > 1 {print}' > NR_009_CB_preprocessed.txt
+#
+# # Split NR_009_CB_preprocessed.txt into 6 files to speed up split BAM file
+#
+# awk 'FNR > 0 && FNR < 601 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_1.txt
+# awk 'FNR > 600 && FNR < 1201 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_2.txt
+# awk 'FNR > 1200 && FNR < 1801 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_3.txt
+# awk 'FNR > 1800 && FNR < 2401 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_4.txt
+# awk 'FNR > 2400 && FNR < 3001 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_5.txt
+# awk 'FNR > 3000 && FNR < 3694 {print}' NR_009_CB_preprocessed.txt > NR_009_CB_preprocessed_6.txt
+#
+#
+# # Run filtering BAM
+# ./split_BAM.sh NR_009_CB_preprocessed_1.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 1 &
+# ./split_BAM.sh NR_009_CB_preprocessed_2.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 2 &
+# ./split_BAM.sh NR_009_CB_preprocessed_3.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 3 &
+# ./split_BAM.sh NR_009_CB_preprocessed_4.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 4 &
+# ./split_BAM.sh NR_009_CB_preprocessed_5.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 5 &
+# ./split_BAM.sh NR_009_CB_preprocessed_6.txt /data/rajewsky/home/skim/kidney_epithelial_Jan/NR_JK_009_011/outs/possorted_genome_bam.bam 6 &
+#
+
+
+
+

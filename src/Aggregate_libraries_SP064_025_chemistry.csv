@@ -1,0 +1,10 @@
+library_id,molecule_h5,Experiment
+SP064_022,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_022_premrna/outs/molecule_info.h5,Ctrl
+SP064_023,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_023_premrna/outs/molecule_info.h5,AD
+SP064_024,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_024_premrna/outs/molecule_info.h5,ADp40KO
+SP064_025,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_025_multilanes_chemistry3p/outs/molecule_info.h5,Ctrl
+SP064_026,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_026_premrna/outs/molecule_info.h5,AD
+SP064_027,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_027_premrna/outs/molecule_info.h5,ADp40KO
+SP064_028,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_028_premrna/outs/molecule_info.h5,Ctrl
+SP064_029,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_029_premrna/outs/molecule_info.h5,AD
+SP064_030,/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_030_premrna/outs/molecule_info.h5,ADp40KO
