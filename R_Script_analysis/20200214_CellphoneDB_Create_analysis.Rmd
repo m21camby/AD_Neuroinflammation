@@ -1,0 +1,174 @@
+---
+title: "cellphonedb_whole"
+author: "Skim"
+date: "2/14/2020"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+#### spliting Ctrl, AD, ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+data9set_cleaned_Ctrl.SO <- subset(data9set_cleaned.SO, subset = sample == c("Ctrl"))
+data9set_cleaned_AD.SO <- subset(data9set_cleaned.SO, subset = sample == c("AD"))
+data9set_cleaned_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample == c("ADp40KO"))
+```
+
+```{r warning=FALSE, message=FALSE}
+# mouse to human homolog gene
+bm <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM.df", sep = "\t", stringsAsFactors = FALSE)
+bm2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM2.df", sep = "\t", stringsAsFactors = FALSE)
+
+bm.df <- merge(bm, bm2.df, by = "ensembl_gene_id")
+
+
+# unique gene
+bm_unique.df <- bm.df[which(!bm.df$mgi_symbol %in% bm.df$mgi_symbol[duplicated(bm.df$mgi_symbol)]), ]
+# duplicated gene
+bm_duplicate.df <- bm.df[which(bm.df$mgi_symbol %in% bm.df$mgi_symbol[duplicated(bm.df$mgi_symbol)]), ]
+
+# remove empty rows
+bm_unique.df <- bm_unique.df[!bm_unique.df$hsapiens_homolog_associated_gene_name == "", ]
+
+# keep duplicated genes when hsapiens_homolog_associated_gene_name and mgi symbol matches
+bm_duplicate.df$mgi_symbol_upper <- toupper(bm_duplicate.df$mgi_symbol)
+bm_duplicate.df <- bm_duplicate.df[which(bm_duplicate.df$hsapiens_homolog_associated_gene_name == bm_duplicate.df$mgi_symbol_upper), ]
+
+bm_final.df <- rbind(bm_unique.df[,c(2,3)], bm_duplicate.df[,c(2,3)])
+
+write.table(bm_final.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_bm_final.df")
+
+# unique hsapiense gene
+bm_final_unique.df <- bm_final.df[which(!bm_final.df$hsapiens_homolog_associated_gene_name %in% bm_final.df$hsapiens_homolog_associated_gene_name[duplicated(bm_final.df$hsapiens_homolog_associated_gene_name)]), ]
+
+# duplicated hsapiense gene
+bm_final_duplicate.df <- bm_final.df[which(bm_final.df$hsapiens_homolog_associated_gene_name %in% bm_final.df$hsapiens_homolog_associated_gene_name[duplicated(bm_final.df$hsapiens_homolog_associated_gene_name)]), ]
+
+# keep duplicated genes when hsapiens_homolog_associated_gene_name and mgi symbol matches
+bm_final_duplicate.df$mgi_symbol_upper <- toupper(bm_final_duplicate.df$mgi_symbol)
+bm_final_duplicate.df <- bm_final_duplicate.df[which(bm_final_duplicate.df$hsapiens_homolog_associated_gene_name == bm_final_duplicate.df$mgi_symbol_upper), ]
+
+bm_final.df2 <- rbind(bm_final_unique.df, bm_final_duplicate.df[,c(1,2)])
+
+write.table(bm_final.df2, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_bm_final.df2")
+
+
+bm_gene_final.df <- read.table( "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_bm_gene_final.df", stringsAsFactors = FALSE)
+
+
+
+```
+
+### Ctrl
+
+```{r warning=FALSE, message=FALSE}
+
+data9set_cleaned_Ctrl.df <- as.data.frame(as.matrix(data9set_cleaned_Ctrl.SO@assays$RNA@counts))
+data9set_cleaned_Ctrl.df <- as.data.frame(apply(data9set_cleaned_Ctrl.df, 2, function(x) (x/sum(x))*10000))
+
+
+data9set_cleaned_Ctrl.df$mgi_symbol <- rownames(data9set_cleaned_Ctrl.df)
+data9set_cleaned_Ctrl.df2 <- inner_join(bm_gene_final.df, data9set_cleaned_Ctrl.df, by = "mgi_symbol")
+
+# Assign ENSEMBL to rownames
+rownames(data9set_cleaned_Ctrl.df2) <- data9set_cleaned_Ctrl.df2[, 1]
+# remove 1st and 2nd 3rd columns
+data9set_cleaned_Ctrl.df2 <- data9set_cleaned_Ctrl.df2[, -c(1:3)]
+
+write.table(data.frame("Genes"=rownames(data9set_cleaned_Ctrl.df2), data9set_cleaned_Ctrl.df2, check.names=FALSE), "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_Ctrl_expression.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data create
+data9set_cleaned_Ctrl_meta.df <- data.frame(Cell = rownames(data9set_cleaned_Ctrl.SO@meta.data), cell_type = data9set_cleaned_Ctrl.SO@meta.data$seurat_clusters)
+write.table(data9set_cleaned_Ctrl_meta.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_Ctrl.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data for cell type
+data9set_cleaned_Ctrl.SO$cell_type <- data9set_cleaned_Ctrl.SO@active.ident
+
+data9set_cleaned_Ctrl_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_Ctrl.SO@meta.data), cell_type = data9set_cleaned_Ctrl.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_Ctrl_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_Ctrl_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+
+```
+
+### AD
+
+```{r warning=FALSE, message=FALSE}
+
+data9set_cleaned_AD.df <- as.data.frame(as.matrix(data9set_cleaned_AD.SO@assays$RNA@counts))
+data9set_cleaned_AD.df <- as.data.frame(apply(data9set_cleaned_AD.df, 2, function(x) (x/sum(x))*10000))
+
+
+data9set_cleaned_AD.df$mgi_symbol <- rownames(data9set_cleaned_AD.df)
+data9set_cleaned_AD.df2 <- inner_join(bm_gene_final.df, data9set_cleaned_AD.df, by = "mgi_symbol")
+
+# Assign ENSEMBL to rownames
+rownames(data9set_cleaned_AD.df2) <- data9set_cleaned_AD.df2[, 1]
+# remove 1st and 2nd 3rd columns
+data9set_cleaned_AD.df2 <- data9set_cleaned_AD.df2[, -c(1:3)]
+
+write.table(data.frame("Genes"=rownames(data9set_cleaned_AD.df2), data9set_cleaned_AD.df2, check.names=FALSE), "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_AD_expression.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data create
+data9set_cleaned_AD_meta.df <- data.frame(Cell = rownames(data9set_cleaned_AD.SO@meta.data), cell_type = data9set_cleaned_AD.SO@meta.data$seurat_clusters)
+
+write.table(data9set_cleaned_AD_meta.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_AD.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data for cell type
+data9set_cleaned_AD.SO$cell_type <- data9set_cleaned_AD.SO@active.ident
+
+data9set_cleaned_AD_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_AD.SO@meta.data), cell_type = data9set_cleaned_AD.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_AD_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_AD_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+
+```
+
+### ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+
+data9set_cleaned_ADp40KO.df <- as.data.frame(as.matrix(data9set_cleaned_ADp40KO.SO@assays$RNA@counts))
+data9set_cleaned_ADp40KO.df <- as.data.frame(apply(data9set_cleaned_ADp40KO.df, 2, function(x) (x/sum(x))*10000))
+
+
+data9set_cleaned_ADp40KO.df$mgi_symbol <- rownames(data9set_cleaned_ADp40KO.df)
+data9set_cleaned_ADp40KO.df2 <- inner_join(bm_gene_final.df, data9set_cleaned_ADp40KO.df, by = "mgi_symbol")
+
+# Assign ENSEMBL to rownames
+rownames(data9set_cleaned_ADp40KO.df2) <- data9set_cleaned_ADp40KO.df2[, 1]
+# remove 1st and 2nd 3rd columns
+data9set_cleaned_ADp40KO.df2 <- data9set_cleaned_ADp40KO.df2[, -c(1:3)]
+
+write.table(data.frame("Genes"=rownames(data9set_cleaned_ADp40KO.df2), data9set_cleaned_ADp40KO.df2, check.names=FALSE), "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_ADp40KO_expression.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data create
+data9set_cleaned_ADp40KO_meta.df <- data.frame(Cell = rownames(data9set_cleaned_ADp40KO.SO@meta.data), cell_type = data9set_cleaned_ADp40KO.SO@meta.data$seurat_clusters)
+
+write.table(data9set_cleaned_ADp40KO_meta.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_ADp40KO.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+# cellphonedb meta data for cell type
+data9set_cleaned_ADp40KO.SO$cell_type <- data9set_cleaned_ADp40KO.SO@active.ident
+
+data9set_cleaned_ADp40KO_meta_cell_type.df <- data.frame(Cell = rownames(data9set_cleaned_ADp40KO.SO@meta.data), cell_type = data9set_cleaned_ADp40KO.SO@meta.data$cell_type)
+
+write.table(data9set_cleaned_ADp40KO_meta_cell_type.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200214_CellphoneDB_Create_analysis_Cellphonedb_meta_ADp40KO_cell_type.txt", sep = "\t", quote=FALSE, row.names = FALSE)
+
+
+```
+

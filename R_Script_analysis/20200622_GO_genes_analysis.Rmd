@@ -1,0 +1,763 @@
+---
+title: "CA1 & CA2/3 GO term genes changes"
+author: "Skim"
+date: '2020 6 22 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+In the report, I checked GO analysis (AD vs ADp40KO) terms genes and how they are differentially expressed among samples. I looked at by genotype, sample and hierarchical clustering. 
+
+```{r warning=FALSE, message=FALSE}
+#.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat, lib.loc = "/data/rajewsky/shared_libs/R/")
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+library(RColorBrewer)
+library(scales)
+```
+
+## 1. CA1 regions (cluster 2, 13, 18, 40)
+
+AD MF  
+1) ion channel binding (Cacna1c, Rims1, Kcnh1, Dpp10, Kcnd3)  
+2) PDZ domain binding (Cadm1, Kirrel3, Shisa9, Atp2b4)  
+3) transmitter-gated ion channel activity involved in regulation of postsynaptic membrane potential (Grid1, Gria4, Grik4)  
+4) voltage-gated cation channel activity (Cacna1c, Cacnb2, Kcnh1, Kcnd3)  
+5) SH3 domain binding (Rims1, Pak3, Arhgap6)  
+6) calcium ion binding (Spock1, Caln1, Pcdh15, Mctp1, Cdh4, Slit2)   
+ 
+AD BP  
+1) synaptic membrane adhesion (Cadm1, Lrrc4, Ptprd, Lrrc4c, Pcdh17)  
+2) presynapse assembly (Cadm1, Ptprd, Cntn5, Pcdh17)  
+3) synapse assembly (Cadm1, Kirrel3, Nrg1, Lrrc4, Ptprd, Cntn5, Dnm3, Lrrtm4, Pcdh17)  
+4) regulation of dendrite morphogenesis (Pak3, Ptprz1, Ptprd, Dnm3)  
+
+ADp40KO MF  
+1) transmembrane receptor protein tyrosine (Epha5, Ntrk2, Epha7, Fgfr1, Epha4, Epha3)  
+2) PDZ domain binding (Atp2b1, Adgrb1, Adgrl2, Cacng3)  
+3) protein serine/threonine kinase activity (Camk2a, Prpf4b, Prkca, Hunk, Rock2, Mast3, Sik3)  
+4) voltage-gated potassium channel activity (Kcnd2, Kcnq5, Kcnh7)  
+5) ephrin receptor binding (Epha7, Epha4)  
+
+ADp40KO BP  
+1) ephrin receptor signaling pathway (Epha5, Epha7, Epha4, Epha3)  
+2) postsynapse organization (Epha5, Homer1, Epha7, Etv5, Sptbn2, Rock2, Epha4, Adgrb1)  
+3) peptidyl-threonine phosphorylation (Spred2, Camk2a, Prkca, Rock2, Spred1)  
+4) negative regulation of MAP kinase activity (Spred2, Sorl1, Prkca, Spred1)  
+5) positive regulation of synapse assembly (Ntrk2, Prkca, Adgrb1, Adgrl2)  
+6) dendrite morphogenesis (Epha5, Camk2a, Fmn1, Rock2, Epha4)  
+
+
+```{r warning=FALSE, message=FALSE}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+z_score_DE_genes <- function(Seurat_object, list_genes){
+  for(i in c(1:9)){
+  if(i == 1){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+#print("1st")
+cell_avg.df$gene <- rownames(cell_avg.df)
+#print("2nd")
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% list_genes, ]
+#print("3rd")
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+} 
+
+z_score_DE_genes_by_all <- function(Seurat_object, list_genes){
+  for(i in c("Ctrl", "AD", "ADp40KO")){
+  if(i == "Ctrl"){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = sample %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = sample %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+
+
+cell_avg.df$gene <- rownames(cell_avg.df)
+
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% list_genes, ]
+
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+data9set_CA1.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(2, 13, 18, 40))
+```
+
+### 1-1. AD MF in CA1
+
+```{r warning=FALSE, message=FALSE}
+ion_channel_binding <- c("Cacna1c", "Rims1", "Kcnh1", "Dpp10", "Kcnd3")  
+PDZ_domain_binding <- c("Cadm1", "Kirrel3", "Shisa9", "Atp2b4")  
+transmitter_gated_ion_channel <- c("Grid1", "Gria4", "Grik4")  
+voltage_gated_cation <- c("Cacna1c", "Cacnb2", "Kcnh1", "Kcnd3")  
+SH3_domain_binding <- c("Rims1", "Pak3", "Arhgap6")  
+calcium_ion_binding <- c("Spock1", "Caln1", "Pcdh15", "Mctp1", "Cdh4", "Slit2")  
+
+genes <- c(ion_channel_binding, setdiff(PDZ_domain_binding, transmitter_gated_ion_channel))
+genes <- c(genes, setdiff(transmitter_gated_ion_channel, genes))           
+genes <- c(genes, setdiff(SH3_domain_binding, genes))
+genes <- c(genes, setdiff(calcium_ion_binding, genes))   
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ion_channel_binding, "ion\nchannel\nbinding", ifelse(z_score$gene %in% setdiff(PDZ_domain_binding, ion_channel_binding), "PDZ\ndomain\nbinding", ifelse(z_score$gene %in% setdiff(transmitter_gated_ion_channel, c(ion_channel_binding, PDZ_domain_binding)), "transmitter-gated\nion channel\nactivity", ifelse(z_score$gene %in% setdiff(SH3_domain_binding, c(ion_channel_binding, PDZ_domain_binding, transmitter_gated_ion_channel)), "SH3\n domain\nbinding", "calcium\nion\nbinding"))))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ion_channel_binding, "ion\nchannel\nbinding", ifelse(z_score$gene %in% setdiff(PDZ_domain_binding, ion_channel_binding), "PDZ\ndomain\nbinding", ifelse(z_score$gene %in% setdiff(transmitter_gated_ion_channel, c(ion_channel_binding, PDZ_domain_binding)), "transmitter-gated\nion channel\nactivity", ifelse(z_score$gene %in% setdiff(SH3_domain_binding, c(ion_channel_binding, PDZ_domain_binding, transmitter_gated_ion_channel)), "SH3\n domain\nbinding", "calcium\nion\nbinding"))))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA1.SO, features = "Il12b", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA1.SO, features = "Caln1", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA1.SO, features = "Rims1", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+### 1-2. AD BP in CA1
+
+```{r warning=FALSE, message=FALSE}
+synaptic_membrane_adhesion <- c("Cadm1", "Lrrc4", "Ptprd", "Lrrc4c", "Pcdh17")  
+presynapse_assembly <- c("Cadm1", "Ptprd", "Cntn5", "Pcdh17")  
+synapse_assembly <- c("Cadm1", "Kirrel3", "Nrg1", "Lrrc4", "Ptprd", "Cntn5", "Dnm3", "Lrrtm4", "Pcdh17")  
+regulation_of_dendrite_morphogenesis <- c("Pak3", "Ptprz1", "Ptprd", "Dnm3") 
+
+genes <- c(synaptic_membrane_adhesion, setdiff(presynapse_assembly, regulation_of_dendrite_morphogenesis))
+genes <- c(genes, setdiff(regulation_of_dendrite_morphogenesis, genes))           
+genes <- c(genes, setdiff(synapse_assembly, genes))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% synaptic_membrane_adhesion, "synaptic\nmembrane\nadhesion", ifelse(z_score$gene %in% setdiff(presynapse_assembly, synaptic_membrane_adhesion), "presynapse\nassembly", ifelse(z_score$gene %in% setdiff(regulation_of_dendrite_morphogenesis, c(presynapse_assembly, synaptic_membrane_adhesion)), "regulation of\ndendrite\nmorphogenesis", "synapse\nassembly")))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% synaptic_membrane_adhesion, "synaptic\nmembrane\nadhesion", ifelse(z_score$gene %in% setdiff(presynapse_assembly, synaptic_membrane_adhesion), "presynapse\nassembly", ifelse(z_score$gene %in% setdiff(regulation_of_dendrite_morphogenesis, c(presynapse_assembly, synaptic_membrane_adhesion)), "regulation of\ndendrite\nmorphogenesis", "synapse\nassembly")))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+### 1-3. ADp40KO MF in CA1
+
+```{r warning=FALSE, message=FALSE}
+
+transmembrane_receptor_protein_tyrosine <- c("Epha5", "Ntrk2", "Epha7", "Fgfr1", "Epha4", "Epha3")  
+PDZ_domain_binding <- c("Atp2b1", "Adgrb1", "Adgrl2", "Cacng3")  
+protein_serine_threonine_kinase <- c("Camk2a", "Prpf4b", "Prkca", "Hunk", "Rock2", "Mast3", "Sik3")  
+voltage_gated_potassium_channel <- c("Kcnd2", "Kcnq5", "Kcnh7")  
+ephrin_receptor_binding <- c("Epha7", "Epha4")  
+  
+
+genes <- c(ephrin_receptor_binding, setdiff(transmembrane_receptor_protein_tyrosine, ephrin_receptor_binding))
+genes <- c(genes, setdiff(PDZ_domain_binding, genes))           
+genes <- c(genes, setdiff(protein_serine_threonine_kinase, genes))
+genes <- c(genes, setdiff(voltage_gated_potassium_channel, genes))   
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ephrin_receptor_binding, "ephrin\nreceptor\nbinding", ifelse(z_score$gene %in% setdiff(PDZ_domain_binding, ephrin_receptor_binding), "PDZ\ndomain\nbinding", ifelse(z_score$gene %in% setdiff(transmembrane_receptor_protein_tyrosine, c(PDZ_domain_binding, ephrin_receptor_binding)), "transmembrane\nreceptor\nprotein\ntyrosine", ifelse(z_score$gene %in% setdiff(protein_serine_threonine_kinase, c(PDZ_domain_binding, ephrin_receptor_binding, transmembrane_receptor_protein_tyrosine)), "protein\nserine\nthreonine\nkinase", "voltage\ngated\npotassium\nchannel"))))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ephrin_receptor_binding, "ephrin\nreceptor\nbinding", ifelse(z_score$gene %in% setdiff(PDZ_domain_binding, ephrin_receptor_binding), "PDZ\ndomain\nbinding", ifelse(z_score$gene %in% setdiff(transmembrane_receptor_protein_tyrosine, c(PDZ_domain_binding, ephrin_receptor_binding)), "transmembrane\nreceptor\nprotein\ntyrosine", ifelse(z_score$gene %in% setdiff(protein_serine_threonine_kinase, c(PDZ_domain_binding, ephrin_receptor_binding, transmembrane_receptor_protein_tyrosine)), "protein\nserine\nthreonine\nkinase", "voltage\ngated\npotassium\nchannel"))))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA1.SO, features = "Kcnd2", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+### 1-4. ADp40KO BP in CA1
+
+```{r warning=FALSE, message=FALSE}
+ 
+ephrin_receptor_signaling_pathway <- c("Epha5", "Epha7", "Epha4", "Epha3")  
+postsynapse_organization <- c("Epha5", "Homer1", "Epha7", "Etv5", "Sptbn2", "Rock2", "Epha4", "Adgrb1")  
+peptidyl_threonine_phosphorylation <- c("Spred2", "Camk2a", "Prkca", "Rock2", "Spred1")  
+negative_regulation_of_MAPk <- c("Spred2", "Sorl1", "Prkca", "Spred1")
+positive_regulation_of_synapse_assembly <- c("Ntrk2", "Prkca", "Adgrb1", "Adgrl2")
+dendrite_morphogenesis <- c("Epha5", "Camk2a", "Fmn1", "Rock2", "Epha4") 
+  
+
+genes <- c(ephrin_receptor_signaling_pathway, postsynapse_organization, peptidyl_threonine_phosphorylation, negative_regulation_of_MAPk,positive_regulation_of_synapse_assembly,  dendrite_morphogenesis)
+genes <- unique(genes)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ephrin_receptor_signaling_pathway, "ephrin\nreceptor\nsignaling\npathway", ifelse(z_score$gene %in% setdiff(postsynapse_organization, ephrin_receptor_signaling_pathway), "postsynapse\norganization", ifelse(z_score$gene %in% setdiff(peptidyl_threonine_phosphorylation, c(postsynapse_organization, ephrin_receptor_signaling_pathway)), "peptidyl\nthreonine\nphosphorylation", ifelse(z_score$gene %in% setdiff(negative_regulation_of_MAPk, c(peptidyl_threonine_phosphorylation, postsynapse_organization, ephrin_receptor_signaling_pathway)), "negative\nregulation_\nof MAPk", ifelse(z_score$gene %in% setdiff(positive_regulation_of_synapse_assembly, c(peptidyl_threonine_phosphorylation, postsynapse_organization, ephrin_receptor_signaling_pathway, negative_regulation_of_MAPk)), "positive\nregulation of\nsynapse\nassembly", "dendrite\nmorphogenesis")))))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA1.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% ephrin_receptor_signaling_pathway, "ephrin\nreceptor\nsignaling\npathway", ifelse(z_score$gene %in% setdiff(postsynapse_organization, ephrin_receptor_signaling_pathway), "postsynapse\norganization", ifelse(z_score$gene %in% setdiff(peptidyl_threonine_phosphorylation, c(postsynapse_organization, ephrin_receptor_signaling_pathway)), "peptidyl\nthreonine\nphosphorylation", ifelse(z_score$gene %in% setdiff(negative_regulation_of_MAPk, c(peptidyl_threonine_phosphorylation, postsynapse_organization, ephrin_receptor_signaling_pathway)), "negative\nregulation_\nof MAPk", ifelse(z_score$gene %in% setdiff(positive_regulation_of_synapse_assembly, c(peptidyl_threonine_phosphorylation, postsynapse_organization, ephrin_receptor_signaling_pathway, negative_regulation_of_MAPk)), "positive\nregulation of\nsynapse\nassembly", "dendrite\nmorphogenesis")))))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA1.SO, features = "Epha7", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+### 1-5. cluster 2 cell proportion
+
+sample 5 showed much more cells proportion than other samples
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=3}
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c(1,4,7,2,5,8,3,6,9))
+
+ggplot(plot.data[plot.data$cluster %in% c(2),], aes(x=gemgroup, y=cell_prop, fill = sample, color=sample)) +
+  geom_point(position=position_dodge(0.8), size = 2) + geom_text_repel(aes(label = gemgroup), 
+                    size = 6, color = "black", force =  10)
+```
+
+## 2. CA2/3 regions (cluster 9, 21, 27, 32)
+
+AD MF  
+1) voltage-gated calcium channel activity (Cacna1c, Cacnb2)   
+2) calcium ion binding (Caln1, Dgkg, Cdh12)  
+
+AD BP  
+1) positive regulation of cation channel (Ank3, Cacnb2, Asic2)  
+2) synapse organization (Ank3, Cacnb2, Asic2, Apoe)  
+
+ADp40KO MF  
+1) PDZ domain binding (Adgrb1, Atp2b2)  
+2) iron ion binding (Fth1, Msmo1)  
+
+ADp40KO BP  
+1) protein ubiquitination (Hecw1, Rnf112, Dtx3, Adgrb1)  
+2) brain development (Ahi1, Epha5, Atp2b2, Ndrg4)  
+3) positive regulation of neuron projection (Dcc, Ahi1, Ndrg4)  
+4) embryonic organ development (Ahi1, Rnf112, Atp2b2)  
+5) synapse organization (Epha5, Adgrb1, Atp2b2)  
+
+### 2-1. AD MF & BP in CA2/3
+
+```{r warning=FALSE, message=FALSE, fig.width=8.5, fig.height=5}
+data9set_CA23.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(9, 21, 27, 32))
+```
+
+```{r warning=FALSE, message=FALSE}
+ 
+voltage_gated_calcium_channel <- c("Cacna1c", "Cacnb2")   
+calcium_ion_binding <- c("Caln1", "Dgkg", "Cdh12")  
+positive_regulation_of_cation_channel <- c("Ank3", "Cacnb2", "Asic2")  
+synapse_organization <- c("Ank3", "Cacnb2", "Asic2", "Apoe")   
+
+genes <- c(voltage_gated_calcium_channel, calcium_ion_binding, positive_regulation_of_cation_channel, synapse_organization)
+genes <- unique(genes)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA23.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% voltage_gated_calcium_channel, "voltage\ngated\ncalcium\nchannel", ifelse(z_score$gene %in% setdiff(calcium_ion_binding, voltage_gated_calcium_channel), "calcium\nion\nbinding", ifelse(z_score$gene %in% setdiff(positive_regulation_of_cation_channel, c(calcium_ion_binding, voltage_gated_calcium_channel)), "positive\nregulation of\ncation_channel", "synapse\norganization")))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA23.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% voltage_gated_calcium_channel, "voltage\ngated\ncalcium\nchannel", ifelse(z_score$gene %in% setdiff(calcium_ion_binding, voltage_gated_calcium_channel), "calcium\nion\nbinding", ifelse(z_score$gene %in% setdiff(positive_regulation_of_cation_channel, c(calcium_ion_binding, voltage_gated_calcium_channel)), "positive\nregulation of\ncation_channel", "synapse\norganization")))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+
+### 2-2. ADp40KO MF & BP in CA2/3
+
+```{r warning=FALSE, message=FALSE}
+ 
+PDZ_domain_binding <- c("Adgrb1", "Atp2b2")  
+iron_ion_binding <- c("Fth1", "Msmo1")  
+
+protein_ubiquitination <- c("Hecw1", "Rnf112", "Dtx3", "Adgrb1")  
+brain_development <- c("Ahi1", "Epha5", "Atp2b2", "Ndrg4")
+positive_regulation_of_neuron_projection <- c("Dcc", "Ahi1", "Ndrg4")
+embryonic_organ_development <- c("Ahi1", "Rnf112", "Atp2b2")
+synapse_organization <- c("Epha5", "Adgrb1", "Atp2b2")  
+
+genes <- c(PDZ_domain_binding, iron_ion_binding, 
+           protein_ubiquitination, brain_development, positive_regulation_of_neuron_projection, embryonic_organ_development, synapse_organization)
+genes <- unique(genes)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=3}
+z_score <- z_score_DE_genes_by_all(data9set_CA23.SO, genes)
+colnames(z_score) <- c("WT", "AD", "AD.p40KO")
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% PDZ_domain_binding, "PDZ\ndomain\nbinding", 
+                     ifelse(z_score$gene %in% setdiff(iron_ion_binding, PDZ_domain_binding), "iron\nion\nbinding", 
+                            ifelse(z_score$gene %in% setdiff(protein_ubiquitination, c(iron_ion_binding, PDZ_domain_binding)), "protein_ubiquitination", 
+                                   ifelse(z_score$gene %in% setdiff(brain_development, c(protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "brain\ndevelopment", 
+                                          ifelse(z_score$gene %in% setdiff(positive_regulation_of_neuron_projection, c(brain_development, protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "positive\nregulation\nof\nneuron\nprojection",
+                                                 ifelse(z_score$gene %in% setdiff(embryonic_organ_development, c(positive_regulation_of_neuron_projection, brain_development, protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "embryonic\norgan\ndevelopment", "synapse\norganization"))))))
+
+z_score2 <- gather(z_score, sample, z_score, WT:AD.p40KO)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT","AD.p40KO","AD"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=10, fig.height=4}
+z_score <- z_score_DE_genes(data9set_CA23.SO, genes)
+colnames(z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+mat <- z_score
+
+z_score$gene <- rownames(z_score)
+
+z_score$GO <- ifelse(z_score$gene %in% PDZ_domain_binding, "PDZ\ndomain\nbinding", 
+                     ifelse(z_score$gene %in% setdiff(iron_ion_binding, PDZ_domain_binding), "iron\nion\nbinding", 
+                            ifelse(z_score$gene %in% setdiff(protein_ubiquitination, c(iron_ion_binding, PDZ_domain_binding)), "protein_ubiquitination", 
+                                   ifelse(z_score$gene %in% setdiff(brain_development, c(protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "brain\ndevelopment", 
+                                          ifelse(z_score$gene %in% setdiff(positive_regulation_of_neuron_projection, c(brain_development, protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "positive\nregulation\nof\nneuron\nprojection",
+                                                 ifelse(z_score$gene %in% setdiff(embryonic_organ_development, c(positive_regulation_of_neuron_projection, brain_development, protein_ubiquitination, iron_ion_binding, PDZ_domain_binding)), "embryonic\norgan\ndevelopment", "synapse\norganization"))))))
+
+z_score2 <- gather(z_score, sample, z_score, WT_1:AD_3)
+
+z_score2$sample <- factor(z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+cols <- rev(brewer.pal(11, 'RdYlBu'))
+
+ggplot(data = z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  geom_tile() + scale_y_discrete(position = "right")  + coord_flip() +  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 11.5, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black"),
+                                         panel.spacing = unit(0, "mm"), 
+                                        panel.margin= unit(c(-1), "mm"), 
+                                        plot.margin = margin(0, 0, 0, 0, "cm"),
+                                        strip.background = element_blank(),
+                                        strip.text.x = element_text(size = 10)) + 
+  #scale_fill_gradient2(low="red", high='blue', mid="white", midpoint = 0) +  
+  scale_fill_gradientn(colours = cols, limits = c(-2, 2), oob=squish) + 
+  facet_grid(~GO, scales = "free_x", space = "free_x", switch = 'x')
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+mat <- as.matrix(t(mat))
+heatmap(mat, scale = "none", col =  cols, margins = c(10,1))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=4}
+VlnPlot(data9set_CA23.SO, features = "Epha5", group.by = "gemgroup", pt.size = 0.01) + theme(legend.position = "none")
+```
+
+### 2-3. cluster 9 cell proportion
+
+sample 5 showed much more cells proportion than other samples
+
+```{r warning=FALSE, message=FALSE, fig.width=6, fig.height=3}
+ggplot(plot.data[plot.data$cluster %in% c(9),], aes(x=gemgroup, y=cell_prop, fill = sample, color=sample)) +
+  geom_point(position=position_dodge(0.8), size = 2) + geom_text_repel(aes(label = gemgroup), 
+                    size = 6, color = "black", force =  10)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+
+```

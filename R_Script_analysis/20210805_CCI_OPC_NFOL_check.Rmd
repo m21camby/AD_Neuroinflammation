@@ -1,0 +1,436 @@
+---
+title: "CCI_check_again"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(viridis)
+library(igraph)
+
+source("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New.R")
+
+#load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# test <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+# 
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+pvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+pvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_ADp40KO_cell_type/pvalues.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+# Ctrl_CB <- sigmeanvalue_Ctrl.df
+# # sigmeanvalue modification
+# Ctrl_CB[is.na(Ctrl_CB)] <- 0
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), "/", "_")
+# 
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# colnames(Ctrl_CB) <- str_replace(colnames(Ctrl_CB), " ", "_")
+# 
+# Ctrl_CB <- data.frame(Ctrl_CB[, c(2, 13:373)])
+# 
+# Ctrl_CB <- Ctrl_CB %>% distinct()
+# 
+# rownames(Ctrl_CB) <- Ctrl_CB$interacting_pair
+# Ctrl_CB <- Ctrl_CB[, -c(1)]
+# 
+# colnames(Ctrl_CB)
+# 
+# ```
+# 
+# 
+# ```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# library(biomaRt)
+# 
+# convertHumanGeneList <- function(x){
+#  
+# require("biomaRt")
+# human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# mouse = useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+#  
+# genesV2 = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+#  
+# return(genesV2)
+# }
+# 
+# sigmeanvalue_Ctrl_celltype.df$complex <- str_count(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_")
+# sigmeanvalue_Ctrl_celltype.df$gene_a1 <- str_extract(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "[^_]+")
+# sigmeanvalue_Ctrl_celltype.df$gene_a2 <- ifelse(sigmeanvalue_Ctrl_celltype.df$complex %in% 2, qdapRegex::ex_between(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_", "_"), " ") %>% unlist
+# 
+# 
+# sigmeanvalue_Ctrl_celltype.df$gene_b1 <- sub(".*_", "", sigmeanvalue_Ctrl_celltype.df$interacting_pair)
+# 
+# genes_a1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a1)
+# colnames(genes_a1) <- c("gene_a1", "mouse_gene_a1")
+# 
+# genes_a2 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a2)
+# 
+# genes_b1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_b1)
+# colnames(genes_b1) <- c("gene_b1", "mouse_gene_b1")
+# 
+# 
+# # last
+# sub(".*_", "", Ctrl_CB$interacting_pair[200:210]) 
+# # first and second
+# sub('_[^_]*$', '', Ctrl_CB$interacting_pair[200:210])
+# # first
+# str_extract(Ctrl_CB$interacting_pair[200:210], "[^_]+") 
+# 
+# str_match("BMPR1B_BMPR2_BMPR1A", "^_\\s*(.*?)\\s_*")
+# 
+# genes <- convertHumanGeneList(sub(".*_", "", Ctrl_CB$interacting_pair))
+# 
+# grepl("_", Ctrl_CB$interacting_pair[200:210]) 
+# 
+# str_count(Ctrl_CB$interacting_pair[200:210], "_")
+# 
+# qdapRegex::ex_between(Ctrl_CB$interacting_pair[200:210], "_", "_")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_a1, by = "gene_a1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_b1, by = "gene_b1")
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1), ]
+# 
+# sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1), ]
+cellphonedb_plot <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("Ctrl", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=Sender_receiver,
+                     colour=sigmeanvalue,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+} 
+
+cellphonedb_plot2 <- function(exp.df){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("WT", "AD", "ADp40KO"))
+  ggplot(exp.df, aes(x=exp,
+                     y=interacting_cells,
+                     colour=means,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) +
+    labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    theme_minimal() + theme(axis.title.x = element_blank(), 
+                            #axis.text.x =  element_text(size = 10, angle = 90), 
+                            axis.text.x = element_blank(), 
+                            panel.margin = unit(0, "lines"), 
+                            strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+}  
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+
+  pvalue_Ctrl.df2 <- pvalue_Ctrl.df[grepl("ERBB", pvalue_Ctrl.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(pvalue_Ctrl.df))]
+pvalue_Ctrl.df2 <- pvalue_Ctrl.df2[grepl("NRG", pvalue_Ctrl.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(pvalue_Ctrl.df2))]
+
+sigmeanvalue_Ctrl.df2 <- sigmeanvalue_Ctrl.df[grepl("ERBB", sigmeanvalue_Ctrl.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(sigmeanvalue_Ctrl.df))]
+sigmeanvalue_Ctrl.df2 <- sigmeanvalue_Ctrl.df2[grepl("NRG", sigmeanvalue_Ctrl.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(sigmeanvalue_Ctrl.df2))]
+
+pvalue_AD.df2 <- pvalue_AD.df[grepl("ERBB", pvalue_AD.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(pvalue_AD.df))]
+pvalue_AD.df2 <- pvalue_AD.df2[grepl("NRG", pvalue_AD.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(pvalue_AD.df2))]
+
+sigmeanvalue_AD.df2 <- sigmeanvalue_AD.df[grepl("ERBB", sigmeanvalue_AD.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(sigmeanvalue_AD.df))]
+sigmeanvalue_AD.df2 <- sigmeanvalue_AD.df2[grepl("NRG", sigmeanvalue_AD.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(sigmeanvalue_AD.df2))]
+
+pvalue_ADp40KO.df2 <- pvalue_ADp40KO.df[grepl("ERBB", pvalue_ADp40KO.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(pvalue_ADp40KO.df))]
+pvalue_ADp40KO.df2 <- pvalue_ADp40KO.df2[grepl("NRG", pvalue_ADp40KO.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(pvalue_ADp40KO.df2))]
+
+sigmeanvalue_ADp40KO.df2 <- sigmeanvalue_ADp40KO.df[grepl("ERBB", sigmeanvalue_ADp40KO.df$interacting_pair), grepl(("interacting_pair|OPC|NFOL|MFOL|MOL"), colnames(sigmeanvalue_ADp40KO.df))]
+sigmeanvalue_ADp40KO.df2 <- sigmeanvalue_ADp40KO.df2[grepl("NRG", sigmeanvalue_ADp40KO.df2$interacting_pair), grepl(("interacting_pair|CA1|CA2_3|Dentate_Gyrus|Inhibitory_Neurons|subiculum"), colnames(sigmeanvalue_ADp40KO.df2))]
+
+pvalue_Ctrl.df2$exp <- "Ctrl" 
+pvalue_Ctrl.df2$metric <- "pvalue" 
+sigmeanvalue_Ctrl.df2$exp <- "Ctrl"
+sigmeanvalue_Ctrl.df2$metric <- "avgexp"
+
+pvalue_AD.df2$exp <- "AD"
+pvalue_AD.df2$metric <- "pvalue"
+sigmeanvalue_AD.df2$exp <- "AD"
+sigmeanvalue_AD.df2$metric <- "avgexp"
+
+pvalue_ADp40KO.df2$exp <- "ADp40KO" 
+pvalue_ADp40KO.df2$metric <- "pvalue"
+sigmeanvalue_ADp40KO.df2$exp <- "ADp40KO"
+sigmeanvalue_ADp40KO.df2$metric <- "avgexp"
+
+All <- rbind(sigmeanvalue_Ctrl.df2, sigmeanvalue_AD.df2, sigmeanvalue_ADp40KO.df2)
+colnames(All) <- str_replace(colnames(All), "/", "_")
+colnames(All) <- str_replace(colnames(All), " ", "_")
+colnames(All) <- str_replace(colnames(All), "\\|", "_")
+
+All_2 <- All %>% gather(Paper, value, CA1_NFOL:subiculum_OPC)
+
+All_p <- rbind(pvalue_Ctrl.df2, pvalue_AD.df2, pvalue_ADp40KO.df2)
+colnames(All_p) <- str_replace(colnames(All_p), "/", "_")
+colnames(All_p) <- str_replace(colnames(All_p), " ", "_")
+colnames(All_p) <- str_replace(colnames(All_p), "\\|", "_")
+
+All_p_2 <- All_p %>% gather(Paper, value, CA1_NFOL:subiculum_OPC)
+
+All_final <- rbind(All_2, All_p_2)
+
+All_final[is.na(All_final)] <- 0
+
+
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2 <- function(exp.df, pair = "ERBB4_NRG4"){
+  
+  exp.df$exp <- factor(exp.df$exp, levels = c("Ctrl", "AD", "ADp40KO"))
+ ggplot(data=exp.df[exp.df$interacting_pair %in% pair, ], aes(x=Paper, y=value, fill=exp)) +
+ geom_bar(stat="identity", position=position_dodge()) + theme_minimal() + 
+   theme(axis.title.x = element_blank(),
+         axis.text.x =  element_text(size = 10, angle = 90)) + ggtitle(pair)
+ 
+    # labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    # theme_minimal() + theme(axis.title.x = element_blank(), 
+    #                         #axis.text.x =  element_text(size = 10, angle = 90), 
+    #                         axis.text.x = element_blank(), 
+    #                         panel.margin = unit(0, "lines"), 
+    #                         strip.background = element_blank()) + facet_grid(scales="free", space = "free", switch = "y", cols = vars(exp)) 
+  
+} 
+
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "ERBB4_NRG4")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "ERBB3_NRG1")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "NRG1_ERBB4")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "NRG2_ERBB4")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "NRG2_ERBB3")
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+cellphonedb_plot2(All_final[All_final$metric %in% "avgexp", ], pair = "NRG1_ERBB4")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+# convertHumanGeneList <- function(x){
+#   
+#   require("biomaRt")
+#   human = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+#   mouse = useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+#   
+#   genesV2 = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+#   
+#   return(genesV2)
+# }
+# exp = "Ctrl"
+# cell_type_1 = "OPC" 
+# cell_type_2 = "CA1"
+# 
+# sigmeanvalue_Ctrl.df <- read.table(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_", exp, "_cell_type/significant_means.txt"), sep = "\t", header = TRUE, check.names = FALSE)
+#   # sigmeanvalue modification
+# sigmeanvalue_Ctrl.df[is.na(sigmeanvalue_Ctrl.df)] <- 0
+#   colnames(sigmeanvalue_Ctrl.df) <- str_replace(colnames(sigmeanvalue_Ctrl.df), "/", "_")
+#   colnames(sigmeanvalue_Ctrl.df) <- str_replace(colnames(sigmeanvalue_Ctrl.df), "/", "_")
+#   
+#   colnames(sigmeanvalue_Ctrl.df) <- str_replace(colnames(sigmeanvalue_Ctrl.df), " ", "_")
+#   colnames(sigmeanvalue_Ctrl.df) <- str_replace(colnames(sigmeanvalue_Ctrl.df), " ", "_")
+#   colnames(sigmeanvalue_Ctrl.df) <- str_replace(colnames(sigmeanvalue_Ctrl.df), " ", "_")
+#   
+#   # remove unecessary information
+#   sigmeanvalue_Ctrl.df <- data.frame(sigmeanvalue_Ctrl.df[, c(2, 13:373)])
+#   sigmeanvalue_Ctrl.df <- sigmeanvalue_Ctrl.df %>% distinct()
+#   
+#   rownames(sigmeanvalue_Ctrl.df) <- sigmeanvalue_Ctrl.df$interacting_pair
+#   sigmeanvalue_Ctrl.df <- sigmeanvalue_Ctrl.df[, -c(1)]
+#   
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl.df[, which(grepl(cell_type_1, colnames(sigmeanvalue_Ctrl.df)) & grepl(cell_type_2, colnames(sigmeanvalue_Ctrl.df)))]
+#   sigmeanvalue_Ctrl_celltype.df$interacting_pair <- rownames(sigmeanvalue_Ctrl_celltype.df)
+#   
+#   start_input <- paste0(cell_type_1,".",cell_type_2)
+#   end_input <- paste0(cell_type_2,".",cell_type_1)
+#   
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df %>% gather(Sender_receiver, sigmeanvalue, !!start_input:!!end_input)
+#   
+#   # remove TTR
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!grepl("TTR", sigmeanvalue_Ctrl_celltype.df$interacting_pair), ]
+# 
+#   #########################
+#   # Change to mouse genes
+#   #########################
+#   # counts how many genes in interacting_pair
+#   sigmeanvalue_Ctrl_celltype.df$complex <- str_count(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_")
+#   # add first gene
+#   sigmeanvalue_Ctrl_celltype.df$gene_a1 <- str_extract(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "[^_]+")
+#   # add second gene if exist
+#   sigmeanvalue_Ctrl_celltype.df$gene_a2 <- ifelse(sigmeanvalue_Ctrl_celltype.df$complex %in% 2, qdapRegex::ex_between(sigmeanvalue_Ctrl_celltype.df$interacting_pair, "_", "_"), " ") %>% unlist
+#   # add last gene
+#   sigmeanvalue_Ctrl_celltype.df$gene_b1 <- sub(".*_", "", sigmeanvalue_Ctrl_celltype.df$interacting_pair)
+# 
+#     # extract mouse first gene
+#   genes_a1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a1)
+#   colnames(genes_a1) <- c("gene_a1", "mouse_gene_a1")
+#     # not necessary
+#   genes_a2 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_a2)
+#   # extract mouse last gene
+#   genes_b1 <- convertHumanGeneList(sigmeanvalue_Ctrl_celltype.df$gene_b1)
+#   colnames(genes_b1) <- c("gene_b1", "mouse_gene_b1")
+#   
+#     # join matrix first gene
+#   sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_a1, by = "gene_a1")
+#   # join matrix last gene
+#   sigmeanvalue_Ctrl_celltype.df <- left_join(sigmeanvalue_Ctrl_celltype.df, genes_b1, by = "gene_b1")
+#   # remove if NA first gene
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1), ]
+#   # remove if NA last gene
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[!is.na(sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1), ]
+#   
+#   sigmeanvalue_Ctrl_celltype.df <- sigmeanvalue_Ctrl_celltype.df[, c(2,3,8,9)]
+#   
+#   sigmeanvalue_Ctrl_celltype.df$interacting_pair <- paste0(sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1, "_", sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1)
+#   
+#   sigmeanvalue_Ctrl_celltype.df$mouse_gene_a1 <- NULL
+#   sigmeanvalue_Ctrl_celltype.df$mouse_gene_b1 <- NULL
+#   
+#     pvalue_Ctrl.df <- read.table(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_", exp, "_cell_type/pvalues.txt"), sep = "\t", header = TRUE)
+#   pvalue_Ctrl.df[is.na(pvalue_Ctrl.df)] <- 0
+#   
+#   colnames(pvalue_Ctrl.df) <- str_replace(colnames(pvalue_Ctrl.df), "/", "_")
+#   colnames(pvalue_Ctrl.df) <- str_replace(colnames(pvalue_Ctrl.df), "/", "_")
+#   
+#   colnames(pvalue_Ctrl.df) <- str_replace(colnames(pvalue_Ctrl.df), " ", "_")
+#   colnames(pvalue_Ctrl.df) <- str_replace(colnames(pvalue_Ctrl.df), " ", "_")
+#   colnames(pvalue_Ctrl.df) <- str_replace(colnames(pvalue_Ctrl.df), " ", "_")
+#   
+#   pvalue_Ctrl.df <- data.frame(pvalue_Ctrl.df[, c(2, 12:372)])
+#   pvalue_Ctrl.df <- pvalue_Ctrl.df %>% distinct()
+#   rownames(pvalue_Ctrl.df) <- pvalue_Ctrl.df$interacting_pair
+#   pvalue_Ctrl.df <- pvalue_Ctrl.df[, -c(1)]
+#   
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl.df[, which(grepl(cell_type_1, colnames(pvalue_Ctrl.df)) & grepl(cell_type_2, colnames(pvalue_Ctrl.df)))]
+#   pvalue_Ctrl_celltype.df$interacting_pair <- rownames(pvalue_Ctrl_celltype.df)
+#   
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl_celltype.df %>% gather(Sender_receiver, pvalue, !!start_input:!!end_input)
+#   
+#   # remove TTR
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl_celltype.df[!grepl("TTR", pvalue_Ctrl_celltype.df$interacting_pair), ]
+#   
+#   
+#   #########################
+#   # Change to mouse genes
+#   #########################
+#   # counts how many genes in interacting_pair
+#   pvalue_Ctrl_celltype.df$complex <- str_count(pvalue_Ctrl_celltype.df$interacting_pair, "_")
+#   # add first gene
+#   pvalue_Ctrl_celltype.df$gene_a1 <- str_extract(pvalue_Ctrl_celltype.df$interacting_pair, "[^_]+")
+#   # add second gene if exist
+#   pvalue_Ctrl_celltype.df$gene_a2 <- ifelse(pvalue_Ctrl_celltype.df$complex %in% 2, qdapRegex::ex_between(pvalue_Ctrl_celltype.df$interacting_pair, "_", "_"), " ") %>% unlist
+#   # add last gene
+#   pvalue_Ctrl_celltype.df$gene_b1 <- sub(".*_", "", pvalue_Ctrl_celltype.df$interacting_pair)
+#   
+#   # extract mouse first gene
+#   genes_a1 <- convertHumanGeneList(pvalue_Ctrl_celltype.df$gene_a1)
+#   colnames(genes_a1) <- c("gene_a1", "mouse_gene_a1")
+#   # not necessary
+#   genes_a2 <- convertHumanGeneList(pvalue_Ctrl_celltype.df$gene_a2)
+#   # extract mouse last gene
+#   genes_b1 <- convertHumanGeneList(pvalue_Ctrl_celltype.df$gene_b1)
+#   colnames(genes_b1) <- c("gene_b1", "mouse_gene_b1")
+#   
+#   # join matrix first gene
+#   pvalue_Ctrl_celltype.df <- left_join(pvalue_Ctrl_celltype.df, genes_a1, by = "gene_a1")
+#   # join matrix last gene
+#   pvalue_Ctrl_celltype.df <- left_join(pvalue_Ctrl_celltype.df, genes_b1, by = "gene_b1")
+#   # remove if NA first gene
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl_celltype.df[!is.na(pvalue_Ctrl_celltype.df$mouse_gene_a1), ]
+#   # remove if NA last gene
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl_celltype.df[!is.na(pvalue_Ctrl_celltype.df$mouse_gene_b1), ]
+#   
+#   pvalue_Ctrl_celltype.df <- pvalue_Ctrl_celltype.df[, c(2,3,8,9)]
+#   
+#   pvalue_Ctrl_celltype.df$interacting_pair <- paste0(pvalue_Ctrl_celltype.df$mouse_gene_a1, "_", pvalue_Ctrl_celltype.df$mouse_gene_b1)
+#   
+#   pvalue_Ctrl_celltype.df$mouse_gene_a1 <- NULL
+#   pvalue_Ctrl_celltype.df$mouse_gene_b1 <- NULL
+#   
+#   
+#   ##############################
+#   # combine sigmean and pvalue
+#   ##############################
+#   # merge sigmean and pvalue
+#   Ctrl_AS_CA1.df <- left_join(sigmeanvalue_Ctrl_celltype.df, pvalue_Ctrl_celltype.df, by = c("interacting_pair", "Sender_receiver"))
+#   # conver log10
+#   Ctrl_AS_CA1.df$logpvalue <- -log10(Ctrl_AS_CA1.df$pvalue)
+#   Ctrl_AS_CA1.df$logpvalue[is.infinite(Ctrl_AS_CA1.df$logpvalue)] <- 3
+#   
+#   Ctrl_AS_CA1.df <- Ctrl_AS_CA1.df[Ctrl_AS_CA1.df$sigmeanvalue > 0, ]
+#   
+#   for(i in 1:nrow(Ctrl_AS_CA1.df)){
+#     Ctrl_AS_CA1.df[i, "sender"] <- strsplit(Ctrl_AS_CA1.df$Sender_receiver, '[.]')[[i]][1]
+#     Ctrl_AS_CA1.df[i, "receiver"] <- strsplit(Ctrl_AS_CA1.df$Sender_receiver, '[.]')[[i]][2]
+#   }
+```
+
+### 4. NFOL
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+# 
+# 
+# list1 <- "NFOL"
+# list2 <- c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum", "Inhibitory_Neurons")
+# #list2 <- c("Dentate_Gyrus", "CA1")
+# 
+# 
+# test <- cellphonedb_multiplot(list1, list2)
+# # 
+# save(test, file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20210805_CCI_OPC_NFOL_check/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+# 
+# load(file= paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200917_CellPhoneDB_functions_New_analysis/cellphoneDB_analysis_ggplot_list_", list1,".RData"))
+# 
+# grid.arrange(grobs = c(test[1], test[2], test[3], test[5], test[4], test[6], test[7], test[8], test[9], test[10], test[11]), ncol = 3, heights = c(1,1,1,1))
+
+```

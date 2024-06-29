@@ -1,0 +1,208 @@
+---
+title: "statistics test"
+author: "Skim"
+date: '2020 9 15 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+## 1. kruskal wallis test
+
+kruskal wallis test [ref](http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r)
+
+Kruskal-Wallis test by rank is a non-parametric alternative to one-way ANOVA test, which extends the two-samples Wilcoxon test in the situation where there are more than two groups. It’s recommended when the assumptions of one-way ANOVA test are not met. 
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(viridis)
+library(car)
+library(fBasics)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/report.sessionInfo.R")
+
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(gemgroup, cell_type, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+plot.data <- plot.data[which(plot.data$cell_type %in% c("Excitatory Neurons", "Astrocytes", "Oligodendrocytes", "Microglia", "Inhibitory Interneurons", "OPC")),]
+```
+
+### 1-1. kruskal wallis test (MG)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "Microglia"), ])
+```
+
+### 1-2. kruskal wallis test (OL)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "Oligodendrocytes"), ])
+```
+
+### 1-3. kruskal wallis test (AS)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "Astrocytes"), ])
+```
+
+### 1-4. kruskal wallis test (EX)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "Excitatory Neurons"), ])
+```
+
+### 1-5. kruskal wallis test (IN)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "Inhibitory Interneurons"), ])
+```
+
+### 1-6. kruskal wallis test (OPC)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+kruskal.test(cell_prop ~ sample, data = plot.data[which(plot.data$cell_type == "OPC"), ])
+```
+
+## 2. ANOVA assumption
+
+[ref](https://yieldingresults.org/wp-content/uploads/2015/03/Checking_ANOVA_assumptions.html)
+
+1) ANOVA assumes that the variances of the distributions in the populations are equal. the null hypothesis says that all observations come from the same underlying group with the same degree of variability. 
+
+2) ANOVA is based on the F-statistic, where the F-statistic requires that the dependent variable is normally distributed in each group. 
+
+### 2-1. Assumption of homogeneity of variance (MG)
+
+Since the p-value is over 0.05, we fail to reject the null hypothesis and thus accept homogeneity of variances. However, let’s say the p-value was under 0.05; in this case, we could only conclude that at least one of the group variances was significantly different to the other group variances 
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "Microglia"), ])
+```
+
+### 2-2. Assumption of homogeneity of variance (OL)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "Oligodendrocytes"), ])
+```
+
+### 2-3. Assumption of homogeneity of variance (OPC)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "OPC"), ])
+```
+
+### 2-4. Assumption of homogeneity of variance (AS)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "Astrocytes"), ])
+```
+
+### 2-5. Assumption of homogeneity of variance (EX)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "Excitatory Neurons"), ])
+```
+
+### 2-6. Assumption of homogeneity of variance (IN)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+bartlett.test(cell_prop ~ sample, data=plot.data[which(plot.data$cell_type == "Inhibitory Interneurons"), ])
+```
+
+## 3. ANOVA assumption (Normality test)
+
+Is the normal distribution assumption apply to the distribution **within groups** and not **between groups**?  It seems like the normality should be determined **within groups** because each sample set is theoretically from an independent population. 
+
+Another answer: Yes, the normality should be examined within group. If they're not normal, you might want to consider performing tests which do not assume normality.
+
+I personally recommend Kolmogorov Smirnoff for sample sizes above 30 and Shapiro Wilk for sample sizes below 30.
+
+p-value higher than 0.05 means normal distributed. 
+
+### 3-1. Normality test (MG Ctrl)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Microglia" & plot.data$sample == "Ctrl"), ]$cell_prop)
+```
+
+### 3-2. Normality test (MG AD)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Microglia" & plot.data$sample == "AD"), ]$cell_prop)
+```
+
+### 3-3. Normality test (MG ADp40KO)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Microglia" & plot.data$sample == "ADp40KO"), ]$cell_prop)
+```
+
+### 3-4. Normality test (OL Ctrl)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Oligodendrocytes" & plot.data$sample == "Ctrl"), ]$cell_prop)
+```
+
+### 3-5. Normality test (OL AD)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Oligodendrocytes" & plot.data$sample == "AD"), ]$cell_prop)
+```
+
+### 3-6. Normality test (OL ADp40KO)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Oligodendrocytes" & plot.data$sample == "ADp40KO"), ]$cell_prop)
+```
+
+### 3-7. Normality test (AS Ctrl)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Astrocytes" & plot.data$sample == "Ctrl"), ]$cell_prop)
+```
+
+### 3-8. Normality test (AS AD)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Astrocytes" & plot.data$sample == "AD"), ]$cell_prop)
+```
+
+### 3-9. Normality test (AS ADp40KO)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Astrocytes" & plot.data$sample == "ADp40KO"), ]$cell_prop)
+```
+
+### 3-10. Normality test (IN Ctrl)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Inhibitory Interneurons" & plot.data$sample == "Ctrl"), ]$cell_prop)
+```
+
+### 3-11. Normality test (IN AD)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Inhibitory Interneurons" & plot.data$sample == "AD"), ]$cell_prop)
+```
+
+### 3-12. Normality test (IN ADp40KO)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+shapiro.test(plot.data[which(plot.data$cell_type == "Inhibitory Interneurons" & plot.data$sample == "ADp40KO"), ]$cell_prop)
+```

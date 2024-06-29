@@ -1,0 +1,193 @@
+---
+title: "Test file"
+author: "Skim"
+date: '2020 10 19 '
+output: html_document
+---
+
+
+```{r fig.width = 5, fig.height= 6}
+
+
+```
+
+
+
+```{r fig.width = 5, fig.height= 6}
+CADM1_CADM1_final <- CADM1_CADM1_final[grepl("Micro", CADM1_CADM1_final$interacting_cells), ]
+CADM1_CADM1_final_s <- CADM1_CADM1_final[CADM1_CADM1_final$sender %in% "Microglia", ]
+CADM1_CADM1_final_r <- CADM1_CADM1_final[CADM1_CADM1_final$receiver %in% "Microglia", ]
+
+# Remove Both Microglia
+CADM1_CADM1_final_s <- CADM1_CADM1_final_s[CADM1_CADM1_final_s$interacting_cells != "Microglia|Microglia", ]
+CADM1_CADM1_final_r <- CADM1_CADM1_final_r[CADM1_CADM1_final_r$interacting_cells != "Microglia|Microglia", ]
+
+# Name change
+CADM1_CADM1_final_s[CADM1_CADM1_final_s == "CA2_3"] <- "CA2/3"
+CADM1_CADM1_final_s[CADM1_CADM1_final_s == "Dentate_Gyrus"] <- "Dentate Gyrus"
+CADM1_CADM1_final_s[CADM1_CADM1_final_s == "Inhibitory_Neurons"] <- "Inhibitory Neurons"
+CADM1_CADM1_final_s[CADM1_CADM1_final_s == "CADM1_CADM1"] <- "Cadm1_Cadm1"
+
+
+CADM1_CADM1_final_r[CADM1_CADM1_final_r == "CA2_3"] <- "CA2/3"
+CADM1_CADM1_final_r[CADM1_CADM1_final_r == "Dentate_Gyrus"] <- "Dentate Gyrus"
+CADM1_CADM1_final_r[CADM1_CADM1_final_r == "Inhibitory_Neurons"] <- "Inhibitory Neurons"
+CADM1_CADM1_final_r[CADM1_CADM1_final_r == "CADM1_CADM1"] <- "Cadm1_Cadm1"
+
+
+# give levels
+CADM1_CADM1_final_s$receiver <- factor(CADM1_CADM1_final_s$receiver, 
+                                       levels = rev(c("Dentate Gyrus", "CA1", "CA2/3", "subiculum", "Inhibitory Neurons", "MOL", "MFOL", "NFOL", "OPC", "Astrocytes")))
+
+CADM1_CADM1_final_r$sender <- factor(CADM1_CADM1_final_r$sender, 
+                                       levels = c("Dentate Gyrus", "CA1", "CA2/3", "subiculum", "Inhibitory Neurons", "MOL", "MFOL", "NFOL", "OPC", "Astrocytes"))
+
+
+CADM1_CADM1_final_s$exp <- factor(CADM1_CADM1_final_s$exp, levels = c("WT", "AD", "ADp40KO"))
+CADM1_CADM1_final_r$exp <- factor(CADM1_CADM1_final_r$exp, levels = c("WT", "AD", "ADp40KO"))
+
+
+# Remove Microglia for labeling and left only one
+CADM1_CADM1_final_r$receiver <- ifelse(CADM1_CADM1_final_r$sender %in% "Inhibitory Neurons", "Microglia", " ")
+```
+
+```{r fig.width = 5, fig.height= 6}
+PTN_PTPRZ1_final <- PTN_PTPRZ1_final[grepl("Micro", PTN_PTPRZ1_final$interacting_cells), ]
+PTN_PTPRZ1_final_s <- PTN_PTPRZ1_final[PTN_PTPRZ1_final$sender %in% "Microglia", ]
+PTN_PTPRZ1_final_r <- PTN_PTPRZ1_final[PTN_PTPRZ1_final$receiver %in% "Microglia", ]
+
+# Remove Both Microglia
+PTN_PTPRZ1_final_s <- PTN_PTPRZ1_final_s[PTN_PTPRZ1_final_s$interacting_cells != "Microglia|Microglia", ]
+PTN_PTPRZ1_final_r <- PTN_PTPRZ1_final_r[PTN_PTPRZ1_final_r$interacting_cells != "Microglia|Microglia", ]
+
+# Name change
+PTN_PTPRZ1_final_s[PTN_PTPRZ1_final_s == "CA2_3"] <- "CA2/3"
+PTN_PTPRZ1_final_s[PTN_PTPRZ1_final_s == "Dentate_Gyrus"] <- "Dentate Gyrus"
+PTN_PTPRZ1_final_s[PTN_PTPRZ1_final_s == "Inhibitory_Neurons"] <- "Inhibitory Neurons"
+PTN_PTPRZ1_final_s[PTN_PTPRZ1_final_s == "PTN_PTPRZ1"] <- "Ptn_Ptprz1"
+
+
+PTN_PTPRZ1_final_r[PTN_PTPRZ1_final_r == "CA2_3"] <- "CA2/3"
+PTN_PTPRZ1_final_r[PTN_PTPRZ1_final_r == "Dentate_Gyrus"] <- "Dentate Gyrus"
+PTN_PTPRZ1_final_r[PTN_PTPRZ1_final_r == "Inhibitory_Neurons"] <- "Inhibitory Neurons"
+PTN_PTPRZ1_final_r[PTN_PTPRZ1_final_r == "PTN_PTPRZ1"] <- "Ptn_Ptprz1"
+
+
+# give levels
+PTN_PTPRZ1_final_s$receiver <- factor(PTN_PTPRZ1_final_s$receiver, 
+                                       levels = rev(c("Dentate Gyrus", "CA1", "CA2/3", "subiculum", "Inhibitory Neurons", "MOL", "MFOL", "NFOL", "OPC", "Astrocytes")))
+
+PTN_PTPRZ1_final_r$sender <- factor(PTN_PTPRZ1_final_r$sender, 
+                                       levels = c("Dentate Gyrus", "CA1", "CA2/3", "subiculum", "Inhibitory Neurons", "MOL", "MFOL", "NFOL", "OPC", "Astrocytes"))
+
+
+PTN_PTPRZ1_final_s$exp <- factor(PTN_PTPRZ1_final_s$exp, levels = c("WT", "AD", "ADp40KO"))
+PTN_PTPRZ1_final_r$exp <- factor(PTN_PTPRZ1_final_r$exp, levels = c("WT", "AD", "ADp40KO"))
+
+
+# Remove Microglia for labeling and left only one
+PTN_PTPRZ1_final_r$receiver <- ifelse(PTN_PTPRZ1_final_r$sender %in% "Inhibitory Neurons", "Microglia", " ")
+
+```
+
+```{r fig.width = 5, fig.height= 6}
+test_r <- rbind(CADM1_CADM1_final_r, PTN_PTPRZ1_final_r)
+test_s <- rbind(CADM1_CADM1_final_s, PTN_PTPRZ1_final_s)
+
+```
+
+
+```{r fig.width = 5, fig.height= 6}
+
+
+c1 <- ggplot(test_r, aes(x=exp,
+                     y=receiver,
+                     colour=means,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) + labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    facet_grid(sender ~ ligand_receptor, scales="free", space = "free", switch = "y") + 
+    theme_minimal() + 
+    theme(axis.title.x = element_blank(), 
+          axis.title.y =  element_blank(),
+          axis.text.y = element_text(size = 11, family = "Helvetica", color = "black"),
+          axis.text.x = element_text(size = 11, family = "Helvetica", color = "black"),
+          strip.background = element_blank(),
+          strip.text.x = element_text(angle=45, size = 12, family = "Helvetica", color = "black"),
+          strip.text.y.left = element_text(angle=0, size = 11, family = "Helvetica", color = "black"),
+          strip.placement = "outside",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          #panel.spacing = unit(c(0, 0, 0, 0), "lines"),
+          panel.spacing.x = unit(-2, "cm"),
+          plot.margin = margin(0, 0, 0, 0, "cm")
+          ) + scale_color_viridis(limits = c(0,15)) + 
+    scale_x_discrete(position = "top", labels=c("WT" = "W", "AD" = "A",
+                                                "ADp40KO" = "K"), 
+                     expand = expansion(mult = c(0.2, 1))) 
+
+
+
+```
+
+```{r fig.width = 5, fig.height= 6}
+
+
+c2 <- ggplot(test_s, aes(x=exp,
+                     y=receiver,
+                     colour=means,
+                     size=logpvalue)) +
+    geom_point() +
+    expand_limits(x=0) + labs(x="cluster", y="Interacting cell types", colour="mean expression", size="-log10(p value)") +
+    facet_grid(sender ~ ligand_receptor, scales="free", space = "free", switch = "y") + 
+    theme_minimal() + 
+    theme(axis.title.x = element_blank(), 
+          axis.title.y =  element_blank(),
+          axis.text.y = element_text(size = 11, family = "Helvetica", color = "black"),
+          axis.text.x = element_text(size = 11, family = "Helvetica", color = "black"),
+          strip.background = element_blank(),
+          strip.text.x = element_text(angle=45, family = "Helvetica", color = "black"),
+          strip.text.y.left = element_text(angle=0, size = 11, family = "Helvetica", color = "black"),
+          strip.placement = "outside",
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+          #panel.spacing = unit(c(0,0,0, -2), "lines"),
+          panel.spacing.x = unit(-2, "cm"),
+          plot.margin = margin(0, 0, 0, 0, "cm")
+          ) + scale_color_viridis(limits = c(0,15)) + 
+    scale_x_discrete(position = "top", labels=c("WT" = "W", "AD" = "A",
+                                                "ADp40KO" = "K"), 
+                     expand = expansion(mult = c(0.2, 1))) 
+
+
+```
+
+```{r fig.width = 6, fig.height= 7}
+legend <- get_legend(c1)
+# 3. Remove the legend from the box plot
+#+++++++++++++++++++++++
+c1 <- c1 + theme(legend.position="none") + theme(plot.margin = margin(0, 0, -0.2, 0, "cm")) 
+
+#+ 
+#  scale_x_discrete(expand = expand_scale(mult = c(0.3, 1)))
+
+c2 <- c2 + theme(legend.position="none") + theme(plot.margin = margin(0, 0, 0, 0, "cm"), 
+                                                 strip.text.x = element_blank(),
+                                                 axis.text.x = element_blank())
+
+blankPlot <- ggplot() + geom_blank(aes(1,1)) + 
+  cowplot::theme_nothing()
+
+grid.arrange(c1, c2, blankPlot, legend, blankPlot, blankPlot, ncol = 2, 
+             widths = c(2.7, .5), heights = c(3.5, 3.5, 2.5, 2.5), 
+             layout_matrix = cbind(c(1,1,2,2), c(3,4,5,6)))
+
+```
+
+```{r fig.width = 5, fig.height= 6}
+
+
+
+```
+
+

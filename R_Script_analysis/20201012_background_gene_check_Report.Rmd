@@ -1,0 +1,168 @@
+---
+title: "background genes"
+author: "Skim"
+date: '2020 10 12 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_022.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_022.rda")
+data_022.df$rank <- rank(-data_022.df$counts)
+
+data_022.df2 <- data_022.df[data_022.df$rank < 21, ]
+data_022.df2 <- data_022.df2[!data_022.df2$gene %in% "Malat1", ]
+
+data_022.df2$gene <- reorder(data_022.df2$gene, -data_022.df2$prop)
+
+
+ggplot(data=data_022.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("WT1 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_023.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_023.rda")
+data_023.df$rank <- rank(-data_023.df$counts)
+
+data_023.df2 <- data_023.df[data_023.df$rank < 21, ]
+data_023.df2 <- data_023.df2[!data_023.df2$gene %in% "Malat1", ]
+
+data_023.df2$gene <- reorder(data_023.df2$gene, -data_023.df2$prop)
+
+
+ggplot(data=data_023.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity")  + ggtitle("ADp40KO1 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_024.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_024.rda")
+data_024.df$rank <- rank(-data_024.df$counts)
+
+data_024.df2 <- data_024.df[data_024.df$rank < 21, ]
+data_024.df2 <- data_024.df2[!data_024.df2$gene %in% "Malat1", ]
+
+data_024.df2$gene <- reorder(data_024.df2$gene, -data_024.df2$prop)
+
+
+ggplot(data=data_024.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("AD1 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B., Il12b is ranked 10630 out of 55421 genes") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10))  
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_025.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_025.rda")
+data_025.df$rank <- rank(-data_025.df$counts)
+
+data_025.df2 <- data_025.df[data_025.df$rank < 21, ]
+data_025.df2 <- data_025.df2[!data_025.df2$gene %in% "Malat1", ]
+
+data_025.df2$gene <- reorder(data_025.df2$gene, -data_025.df2$prop)
+
+
+ggplot(data=data_025.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("WT2 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_026.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_026.rda")
+data_026.df$rank <- rank(-data_026.df$counts)
+
+data_026.df2 <- data_026.df[data_026.df$rank < 21, ]
+data_026.df2 <- data_026.df2[!data_026.df2$gene %in% "Malat1", ]
+
+data_026.df2$gene <- reorder(data_026.df2$gene, -data_026.df2$prop)
+
+
+ggplot(data=data_026.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("ADp40KO2 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_027.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_027.rda")
+data_027.df$rank <- rank(-data_027.df$counts)
+
+data_027.df2 <- data_027.df[data_027.df$rank < 21, ]
+data_027.df2 <- data_027.df2[!data_027.df2$gene %in% "Malat1", ]
+
+data_027.df2$gene <- reorder(data_027.df2$gene, -data_027.df2$prop)
+
+
+ggplot(data=data_027.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("AD2 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B., Il12b is ranked 11011 out of 55421 genes") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10))  
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_028.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_028.rda")
+data_028.df$rank <- rank(-data_028.df$counts)
+
+data_028.df2 <- data_028.df[data_028.df$rank < 21, ]
+data_028.df2 <- data_028.df2[!data_028.df2$gene %in% "Malat1", ]
+
+data_028.df2$gene <- reorder(data_028.df2$gene, -data_028.df2$prop)
+
+
+ggplot(data=data_028.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("WT3 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_029.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_029.rda")
+data_029.df$rank <- rank(-data_029.df$counts)
+
+data_029.df2 <- data_029.df[data_029.df$rank < 21, ]
+data_029.df2 <- data_029.df2[!data_029.df2$gene %in% "Malat1", ]
+
+data_029.df2$gene <- reorder(data_029.df2$gene, -data_029.df2$prop)
+
+
+ggplot(data=data_029.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("ADp40KO3 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B.") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10)) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+data_030.df <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201012_background_gene_check/data_030.rda")
+data_030.df$rank <- rank(-data_030.df$counts)
+
+data_030.df2 <- data_030.df[data_030.df$rank < 21, ]
+data_030.df2 <- data_030.df2[!data_030.df2$gene %in% "Malat1", ]
+
+data_030.df2$gene <- reorder(data_030.df2$gene, -data_030.df2$prop)
+
+
+ggplot(data=data_030.df2, aes(x=gene, y=prop)) +
+  geom_bar(stat="identity") + ggtitle("AD3 ambient RNA (top 20 except Malat1), from top 15,000 ~ 50,000 C.B., Il12b is ranked 10735 out of 55421 genes") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5), plot.title = element_text(size = 10))  
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=8}
+sessionInfo()
+```
+

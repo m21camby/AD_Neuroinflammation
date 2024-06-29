@@ -1,0 +1,86 @@
+---
+title: "Untitled"
+author: "Skim"
+date: '2020 4 20 '
+output: html_document
+---
+
+```{r }
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(viridis)
+library(tidyr)
+library(ggrepel)
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_OL_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6, 12, 38))
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Pdgfra"), pt.size = 0.5) + 
+  scale_x_continuous(limits = c(10,25)) + 
+  scale_y_continuous(limits = c(-20, 10)) + 
+  scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", limits=c(0, 5), midpoint = 2.5, breaks=c(0,2.5,5)) + 
+  ggtitle("OPC (Pdgfra)") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank(),
+        legend.position = "none")
+
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Fyn")) + 
+  scale_x_continuous(limits = c(10,25)) + 
+  scale_y_continuous(limits = c(-20, 10)) + 
+  scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", limits=c(0, 5), midpoint = 2.5, breaks=c(0,2.5,5)) + 
+  ggtitle("COPs (Fyn)") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank(),
+        legend.position = "none")
+
+f3 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Tcf7l2")) + 
+  scale_x_continuous(limits = c(10,25)) + 
+  scale_y_continuous(limits = c(-20, 10)) + 
+  scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", limits=c(0, 5), midpoint = 2.5, breaks=c(0,2.5,5)) + 
+  ggtitle("NFOL (Tcf7l2)") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank(),
+        legend.position = "none")
+
+f4 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Opalin")) + 
+  scale_x_continuous(limits = c(10,25)) + 
+  scale_y_continuous(limits = c(-20, 10)) + 
+  scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", limits=c(0, 5), midpoint = 2.5, breaks=c(0,2.5,5)) + 
+  ggtitle("MFOL (Opalin)") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank(),
+        legend.position = "none")
+
+f5 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Apod")) + 
+  scale_x_continuous(limits = c(10,25)) + 
+  scale_y_continuous(limits = c(-20, 10)) + 
+  scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", limits=c(0, 5), midpoint = 2.5, breaks=c(0,2.5,5)) + 
+  ggtitle("MOL (Apod)") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank())
+
+grid.arrange(f1, f2, f3, f4, f5, ncol = 5, widths= c(1,1, 1,1,1.35))
+```
+
+
+
+```{r pressure, echo=FALSE}
+
+```
+
+

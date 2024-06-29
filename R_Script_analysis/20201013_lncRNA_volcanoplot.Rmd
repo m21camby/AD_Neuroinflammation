@@ -1,0 +1,424 @@
+---
+title: "lncRNAs volcano plot"
+author: "Skim"
+date: "10/13/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(gridExtra)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(Seurat)
+library(ggrepel)
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+
+# give levels to large cell type
+data9set_cleaned.SO$cell_type <- factor(data9set_cleaned.SO$cell_type, levels = c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum",  "Unidentified_Neurons", 
+                                                                                  "Inhibitory_Neurons", "MOL", "MFOL", "OPC", "NFOL", "Microglia","Astrocytes",
+                                                                                  "Vascular", "VLMC", "Choroid", "Fibroblast", "Cajal", "Pericyte", "Macrophage"))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+volcano_plot <- function(DE.df, DE.df_plus, DE.df_minus, DE.df_il12, title = "title", y_lim = c(0,20), x_lim = c(-1, 1), plus_threshold = 1E-5, minus_threshold = 1E-5, plus_force = 10, minus_force = 10){
+  ggplot(DE.df) + geom_point(aes(x = logFC, y = -log10(FDR)), alpha = 0.25) +
+  geom_point(data = DE.df_plus, aes(x = logFC, y = -log10(FDR)), color = "red", alpha = 0.25) +
+  geom_point(data = DE.df_minus, aes(x = logFC, y = -log10(FDR)), color = "blue", alpha = 0.25) +
+  ggtitle(title) + 
+  theme_classic() + 
+  xlab("log fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = y_lim) + xlim(x_lim) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = DE.df_il12, aes(x = logFC, y = -log10(FDR)), label = DE.df_il12$gene, force = plus_force, nudge_y = 10)
+  
+}
+
+volcano_plot_zoom <- function(DE.df, DE.df_plus, DE.df_minus, DE.df_il12, title = "title", y_lim = c(0,20), x_lim = c(-1, 1), plus_threshold = 1E-5, minus_threshold = 1E-5, plus_force = 10, minus_force = 10){
+  ggplot(DE.df) + geom_point(aes(x = logFC, y = -log10(FDR)), alpha = 0.25) +
+  geom_point(data = DE.df_plus, aes(x = logFC, y = -log10(FDR)), color = "red", alpha = 0.25) +
+  geom_point(data = DE.df_minus, aes(x = logFC, y = -log10(FDR)), color = "blue", alpha = 0.25) +
+  ggtitle(title) + 
+  theme_classic() + 
+  xlab("log fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = y_lim) + xlim(x_lim) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = DE.df_il12, aes(x = logFC, y = -log10(FDR)), label = DE.df_il12$gene, force = plus_force, nudge_y = 5)
+  
+}
+
+```
+
+### 1. Microglia Pvt1 & Neat1
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Pvt1_Neat1.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v1 <- volcano_plot(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Pvt1_Neat1.df, title = "Microglia APPPS1 vs WT", x_lim = c(-1, 2.5), y_lim = c(0,150), plus_threshold = 1E-50, minus_threshold = 1E-35, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Pvt1_Neat1.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v2 <- volcano_plot(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Pvt1_Neat1.df, title = "Microglia APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,150), plus_threshold = 1E-10, minus_threshold = 1E-10, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Pvt1_Neat1.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v3 <- volcano_plot(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Pvt1_Neat1.df, title = "Microglia APPPS1.il12b-/- vs WT", x_lim = c(-1, 2), y_lim = c(0,150), plus_threshold = 1E-60, minus_threshold = 1E-40, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Pvt1_Neat1.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v1 <- volcano_plot_zoom(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Pvt1_Neat1.df, title = "Microglia APPPS1 vs WT", x_lim = c(-1, 1.5), y_lim = c(0,25), plus_threshold = 1E-50, minus_threshold = 1E-35, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Pvt1_Neat1.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v2 <- volcano_plot_zoom(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Pvt1_Neat1.df, title = "Microglia APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1.5), y_lim = c(0,25), plus_threshold = 1E-10, minus_threshold = 1E-10, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Pvt1_Neat1.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Pvt1", "Neat1", "Actb")), ]
+
+v3 <- volcano_plot_zoom(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Pvt1_Neat1.df, title = "Microglia APPPS1.il12b-/- vs WT", x_lim = c(-1, 1.5), y_lim = c(0,25), plus_threshold = 1E-60, minus_threshold = 1E-40, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "Microglia")
+
+v1 <- VlnPlot(data9set_sub.SO, features = "Neat1", group.by = "sample", pt.size = 0.01)
+v2 <- VlnPlot(data9set_sub.SO, features = "Pvt1", group.by = "sample", pt.size = 0.01)
+v3 <- VlnPlot(data9set_sub.SO, features = "Actb", group.by = "sample", pt.size = 0.01)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+### 2. Astrocytes Rmst
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "Astrocytes APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,50), plus_threshold = 1E-15, minus_threshold = 1E-15, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "Astrocytes APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,50), plus_threshold = 1E-10, minus_threshold = 1E-10, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "Astrocytes APPPS1.il12b-/- vs WT", x_lim = c(-1.5, 1.5), y_lim = c(0,50), plus_threshold = 1E-25, minus_threshold = 1E-25, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot_zoom(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "Astrocytes APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,15), plus_threshold = 1E-15, minus_threshold = 1E-15, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot_zoom(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "Astrocytes APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,15), plus_threshold = 1E-10, minus_threshold = 1E-10, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot_zoom(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "Astrocytes APPPS1.il12b-/- vs WT", x_lim = c(-1.5, 1.5), y_lim = c(0,15), plus_threshold = 1E-25, minus_threshold = 1E-25, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "Astrocytes")
+
+v1 <- VlnPlot(data9set_sub.SO, features = "Rmst", group.by = "sample", pt.size = 0.01)
+v2 <- VlnPlot(data9set_sub.SO, features = "Actb", group.by = "sample", pt.size = 0.01)
+
+grid.arrange(v1, v2,  ncol = 2)
+```
+
+### 3. Subiculum Rmst
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "subiculum APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,160), plus_threshold = 1E-35, minus_threshold = 1E-25, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "subiculum APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1.5), y_lim = c(0,160), plus_threshold = 1E-30, minus_threshold = 1E-30, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "subiculum APPPS1.il12b-/- vs WT", x_lim = c(-1, 1.5), y_lim = c(0,160), plus_threshold = 1E-30, minus_threshold = 1E-20, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```  
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot_zoom(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "subiculum APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-35, minus_threshold = 1E-25, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot_zoom(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "subiculum APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-30, minus_threshold = 1E-30, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot_zoom(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "subiculum APPPS1.il12b-/- vs WT", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-30, minus_threshold = 1E-20, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```  
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "subiculum")
+
+v1 <- VlnPlot(data9set_sub.SO, features = "Rmst", group.by = "sample", pt.size = 0.01)
+v2 <- VlnPlot(data9set_sub.SO, features = "Actb", group.by = "sample", pt.size = 0.01)
+
+grid.arrange(v1, v2,  ncol = 2)
+```
+
+### 4. Dentate Gyrus Rmst
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "Dentate Gyrus APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,160), plus_threshold = 1E-30, minus_threshold = 1E-30, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "Dentate Gyrus APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,160), plus_threshold = 1E-40, minus_threshold = 1E-40, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "Dentate Gyrus APPPS1.il12b-/- vs WT", x_lim = c(-1, 1), y_lim = c(0,160), plus_threshold = 1E-60, minus_threshold = 1E-40, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_AD_Ctrl.csv", row.names = 1)
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene != "Ttr", ]
+
+AD_Ctrl_plus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC > 0.25), ]
+AD_Ctrl_minus.df <- AD_Ctrl.df[which(AD_Ctrl.df$FDR < 0.01 & AD_Ctrl.df$logFC < -0.25), ]
+AD_Ctrl_Rmst.df <- AD_Ctrl.df[which(AD_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v1 <- volcano_plot_zoom(AD_Ctrl.df, AD_Ctrl_plus.df, AD_Ctrl_minus.df, AD_Ctrl_Rmst.df, title = "Dentate Gyrus APPPS1 vs WT", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-30, minus_threshold = 1E-30, plus_force = 5, minus_force = 20)
+
+# AD vs ADp40KO
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_AD_ADp40KO.csv", row.names = 1)
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene != "Ttr", ]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC > 0.25), ]
+AD_ADp40KO_minus.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$FDR < 0.01 & AD_ADp40KO.df$logFC < -0.25), ]
+AD_ADp40KO_Rmst.df <- AD_ADp40KO.df[which(AD_ADp40KO.df$gene %in% c("Rmst", "Actb")), ]
+
+v2 <- volcano_plot_zoom(AD_ADp40KO.df, AD_ADp40KO_plus.df, AD_ADp40KO_minus.df, AD_ADp40KO_Rmst.df, title = "Dentate Gyrus APPPS1 vs APPPS1.il12b-/-", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-40, minus_threshold = 1E-40, minus_force = 20)
+
+
+# ADp40KO vs Ctrl
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_ADp40KO_Ctrl.csv", row.names = 1)
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene != "Ttr", ]
+
+ADp40KO_Ctrl_plus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC > 0.25), ]
+ADp40KO_Ctrl_minus.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$FDR < 0.01 & ADp40KO_Ctrl.df$logFC < -0.25), ]
+ADp40KO_Ctrl_Rmst.df <- ADp40KO_Ctrl.df[which(ADp40KO_Ctrl.df$gene %in% c("Rmst", "Actb")), ]
+
+v3 <- volcano_plot_zoom(ADp40KO_Ctrl.df, ADp40KO_Ctrl_plus.df, ADp40KO_Ctrl_minus.df, ADp40KO_Ctrl_Rmst.df, title = "Dentate Gyrus APPPS1.il12b-/- vs WT", x_lim = c(-1, 1), y_lim = c(0,20), plus_threshold = 1E-60, minus_threshold = 1E-40, minus_force = 10)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "Dentate_Gyrus")
+
+v1 <- VlnPlot(data9set_sub.SO, features = "Rmst", group.by = "sample", pt.size = 0.01)
+v2 <- VlnPlot(data9set_sub.SO, features = "Actb", group.by = "sample", pt.size = 0.01)
+
+grid.arrange(v1, v2,  ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=18, fig.height=5}
+sessionInfo()
+```

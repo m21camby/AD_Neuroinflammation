@@ -1,0 +1,709 @@
+---
+title: "Deconvolution results reports"
+author: "Skim"
+date: '2020 8 18 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for testing deconvolution of bulk data results. I used MuSic (weighted-NNLS) tool and tested cell size parameter to improve algorithm [ref](https://www.biorxiv.org/content/10.1101/2020.01.19.910976v1). However, cell size parameter didn't change anything and I'm still contacting with the author. 
+
+Overall, it showed less Neurons and more vascular and Rest of cell types compare to real snRNA-seq data and blue brain reference. However, interesting results was that comparing each experiment, deconvolution also showed more Microglia in AD & ADp40KO and also less Oligo in AD.  
+
+```{r warning=FALSE, message=FALSE}
+library(gridExtra)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(Seurat)
+```
+
+```{r warning=FALSE, message=FALSE}
+
+data_summary <- function(data, varname, groupnames){
+  require(plyr)
+  summary_func <- function(x, col){
+    c(mean = mean(x[[col]], na.rm=TRUE),
+      sd = sd(x[[col]], na.rm=TRUE))
+  }
+  data_sum<-ddply(data, groupnames, .fun=summary_func,
+                  varname)
+  data_sum <- rename(data_sum, c("mean" = varname))
+ return(data_sum)
+}
+```
+
+#### 1. Ctrl & cell size used & Not normalized 
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set0 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Not_normal.rda")
+
+# Non weighted
+est.prop.set0.df <- as.data.frame(est.prop.set0$Est.prop.allgene)
+est.prop.set0.df$sample <- c("1","2","3")
+est.prop.set0.df2 <- est.prop.set0.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g1 <- ggplot(data=est.prop.set0.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq not normalized & cell size & non-weighted")
+
+# Weighted
+est.prop.set0.df <- as.data.frame(est.prop.set0$Est.prop.weighted)
+est.prop.set0.df$sample <- c("1","2","3")
+est.prop.set0.df2 <- est.prop.set0.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g2 <- ggplot(data=est.prop.set0.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq not normalized & cell size & weighted")
+
+
+grid.arrange(g1, g2, ncol = 2)
+``` 
+
+#### 2. Ctrl & w/o cell size used & Normalized 
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_no_cell_size.rda")
+
+
+# Non weighted
+est.prop.set.df <- as.data.frame(est.prop.set$Est.prop.allgene)
+est.prop.set.df$sample <- c("1","2","3")
+est.prop.set.df2 <- est.prop.set.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g1 <- ggplot(data=est.prop.set.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & w/o cell size & non-weighted")
+
+# Weighted
+est.prop.set.df <- as.data.frame(est.prop.set$Est.prop.weighted)
+est.prop.set.df$sample <- c("1","2","3")
+est.prop.set.df2 <- est.prop.set.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g2 <- ggplot(data=est.prop.set.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & w/o cell size & weighted")
+
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+#### 3. Ctrl & cell size used & Normalized 
+
+Including cell size or not didn't change anything
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set_2 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size.rda")
+
+
+# Non weighted
+est.prop.set_2.df <- as.data.frame(est.prop.set_2$Est.prop.allgene)
+est.prop.set_2.df$sample <- c("1","2","3")
+est.prop.set_2.df2 <- est.prop.set_2.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g1 <- ggplot(data=est.prop.set_2.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & non-weighted")
+
+# Weighted
+est.prop.set_2.df <- as.data.frame(est.prop.set_2$Est.prop.weighted)
+est.prop.set_2.df$sample <- c("1","2","3")
+est.prop.set_2.df2 <- est.prop.set_2.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g2 <- ggplot(data=est.prop.set_2.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & weighted")
+
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+#### 4. Ctrl & cell size used & Normalized & Broad cell type
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set3 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_2nd.rda")
+
+
+# Non weighted
+est.prop.set3.df <- as.data.frame(est.prop.set3$Est.prop.allgene)
+est.prop.set3.df$sample <- c("1","2","3")
+est.prop.set3.df2 <- est.prop.set3.df %>% gather(Cell_type, proportion, Neurons: Rest)
+
+g1 <- ggplot(data=est.prop.set3.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & non-weighted & broad cell type")
+
+# Weighted
+est.prop.set3.df <- as.data.frame(est.prop.set3$Est.prop.weighted)
+est.prop.set3.df$sample <- c("1","2","3")
+est.prop.set3.df2 <- est.prop.set3.df %>% gather(Cell_type, proportion, Neurons: Rest)
+
+g2 <- ggplot(data=est.prop.set3.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & weighted & broad cell type")
+
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+#### 5. Ctrl & cell size used & Normalized & Broad cell type & remove Rest
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set4 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_3rd.rda")
+
+
+# Non weighted
+est.prop.set4.df <- as.data.frame(est.prop.set4$Est.prop.allgene)
+est.prop.set4.df$sample <- c("1","2","3")
+est.prop.set4.df2 <- est.prop.set4.df %>% gather(Cell_type, proportion, Neurons: Astrocytes)
+
+g1 <- ggplot(data=est.prop.set4.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & non-weighted & broad cell type & No Rest")
+
+# Weighted
+est.prop.set4.df <- as.data.frame(est.prop.set4$Est.prop.weighted)
+est.prop.set4.df$sample <- c("1","2","3")
+est.prop.set4.df2 <- est.prop.set4.df %>% gather(Cell_type, proportion, Neurons: Astrocytes)
+
+g2 <- ggplot(data=est.prop.set4.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & weighted & broad cell type & No Rest")
+
+
+grid.arrange(g1, g2, ncol = 2)
+
+
+```
+
+#### 6. Ctrl & cell size used & Normalized & Precise cell type 
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set5 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_4th.rda")
+
+# Non weighted
+est.prop.set5.df <- as.data.frame(est.prop.set5$Est.prop.allgene)
+est.prop.set5.df$sample <- c("1","2","3")
+est.prop.set5.df2 <- est.prop.set5.df %>% gather(Cell_type, proportion, Subiculum: Rest)
+
+g1 <- ggplot(data=est.prop.set5.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & non-weighted & Preciese cell type") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set5.df <- as.data.frame(est.prop.set5$Est.prop.weighted)
+est.prop.set5.df$sample <- c("1","2","3")
+est.prop.set5.df2 <- est.prop.set5.df %>% gather(Cell_type, proportion, Subiculum: Rest)
+
+g2 <- ggplot(data=est.prop.set5.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA-seq normalized & cell size & weighted & Preciese cell type") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+#### 7. Act-seq & cell size used & Normalized & Precise cell type 
+
+[Act-seq](https://www.sciencedirect.com/science/article/pii/S0896627317308681?via%3Dihub)
+
+Act-seq minimizes artificial transcriptional changes during tissue dissociation. 
+
+Data: medial amygdala, adult (8-10 weeks) male C57BL/6J mice
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set_Act_cell_size <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size.rda")
+
+# Non weighted
+est.prop.set_Act_cell_size.df <- as.data.frame(est.prop.set_Act_cell_size$Est.prop.allgene)
+est.prop.set_Act_cell_size.df$sample <- c("1","2","3")
+est.prop.set_Act_cell_size.df2 <- est.prop.set_Act_cell_size.df %>% gather(Cell_type, proportion, N: EN)
+
+g1 <- ggplot(data=est.prop.set_Act_cell_size.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("Act-seq normalized & cell size & non-weighted") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set_Act_cell_size.df <- as.data.frame(est.prop.set_Act_cell_size$Est.prop.weighted)
+est.prop.set_Act_cell_size.df$sample <- c("1","2","3")
+est.prop.set_Act_cell_size.df2 <- est.prop.set_Act_cell_size.df %>% gather(Cell_type, proportion, N: EN)
+
+g2 <- ggplot(data=est.prop.set_Act_cell_size.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("Act-seq normalized & cell size & weighted") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+#### 8. Act-seq & cell size used & no Normalized & Precise cell type 
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set_Act_no_normal <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_Act_cell_size_no_normal.rda")
+
+# Non weighted
+est.prop.set_Act_no_normal.df <- as.data.frame(est.prop.set_Act_no_normal$Est.prop.allgene)
+est.prop.set_Act_no_normal.df$sample <- c("1","2","3")
+est.prop.set_Act_no_normal.df2 <- est.prop.set_Act_no_normal.df %>% gather(Cell_type, proportion, N: EN)
+
+g1 <- ggplot(data=est.prop.set_Act_no_normal.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("Act-seq no normalized & cell size & non-weighted") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set_Act_no_normal.df <- as.data.frame(est.prop.set_Act_no_normal$Est.prop.weighted)
+est.prop.set_Act_no_normal.df$sample <- c("1","2","3")
+est.prop.set_Act_no_normal.df2 <- est.prop.set_Act_no_normal.df %>% gather(Cell_type, proportion, N: EN)
+
+g2 <- ggplot(data=est.prop.set_Act_no_normal.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("Act-seq no normalized & cell size & weighted") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+12502 genes overlap between Act-seq (12,778) and snRNA-seq (31,790)
+
+#### 9. Ctrl & cell size used & Normalized & broad cell type & HVG
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+est.prop.set6 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG.rda")
+
+# Non weighted
+est.prop.set6.df <- as.data.frame(est.prop.set6$Est.prop.allgene)
+est.prop.set6.df$sample <- c("1","2","3")
+est.prop.set6.df2 <- est.prop.set6.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g1 <- ggplot(data=est.prop.set6.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & non-weighted & HVG") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set6.df <- as.data.frame(est.prop.set6$Est.prop.weighted)
+est.prop.set6.df$sample <- c("1","2","3")
+est.prop.set6.df2 <- est.prop.set6.df %>% gather(Cell_type, proportion, EX_Neurons: Rest)
+
+g2 <- ggplot(data=est.prop.set6.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & weighted & HVG") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+
+```
+
+#### 10. Ctrl & cell size used & Normalized & precise cell type & HVG
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set7 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad.rda")
+
+# Non weighted
+est.prop.set7.df <- as.data.frame(est.prop.set7$Est.prop.allgene)
+est.prop.set7.df$sample <- c("1","2","3")
+est.prop.set7.df2 <- est.prop.set7.df %>% gather(Cell_type, proportion, Subiculum: OPC)
+
+g1 <- ggplot(data=est.prop.set7.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & non-weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set7.df <- as.data.frame(est.prop.set7$Est.prop.weighted)
+est.prop.set7.df$sample <- c("1","2","3")
+est.prop.set7.df2 <- est.prop.set7.df %>% gather(Cell_type, proportion, Subiculum: OPC)
+
+g2 <- ggplot(data=est.prop.set7.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+
+```
+
+#### 10. Ctrl & cell size used & Normalized & precise cell type & HVG
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+est.prop.set8 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad2.rda")
+
+# Non weighted
+est.prop.set8.df <- as.data.frame(est.prop.set8$Est.prop.allgene)
+est.prop.set8.df$sample <- c("1","2","3")
+est.prop.set8.df2 <- est.prop.set8.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g1 <- ggplot(data=est.prop.set8.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & non-weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set8.df <- as.data.frame(est.prop.set8$Est.prop.weighted)
+est.prop.set8.df$sample <- c("1","2","3")
+est.prop.set8.df2 <- est.prop.set8.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g2 <- ggplot(data=est.prop.set8.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA normalized & cell size & weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 7.5, fig.height= 5}
+df1 <- rowSums(est.prop.set8.df[c(1:3),c(1:5)]) %>% as.data.frame
+df2 <- rowSums(est.prop.set8.df[c(1:3),c(10:11)]) %>% as.data.frame
+df3 <- rowSums(est.prop.set8.df[c(1:3),c(12:15)]) %>% as.data.frame
+
+df4 <- cbind(df1, est.prop.set8.df[c(1:3),c(6:9)], df2, df3, est.prop.set8.df[c(1:3),c(16)])
+
+colnames(df4) <- c("Neurons", "Astrocytes", "Microglia", "Oligo", "OPC", "Vascular", "Rest", "sample")
+
+df4_2 <- df4 %>% gather(Cell_type, proportion, Neurons: Rest)
+
+deconv_ctrl <- df4_2
+
+ggplot(data=df4_2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA Ctrl normalized & cell size & weighted & HVG") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+```
+
+#### 11. AD & cell size used & Normalized & precise cell type & HVG
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+est.prop.set9 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_AD.rda")
+
+# Non weighted
+est.prop.set9.df <- as.data.frame(est.prop.set9$Est.prop.allgene)
+est.prop.set9.df$sample <- c("1","2","3")
+est.prop.set9.df2 <- est.prop.set9.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g1 <- ggplot(data=est.prop.set9.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA AD normalized & cell size & non-weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set9.df <- as.data.frame(est.prop.set9$Est.prop.weighted)
+est.prop.set9.df$sample <- c("1","2","3")
+est.prop.set9.df2 <- est.prop.set9.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g2 <- ggplot(data=est.prop.set9.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA AD normalized & cell size & weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 7.5, fig.height= 5}
+df1 <- rowSums(est.prop.set9.df[c(1:3),c(1:5)]) %>% as.data.frame
+df2 <- rowSums(est.prop.set9.df[c(1:3),c(10:11)]) %>% as.data.frame
+df3 <- rowSums(est.prop.set9.df[c(1:3),c(12:15)]) %>% as.data.frame
+
+df4 <- cbind(df1, est.prop.set9.df[c(1:3),c(6:9)], df2, df3, est.prop.set9.df[c(1:3),c(16)])
+
+colnames(df4) <- c("Neurons", "Astrocytes", "Microglia", "Oligo", "OPC", "Vascular", "Rest", "sample")
+
+df4_2 <- df4 %>% gather(Cell_type, proportion, Neurons: Rest)
+
+deconv_AD <- df4_2
+
+ggplot(data=df4_2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA AD normalized & cell size & weighted & HVG") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+```
+
+#### 12. ADp40KO & cell size used & Normalized & precise cell type & HVG
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height= 5}
+
+est.prop.set10 <- readRDS(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200728_deconvolution_MuSic_bootstrapping/MuSic_cell_size_HVG_broad_ADp40KO.rda")
+
+# Non weighted
+est.prop.set10.df <- as.data.frame(est.prop.set10$Est.prop.allgene)
+est.prop.set10.df$sample <- c("1","2","3")
+est.prop.set10.df2 <- est.prop.set10.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g1 <- ggplot(data=est.prop.set10.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA ADp40KO normalized & cell size & non-weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+# Weighted
+est.prop.set10.df <- as.data.frame(est.prop.set10$Est.prop.weighted)
+est.prop.set10.df$sample <- c("1","2","3")
+est.prop.set10.df2 <- est.prop.set10.df %>% gather(Cell_type, proportion, Subiculum: "Choroid Plexus")
+
+g2 <- ggplot(data=est.prop.set10.df2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA ADp40KO normalized & cell size & weighted & HVG & precise") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 7.5, fig.height= 5}
+df1 <- rowSums(est.prop.set10.df[c(1:3),c(1:5)]) %>% as.data.frame
+df2 <- rowSums(est.prop.set10.df[c(1:3),c(10:11)]) %>% as.data.frame
+df3 <- rowSums(est.prop.set10.df[c(1:3),c(12:15)]) %>% as.data.frame
+
+df4 <- cbind(df1, est.prop.set10.df[c(1:3),c(6:9)], df2, df3, est.prop.set10.df[c(1:3),c(16)])
+
+colnames(df4) <- c("Neurons", "Astrocytes", "Microglia", "Oligo", "OPC", "Vascular", "Rest", "sample")
+
+df4_2 <- df4 %>% gather(Cell_type, proportion, Neurons: Rest)
+
+deconv_ADp40KO <- df4_2
+
+ggplot(data=df4_2, aes(x=Cell_type, y=proportion, fill = sample)) +
+  geom_bar(stat="identity", position=position_dodge()) + ggtitle("scRNA ADp40KO normalized & cell size & weighted & HVG") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = .5))
+
+```
+
+#### 13. deconvolution 3 experiment comparison
+
+```{r warning=FALSE, message=FALSE, fig.width= 7.5, fig.height= 5}
+deconv_ctrl$genotype <- "WT"
+deconv_AD$genotype <- "APPPS1"
+deconv_ADp40KO$genotype <- "APPPS1.il12b-/-"
+
+deconv_raw <- rbind(deconv_ctrl, deconv_AD, deconv_ADp40KO)
+
+#saveRDS(deconv_raw, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200818_deconvolution_MuSic_reports/deconv_raw.rda")
+
+deconv_ctrl2 <- data_summary(deconv_ctrl, varname="proportion", 
+                    groupnames=c("Cell_type"))
+
+deconv_AD2 <- data_summary(deconv_AD, varname="proportion", 
+                    groupnames=c("Cell_type"))
+
+deconv_ADp40KO2 <- data_summary(deconv_ADp40KO, varname="proportion", 
+                    groupnames=c("Cell_type"))
+
+
+deconv_ctrl2$exp <- "Ctrl"
+deconv_AD2$exp <- "AD"
+deconv_ADp40KO2$exp <- "ADp40KO"
+
+deconv <- rbind(deconv_ctrl2, deconv_AD2, deconv_ADp40KO2)
+
+deconv$exp <- factor(deconv$exp, levels = c("Ctrl",  "AD", "ADp40KO"))
+
+#saveRDS(deconv, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200818_deconvolution_MuSic_reports/deconv.rda")
+
+ggplot(deconv, aes(x=Cell_type, y=proportion, fill = exp)) + 
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=proportion-sd, ymax=proportion+sd), width=.2,
+                 position=position_dodge(.9)) + ggtitle("deconvolution bulk 9 samples")
+```
+
+
+#### 14. all samples from snRNA-seq data
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data2 <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cell_type, gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cell_type, gemgroup, sample) %>% 
+    dplyr::summarise(count = n()) %>% mutate(total = sum(count)) 
+
+plot.data2 <- plot.data2 %>% dplyr::group_by(gemgroup) %>% dplyr::mutate(sample_total = sum(count)) 
+
+# add total cell number
+plot.data2$total <- 82298
+
+# as data frame
+plot.data2 <- as.data.frame(plot.data2)
+
+# calculate by cell type
+plot.data2$proportion <- plot.data2$count / plot.data2$sample_total
+
+# levels to sample
+plot.data2$sample <- factor(plot.data2$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+# percentage
+plot.data2$proportion2 <- round(100*plot.data2$proportion,2)
+
+```
+
+  
+
+```{r warning=FALSE, message=FALSE}
+plot.data3 <- data.frame(Cell_type = "Neurons", sample = c(1:9), proportion = 0)
+
+for(i in c(1:9)){
+    plot.data3[i, ]$proportion <- plot.data2[i,]$proportion2 + plot.data2[i+9,]$proportion2 + plot.data2[i+18,]$proportion2 + 
+    plot.data2[i+27,]$proportion2 + plot.data2[i+36,]$proportion2 + plot.data2[i+45,]$proportion2
+}
+
+# Astrocytes
+plot.data3_AS <- data.frame(Cell_type = "Astrocytes", sample = c(1:9), proportion = plot.data2[c(64:72), ]$proportion2)
+
+# Microglia
+plot.data3_MG <- data.frame(Cell_type = "Microglia", sample = c(1:9), proportion = plot.data2[c(73:81), ]$proportion2)
+
+# Microglia
+plot.data3_MG <- data.frame(Cell_type = "Microglia", sample = c(1:9), proportion = plot.data2[c(73:81), ]$proportion2)
+
+# Oligo
+plot.data3_OL <- data.frame(Cell_type = "Oligo", sample = c(1:9), proportion = plot.data2[c(82:90), ]$proportion2)
+
+# OPC
+plot.data3_OPC <- data.frame(Cell_type = "OPC", sample = c(1:9), proportion = plot.data2[c(91:99), ]$proportion2)
+
+# Vascular
+plot.data3_V <- data.frame(Cell_type = "Vascular", sample = c(1:9), proportion = 0)
+
+for(i in c(1:9)){
+    #print(i)
+    plot.data3_V[i, ]$proportion <- plot.data2[i+108,]$proportion2 + plot.data2[i+117,]$proportion2 
+}
+
+# Rest
+plot.data3_Rest <- data.frame(Cell_type = "Rest", sample = c(1:9), proportion = 0)
+
+for(i in c(1:9)){
+    #print(i)
+    plot.data3_Rest[i, ]$proportion <- plot.data2[i+54,]$proportion2 + plot.data2[i+99,]$proportion2 +
+    plot.data2[i+126,]$proportion2
+}
+
+# Choroid plexus add
+plot.data3_Rest[1,]$proportion <- plot.data3_Rest[1,]$proportion + 0.01
+plot.data3_Rest[4,]$proportion <- plot.data3_Rest[4,]$proportion + 1.02
+plot.data3_Rest[5,]$proportion <- plot.data3_Rest[5,]$proportion + 0.04
+plot.data3_Rest[6,]$proportion <- plot.data3_Rest[6,]$proportion + 1.84
+plot.data3_Rest[7,]$proportion <- plot.data3_Rest[7,]$proportion + 1.22
+plot.data3_Rest[8,]$proportion <- plot.data3_Rest[8,]$proportion + 0.85
+plot.data3_Rest[9,]$proportion <- plot.data3_Rest[9,]$proportion + 0.83
+
+Final_plot.data <- rbind(plot.data3, plot.data3_AS, plot.data3_MG, plot.data3_OL, plot.data3_OPC, plot.data3_V, plot.data3_Rest)
+
+
+Final_plot.data2 <- data_summary(Final_plot.data, varname="proportion", 
+                    groupnames=c("Cell_type"))
+
+ggplot(Final_plot.data2, aes(x=Cell_type, y=proportion)) + 
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=proportion-sd, ymax=proportion+sd), width=.2,
+                 position=position_dodge(.9)) + ggtitle("snRNA-seq 9 samples")
+```
+
+```{r warning=FALSE, message=FALSE}
+
+#generate 1000 bootstrap samples
+boot <- list() 
+for (i in 1:1000) {
+  boot[[i]] <- sample(plot.data3$proportion, replace=TRUE)
+}
+
+boot.df <- data.frame(cell_type = character(), proportion = numeric())
+
+k = 0
+for (i in 1:1000) {
+  for (j in 1:9){
+    boot.df[i+j+k-1, ]$proportion <- boot[[i]][j]
+  }
+  k = k + 8
+}
+
+#mean(boot.df$proportion)
+#mean(plot.data3$proportion)
+
+```
+
+#### 15. reference data
+
+```{r warning=FALSE, message=FALSE}
+
+cell_counts <- data.frame(dataset = c("reference", "reference", "reference", "reference", "reference", "reference", "reference"),
+                        cell_type = c("Neurons", "Astrocytes", "Microglia","Oligodendrocytes", "OPC","Vascular","rest"), 
+                        percent = c(68, 7.5, 11.99, 12.01, 0, 0, 0.4))
+
+ggplot(cell_counts, aes(x=cell_type, y=percent)) + 
+  geom_bar(stat="identity", color="black", position=position_dodge()) + ggtitle("blue brain reference")                         
+```                    
+
+#### 16. final results
+
+This plot showed comparison between reference, snRNA-seq and deconvolution results.
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height= 5}
+
+# reference modify
+cell_counts$sd <- 0
+
+colnames(cell_counts) <- c("dataset", "Cell_type", "proportion", "sd")
+
+# snRNA-seq modify
+Final_plot.data2$dataset <- "snRNA-seq"
+
+#Final_plot.data2$proportion <- Final_plot.data2$proportion*100
+#Final_plot.data2$sd <- Final_plot.data2$sd*100
+
+# deconvolution modify
+deconv2 <- rbind(deconv_ctrl, deconv_AD, deconv_ADp40KO)
+
+deconv2 <- data_summary(deconv2, varname="proportion", 
+                    groupnames=c("Cell_type"))
+
+
+deconv2$dataset <- "decovolution"
+
+deconv2$proportion <- deconv2$proportion * 100
+
+deconv2$sd <- deconv2$sd * 100
+
+
+# Merge 3 data sets
+final_cell_type <- rbind(cell_counts, Final_plot.data2, deconv2)
+
+final_cell_type[final_cell_type == "Oligodendrocytes"] <- "Oligo"
+final_cell_type[final_cell_type == "rest"] <- "Rest"
+
+#final_cell_type <- rbind(final_cell_type, cell_counts[6, ])
+
+saveRDS(final_cell_type, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200818_deconvolution_MuSic_reports/final_cell_type.rda")
+
+ggplot(final_cell_type, aes(x=Cell_type, y=proportion, fill = dataset)) + 
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge()) +
+  geom_errorbar(aes(ymin=proportion-sd, ymax=proportion+sd), width=.2,
+                 position=position_dodge(.9)) + ggtitle("Comparison 3 data sets (reference, snRNA-seq, deconvolution)")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height= 5}
+# deconv_raw2 <- deconv_raw[, c(1:3)]
+# deconv_raw2$proportion <- deconv_raw2$proportion*100
+# deconv_raw2$dataset <- "deconvolution"
+# 
+# Final_plot.data_2nd <- Final_plot.data
+# Final_plot.data_2nd$dataset <- "snRNA-seq"
+# 
+# cell_counts_2nd <- cell_counts 
+# colnames(cell_counts_2nd) <- c("dataset", "Cell_type", "proportion")
+# cell_counts_2nd$sample <- 1
+# 
+# final_cell_type_2nd <- rbind(deconv_raw2, Final_plot.data_2nd, cell_counts_2nd)
+# final_cell_type_2nd[final_cell_type_2nd == "Oligodendrocytes"] <- "Oligo"
+# final_cell_type_2nd[final_cell_type_2nd == "rest"] <- "Rest"
+# final_cell_type_2nd$sample <- NULL
+# 
+# saveRDS(final_cell_type_2nd, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200818_deconvolution_MuSic_reports/final_cell_type_2nd.rda")
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height= 5}
+sessionInfo()
+```
+
+
+
+                        
+                        

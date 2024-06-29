@@ -1,0 +1,362 @@
+---
+title: "GO plots"
+author: "Skim"
+date: '2020 10 10 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(Hmisc)
+
+library(biomaRt)
+library(fgsea)
+
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/GSEA_scRNA.R")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+Vln_plot <- function(df = DF){
+  ggplot(df, aes(x=pathway, y=logFC)) + 
+  geom_violin(trim=FALSE) + coord_flip() + geom_jitter(data = df[df$FDR < 0.01, ], aes(color = logFC > 0),  position=position_jitter(0.1), alpha = 0.3) + theme(axis.title.y = element_blank()) +
+    scale_color_manual(values = c("TRUE" = "red", "FALSE" = "blue"))
+}
+
+Vln_plot2 <- function(df = DF){
+  ggplot(df, aes(x=pathway, y=logFC)) + 
+  geom_violin(trim=FALSE) + coord_flip() + geom_jitter(data = df[df$FDR < 0.05, ], aes(color = logFC > 0), position=position_jitter(0.1), alpha = 0.3) + theme(axis.title.y = element_blank()) +
+    scale_color_manual(values = c("TRUE" = "red", "FALSE" = "blue"))
+}
+
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+
+# give levels to large cell type
+data9set_cleaned.SO$cell_type <- factor(data9set_cleaned.SO$cell_type, levels = c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum",  "Unidentified_Neurons", 
+                                                                                  "Inhibitory_Neurons", "MOL", "MFOL", "OPC", "NFOL", "Microglia","Astrocytes",
+                                                                                  "Vascular", "VLMC", "Choroid", "Fibroblast", "Cajal", "Pericyte", "Macrophage"))
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+MFOL_AD_ADp40KO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/MFOL_AD_ADp40KO.csv_GO.csv", row.names = 1)
+
+MFOL_AD_ADp40KO_UP$group <- "AD vs ADp40KO UP"
+
+MFOL_AD_ADp40KO_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+
+```
+
+## MFOL GO AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+MFOL_AD_ADp40KO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/MFOL_AD_ADp40KO.csv_GO.csv", row.names = 1)
+
+MFOL_AD_ADp40KO_DOWN$group <- "AD vs ADp40KO DOWN"
+
+MFOL_AD_ADp40KO <- rbind(MFOL_AD_ADp40KO_UP, MFOL_AD_ADp40KO_DOWN)
+
+ggplot(MFOL_AD_ADp40KO[MFOL_AD_ADp40KO$Term %in% c("zinc ion binding", "cation binding", "programmed cell death", "cell migration", "cell morphogenesis", "cellular component morphogenesis"), ], 
+       aes(x=group, y=Term,
+               colour=Fisher.elim,
+               size=gene_ratio)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="group", y="GO term", colour="-log10(p-value)", size="gene_ratio") +
+  theme_minimal() + 
+  theme(axis.text.x =  element_text(size = 10, angle = 45, vjust = 0.5),
+        axis.title.x =  element_blank()) +scale_color_gradient(low="blue", high="red")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+MFOL_AD_WT_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/MFOL_AD_Ctrl.csv_GO.csv", row.names = 1)
+MFOL_AD_WT_UP$group <- "AD vs WT UP"
+
+MFOL_ADp40KO_WT_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/MFOL_ADp40KO_Ctrl.csv_GO.csv", row.names = 1)
+MFOL_ADp40KO_WT_UP$group <- "ADp40KO vs WT UP"
+
+MFOL_AD_WT_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/MFOL_AD_Ctrl.csv_GO.csv", row.names = 1)
+MFOL_AD_WT_DOWN$group <- "AD vs WT DOWN"
+
+MFOL_ADp40KO_WT_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/MFOL_ADp40KO_Ctrl.csv_GO.csv", row.names = 1)
+MFOL_ADp40KO_WT_DOWN$group <- "ADp40KO vs WT DOWN"
+
+MFOL_ALL <- rbind(MFOL_AD_ADp40KO_UP, MFOL_AD_ADp40KO_DOWN, MFOL_AD_WT_UP, MFOL_ADp40KO_WT_UP, MFOL_AD_WT_DOWN, MFOL_ADp40KO_WT_DOWN)
+```
+
+## MFOL GO AD vs ADp40KO (remove overlap terms)
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+g1 <- ggplot(MFOL_ALL[MFOL_ALL$Term %in% c("programmed cell death", "cell migration", "cell morphogenesis", "cellular component morphogenesis"), ], 
+       aes(x=group, y=Term,
+               colour=Fisher.elim,
+               size=gene_ratio)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="group", y="GO term", colour="-log10(p-value)", size="gene_ratio") +
+  theme_minimal() + 
+  theme(axis.text.x =  element_text(size = 10, angle = 45, vjust = 0.5),
+        axis.title.x =  element_blank()) +scale_color_gradient(low="blue", high="red")
+
+
+MFOL_AD_ADp40KO_DE1 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% c("Shtn1", "Cdh20", "Gas7", "Ephb1", "Dcc", "Syne1"), ]
+MFOL_AD_ADp40KO_DE1$pathway <- "cell morphogenesis"
+
+MFOL_AD_ADp40KO_DE2 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% c("Elmo1", "Oxr1", "Hif3a", "Gli2", "Eya4", "Cst3"), ]
+MFOL_AD_ADp40KO_DE2$pathway <- "programmed cell death"
+
+MFOL_AD_ADp40KO_DE3 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% c("Spock1", "Slc8a1", "Elmo1", "Ptprk", "Cdc42bpa"), ]
+MFOL_AD_ADp40KO_DE3$pathway <- "cell migration"
+
+MFOL_AD_ADp40KO_DE_all <- rbind(MFOL_AD_ADp40KO_DE1, MFOL_AD_ADp40KO_DE2, MFOL_AD_ADp40KO_DE3)
+
+g2 <- Vln_plot(MFOL_AD_ADp40KO_DE_all) +
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Shtn1",], aes(x=pathway, y=logFC), label = "Shtn1", size = 3) + 
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Hif3a",], aes(x=pathway, y=logFC), label = "Hif3a", size = 3) + 
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Spock1",], aes(x=pathway, y=logFC), label = "Spock1", size = 3) +
+  ggtitle("AD vs ADp40KO in MFOL")
+
+grid.arrange(g1, g2, ncol = 2, widths = c(1.5, 1))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+GO_specific <- function(cell_type = "Astrocytes"){
+  
+#### 1-1. Astrocytes AD vs Ctrl up-regulated genes
+
+topGOResults.df <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df <- topGOResults.df[topGOResults.df$Fisher.elim < .01 , ]
+
+
+#### 1-2. Astrocytes AD vs Ctrl down-regulated genes
+
+topGOResults.df2 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+#### 1-3. Astrocytes ADp40KO vs Ctrl up-regulated genes
+
+topGOResults.df3 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df3 <- topGOResults.df3[topGOResults.df3$Term %in% c("cell projection"), ]
+
+# ADp40KO vs Ctrl down-regulated genes
+
+topGOResults.df4 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type, "_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df4 <- topGOResults.df4[topGOResults.df4$Term %in% c("cell projection"), ]
+
+topGOResults.df5 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df5 <- topGOResults.df5[topGOResults.df5$Fisher.elim < .01 , ]
+
+#### 1-6. Astrocytes AD vs ADp40KO down-regulated genes
+
+topGOResults.df6 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type ,"_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df6 <- topGOResults.df6[topGOResults.df6$Fisher.elim < .05 , ]
+
+}
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+MFOL.DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+
+MFOL.DE <- MFOL.DE[!MFOL.DE$gene %in% "Ttr", ]
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "MFOL")
+
+MFOL.df <- GetAssayData(data9set_sub.SO, slot = "counts") 
+
+MFOL.df <- MFOL.df[Matrix::rowSums(MFOL.df) != 0, ]
+
+MFOL.df <- MFOL.df %>% as.data.frame
+
+MFOL.df <- MFOL.df[rowSums(MFOL.df != 0)/13996 > 0.01, ]
+
+#test <- data.frame(pro = MFOL.df$portion, sum = rowSums(MFOL.df))
+```
+
+## MFOL GSEA
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=15}
+
+MFOL.DE2 <- MFOL.DE[MFOL.DE$gene %in% rownames(MFOL.df), ]
+
+GSEA_MFOL2 <- scRNA_GSEA_edgeR(MFOL.DE2, 
+                       pathway = "Hall",
+                       metric = "logFC")
+
+GSEA_MFOL_R2 <- scRNA_GSEA_edgeR(MFOL.DE2, 
+                       pathway = "Reactome",
+                       metric = "logFC")
+
+# GSEA_MFOL3 <- scRNA_GSEA_edgeR(MFOL.DE2, 
+#                        pathway = "Hall",
+#                        metric = "padj")
+# 
+# GSEA_MFOL_R3 <- scRNA_GSEA_edgeR(MFOL.DE2, 
+#                        pathway = "Reactome",
+#                        metric = "padj")
+
+
+GSEA_MFOL_R2_2nd <- GSEA_MFOL_R2[GSEA_MFOL_R2$padj < 0.3,  ]
+
+GSEA_plot <- function(df = hall.df, title_text = "title"){
+  ggplot(df, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.1)) +
+  coord_flip() +
+  labs(title = title_text, y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 8), plot.title = element_text(size = 10))
+}
+
+g1 <- GSEA_plot(GSEA_MFOL_R2_2nd)
+
+#GSEA_MFOL_R2[GSEA_MFOL_R2$pathway %in% c("Cell junction organization"), ]$leadingEdge
+
+genes1 <- c("Ephb1", "Epha6", "Epha4","Epha7", "ARHGEF28", "PSEN1", "ARPC2", "EPHB2", "PAK3","ADAM10", "PAK1", "CDC42"   , "ACTR2","CLTB","DNM1","MYH14","YES1","ROCK2", "FYN", "EPHA5", "LIMK2", "AP2A1", "GRIN2B", "GIT1", "EPHA3", "AP2M1")
+
+genes1 <- capitalize(tolower(genes1))
+
+MFOL_AD_ADp40KO_DE1 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% genes1, ]
+MFOL_AD_ADp40KO_DE1$pathway <- "EPH-Ephrin signaling"
+
+genes2 <- c("SLC25A13", "PC", "ALDOC", "SLC25A12", "MDH2", "ALDOA", "GPI", "GOT1")
+
+genes2 <- capitalize(tolower(genes2))
+
+MFOL_AD_ADp40KO_DE2 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% genes2, ]
+MFOL_AD_ADp40KO_DE2$pathway <- "Gluconeogenesis"
+
+genes3 <- c("CADM2","CDH8", "CDH10","AFDN","FERMT2","PARVB","CLDN11","PARD3","CADM1","CDH2","NECTIN3", "NECTIN1" ,"ITGB4","CDH13",  "CDH12",   "CADM3",   "JUP",     "CDH11",   "SDK1",    "CDH9")
+genes3 <- capitalize(tolower(genes3))
+
+MFOL_AD_ADp40KO_DE3 <- MFOL_AD_ADp40KO_DE[MFOL_AD_ADp40KO_DE$gene %in% genes3, ]
+MFOL_AD_ADp40KO_DE3$pathway <- "Cell junction organization"
+
+MFOL_AD_ADp40KO_DE_all <- rbind(MFOL_AD_ADp40KO_DE1, MFOL_AD_ADp40KO_DE2, MFOL_AD_ADp40KO_DE3)
+
+g2 <- Vln_plot2(MFOL_AD_ADp40KO_DE_all) +
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Shtn1",], aes(x=pathway, y=logFC), label = "Shtn1", size = 3) + 
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Hif3a",], aes(x=pathway, y=logFC), label = "Hif3a", size = 3) + 
+  geom_text(data = MFOL_AD_ADp40KO_DE_all[MFOL_AD_ADp40KO_DE_all$gene == "Spock1",], aes(x=pathway, y=logFC), label = "Spock1", size = 3) +
+  ggtitle("AD vs ADp40KO in MFOL")
+
+# Empty plot
+g3 <- ggplot() + theme_void()
+
+grid.arrange(g1, g3, g2, ncol = 2, widths = c(2.5,1),
+             layout_matrix = cbind(c(1,1,1), c(2,3,3)))
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=10}
+MG_AD_WT_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/Microglia_AD_Ctrl.csv_GO.csv", row.names = 1)
+
+MG_AD_WT_UP$group <- "AD vs WT UP"
+
+MG_ADp40KO_WT_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/Microglia_ADp40KO_Ctrl.csv_GO.csv", row.names = 1)
+
+MG_ADp40KO_WT_UP$group <- "ADp40KO vs WT UP"
+
+MG_AD_WT_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv", row.names = 1)
+
+MG_ADp40KO_WT_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_ADp40KO_Ctrl.csv", row.names = 1)
+```
+
+## Microglia GO
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=15}
+MG_AD_WT_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/Microglia_AD_Ctrl.csv_GO.csv", row.names = 1)
+
+MG_AD_WT_DOWN$group <- "AD vs WT DOWN"
+
+MG_ADp40KO_WT_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/Microglia_ADp40KO_Ctrl.csv_GO.csv", row.names = 1)
+
+MG_ADp40KO_WT_DOWN$group <- "ADp40KO vs WT DOWN"
+
+MG_AD_ADp40KO_WT <- rbind(MG_AD_WT_UP, MG_ADp40KO_WT_UP, MG_AD_WT_DOWN, MG_ADp40KO_WT_DOWN)
+
+g1 <- ggplot(MG_AD_ADp40KO_WT[MG_AD_ADp40KO_WT$Term %in% c("amyloid-beta binding", "cytokine activity", "regulation of neuroinflammatory response",  "response to lipoprotein particle", "cellular response to lipoprotein particl...", "cellular response to interferon-gamma", "amyloid-beta clearance", 
+                                                     "negative regulation of protein modificat...",
+                                                     "transition metal ion transmembrane trans...",
+                                                     "phosphoprotein binding",
+                                                     "transition metal ion transmembrane trans..."), ], 
+       aes(x=group, y=Term,
+               colour=Fisher.elim,
+               size=gene_ratio)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="group", y="GO term", colour="-log10(p-value)", size="gene_ratio") +
+  theme_minimal() + 
+  theme(axis.text.x =  element_text(size = 10, angle = 45, vjust = 0.5),
+        axis.title.x =  element_blank()) +scale_color_gradient(low="blue", high="red")
+
+
+
+MG_AD_WT_DE1 <- MG_AD_WT_DE[MG_AD_WT_DE$gene %in% c("Apbb2", "Apoe", "Ldlrad3", "Ldlr", "Gsap", "Fcgr2b", "Scarb1", "Trem2"), ]
+MG_AD_WT_DE1$pathway <- "amyloid-beta binding"
+
+MG_AD_WT_DE2 <- MG_AD_WT_DE[MG_AD_WT_DE$gene %in% c("Igf1", "Cst7", "Ldlr", "Trem2"), ]
+MG_AD_WT_DE2$pathway <- "regulation of neuroinflammatory response"
+
+MG_AD_WT_DE3 <- MG_AD_WT_DE[MG_AD_WT_DE$gene %in% c("Cacnb2", "Lyn", "Hck", "Syk", "Arrb1", "Vav2"), ]
+MG_AD_WT_DE3$pathway <- "phosphoprotein binding"
+
+MG_AD_WT_DE_all <- rbind(MG_AD_WT_DE1, MG_AD_WT_DE2, MG_AD_WT_DE3)
+
+g2 <- Vln_plot(MG_AD_WT_DE_all) +
+  geom_text(data = MG_AD_WT_DE_all[MG_AD_WT_DE_all$gene == "Apoe",], aes(x=pathway, y=logFC), label = "Apoe", size = 3) + 
+  geom_text(data = MG_AD_WT_DE_all[MG_AD_WT_DE_all$gene == "Igf1",], aes(x=pathway, y=logFC), label = "Igf1", size = 3) + 
+  geom_text(data = MG_AD_WT_DE_all[MG_AD_WT_DE_all$gene == "Lyn",], aes(x=pathway, y=logFC), label = "Lyn", size = 3) +
+  ggtitle("AD vs WT in Microglia")
+
+grid.arrange(g1, g2, ncol = 2, widths = c(1.5, 1.2))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+sessionInfo()
+```
+
+

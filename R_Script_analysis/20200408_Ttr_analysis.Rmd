@@ -1,0 +1,263 @@
+---
+title: "Ttr gene expression from each cell type"
+author: "Skim"
+date: '2020 4 8 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+Shirin found interesting paper about Ttr [ref](https://www.nature.com/articles/s41598-020-60699-8) and to check how they are regulated in all cell type. 
+
+Previous literatures, Transthyretin (TTR), a carrier protein for thyroxine and retinol in plasma and cerebrospinal fluid (CSF), has been shown to bind the amyloid beta peptide. Accordingly, TTR has been suggested to protect against amyloid beta deposition, a key pathological feature in Alzheimer's disease (AD). Supporting this view are the **reduced TTR levels found in CSF** of patients with AD [ref](https://www.ncbi.nlm.nih.gov/pubmed/16698124)
+
+Decreased TTR levels in the CSF were previously correlated with dementia and AD, although these findings are not unchallenged: A recent literature review did not support CP failure in human subjects with AD or elderly with regards to production, transport or secretion of TTR. [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4647590/#CR21)
+
+TTR present in CP was **significantly reduced** in 3xTg-AD compared to Non-Tg mice [ref](https://www.frontiersin.org/articles/10.3389/fncel.2015.00017/full#F4)
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(ggrepel)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+```
+
+### Overview of Ttr
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+FeaturePlot(data9set_cleaned.SO, features = "Ttr") + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 3) 
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+VlnPlot(data9set_cleaned.SO, features = "Ttr", pt.size = 0) + theme(legend.position = "none", axis.title.x = element_blank()) 
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+# function for volcano plot
+volcano_plot <- function(DE.df){
+  # log2FC > 0.5 and padj > 10
+  DE_plus.df <- DE.df[which(DE.df$avg_logFC > 0.5 & -log10(DE.df$p_val_adj) > 10),]
+  # log2FC < -0.5 and padj > 10
+  DE_minus.df <- DE.df[which(DE.df$avg_logFC < -0.5 & -log10(DE.df$p_val_adj) > 10),]
+  # Ttr gene
+  DE_Ttr.df <-  DE.df[DE.df$gene == "Ttr", ]
+  
+  ggplot(DE.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = DE_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  geom_point(data = DE_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "blue") +
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = DE_Ttr.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = DE_Ttr.df$gene, nudge_y = 0.1)
+  
+}
+
+```
+
+### Choroid Plexus
+
+All plots are shown by red: log2FC > 0.5 and padj > 10 & blue: log2FC < -0.5 and padj > 10
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+CP_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Choroid PlexusAD_Ctrl.csv", row.names = 1)
+CP_DE_AD_Ctrl.df$gene <- rownames(CP_DE_AD_Ctrl.df)
+CP_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Choroid PlexusAD_ADp40KO.csv", row.names = 1)
+CP_DE_AD_ADp40KO.df$gene <- rownames(CP_DE_AD_ADp40KO.df)
+CP_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Choroid PlexusADp40KO_Ctrl.csv", row.names = 1)
+CP_DE_ADp40KO_Ctrl.df$gene <- rownames(CP_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(CP_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Choroid Plexus")
+g2 <- volcano_plot(CP_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Choroid Plexus")
+g3 <- volcano_plot(CP_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Choroid Plexus")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### Oligodendrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+Ol_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_Ctrl.csv", row.names = 1)
+Ol_DE_AD_Ctrl.df$gene <- rownames(Ol_DE_AD_Ctrl.df)
+Ol_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv", row.names = 1)
+Ol_DE_AD_ADp40KO.df$gene <- rownames(Ol_DE_AD_ADp40KO.df)
+Ol_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesADp40KO_Ctrl.csv", row.names = 1)
+Ol_DE_ADp40KO_Ctrl.df$gene <- rownames(Ol_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(Ol_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Oligo")
+g2 <- volcano_plot(Ol_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Oligo")
+g3 <- volcano_plot(Ol_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Oligo")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### OPCs
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+OPC_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv", row.names = 1)
+OPC_DE_AD_Ctrl.df$gene <- rownames(OPC_DE_AD_Ctrl.df)
+OPC_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_ADp40KO.csv", row.names = 1)
+OPC_DE_AD_ADp40KO.df$gene <- rownames(OPC_DE_AD_ADp40KO.df)
+OPC_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCADp40KO_Ctrl.csv", row.names = 1)
+OPC_DE_ADp40KO_Ctrl.df$gene <- rownames(OPC_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(OPC_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in OPC")
+g2 <- volcano_plot(OPC_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in OPC")
+g3 <- volcano_plot(OPC_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in OPC")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### Microglia
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+MG_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+MG_DE_AD_Ctrl.df$gene <- rownames(MG_DE_AD_Ctrl.df)
+MG_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv", row.names = 1)
+MG_DE_AD_ADp40KO.df$gene <- rownames(MG_DE_AD_ADp40KO.df)
+MG_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaADp40KO_Ctrl.csv", row.names = 1)
+MG_DE_ADp40KO_Ctrl.df$gene <- rownames(MG_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(MG_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Microglia")
+g2 <- volcano_plot(MG_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Microglia")
+g3 <- volcano_plot(MG_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Microglia")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+AS_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv", row.names = 1)
+AS_DE_AD_Ctrl.df$gene <- rownames(AS_DE_AD_Ctrl.df)
+AS_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv", row.names = 1)
+AS_DE_AD_ADp40KO.df$gene <- rownames(AS_DE_AD_ADp40KO.df)
+AS_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesADp40KO_Ctrl.csv", row.names = 1)
+AS_DE_ADp40KO_Ctrl.df$gene <- rownames(AS_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(AS_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Astrocytes")
+g2 <- volcano_plot(AS_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Astrocytes")
+g3 <- volcano_plot(AS_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Astrocytes")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### Ex Neurons
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+Ex_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_Ctrl.csv", row.names = 1)
+Ex_DE_AD_Ctrl.df$gene <- rownames(Ex_DE_AD_Ctrl.df)
+Ex_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv", row.names = 1)
+Ex_DE_AD_ADp40KO.df$gene <- rownames(Ex_DE_AD_ADp40KO.df)
+Ex_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsADp40KO_Ctrl.csv", row.names = 1)
+Ex_DE_ADp40KO_Ctrl.df$gene <- rownames(Ex_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(Ex_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Excitatory Neurons")
+g2 <- volcano_plot(Ex_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Excitatory Neurons")
+g3 <- volcano_plot(Ex_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Excitatory Neurons")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### In Neurons
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+In_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_Ctrl.csv", row.names = 1)
+In_DE_AD_Ctrl.df$gene <- rownames(In_DE_AD_Ctrl.df)
+In_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv", row.names = 1)
+In_DE_AD_ADp40KO.df$gene <- rownames(In_DE_AD_ADp40KO.df)
+In_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsADp40KO_Ctrl.csv", row.names = 1)
+In_DE_ADp40KO_Ctrl.df$gene <- rownames(In_DE_ADp40KO_Ctrl.df)
+
+g1 <- volcano_plot(In_DE_AD_Ctrl.df) + ggtitle("AD versus Ctrl in Inhibitory Interneurons")
+g2 <- volcano_plot(In_DE_AD_ADp40KO.df) + ggtitle("AD versus ADp40KO in Inhibitory Interneurons")
+g3 <- volcano_plot(In_DE_ADp40KO_Ctrl.df) + ggtitle("ADp40KO versus Ctrl in Inhibitory Interneurons")
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+### Bulk data
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+res1.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/DE_AD_Ctrl.csv", row.names = 1)
+res1.df2 <- res1.df[which(res1.df$gene == "Ttr"), ]
+res2.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/DE_ADp40KO_Ctrl.csv", row.names = 1)
+res2.df2 <- res2.df[which(res2.df$gene == "Ttr"), ]
+res3.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/DE_ADp40KO_AD.csv", row.names = 1)
+res3.df2 <- res3.df[which(res3.df$gene == "Ttr"), ]
+
+g1 <- ggplot(res1.df, aes(x = baseMean, y = log2FoldChange)) +
+  geom_point(size = 0.5, color = "gray") +
+  xlab("Mean of Normalized Counts") + ylab(paste0("Log2FoldChange")) +
+  ggtitle("AD vs Ctrl") + 
+  scale_x_continuous(trans='log10') +
+  geom_hline(yintercept = 0, size = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "darkred", size = 0.1) + geom_hline(yintercept = -1, linetype = "dashed", color = "darkred", size = 0.1) +
+  theme(axis.title = element_text(face = "bold", size = 12), 
+        axis.text = element_text(face = "bold", size = 12, color = "black"), 
+        plot.title = element_text(hjust = 0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) + geom_point(data = res1.df2, color = "#33CC33", size = 1) + geom_text_repel(data = res1.df2, aes(label = rownames(res1.df2)))
+
+g2 <- ggplot(res2.df, aes(x = baseMean, y = log2FoldChange)) +
+  geom_point(size = 0.5, color = "gray") +
+  xlab("Mean of Normalized Counts") + ylab(paste0("Log2FoldChange")) +
+  ggtitle("ADp40K vs Ctrl") + 
+  scale_x_continuous(trans='log10') +
+  geom_hline(yintercept = 0, size = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "darkred", size = 0.1) + geom_hline(yintercept = -1, linetype = "dashed", color = "darkred", size = 0.1) +
+  theme(axis.title = element_text(face = "bold", size = 12), 
+        axis.text = element_text(face = "bold", size = 12, color = "black"), 
+        plot.title = element_text(hjust = 0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) + geom_point(data = res2.df2, color = "#33CC33", size = 1) + geom_text_repel(data = res2.df2, aes(label = rownames(res2.df2)))
+
+g3 <- ggplot(res3.df, aes(x = baseMean, y = log2FoldChange)) +
+  geom_point(size = 0.5, color = "gray") +
+  xlab("Mean of Normalized Counts") + ylab(paste0("Log2FoldChange")) +
+  ggtitle("ADp40KO vs AD") + 
+  scale_x_continuous(trans='log10') +
+  geom_hline(yintercept = 0, size = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "darkred", size = 0.1) + geom_hline(yintercept = -1, linetype = "dashed", color = "darkred", size = 0.1) +
+  theme(axis.title = element_text(face = "bold", size = 12), 
+        axis.text = element_text(face = "bold", size = 12, color = "black"), 
+        plot.title = element_text(hjust = 0.5),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black")) + geom_point(data = res3.df2, color = "#33CC33", size = 1) + geom_text_repel(data = res3.df2, aes(label = rownames(res3.df2)))
+
+
+grid.arrange(g1, g2, g3, ncol = 3)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+sessionInfo()
+```

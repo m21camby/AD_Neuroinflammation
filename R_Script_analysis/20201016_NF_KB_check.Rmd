@@ -1,0 +1,328 @@
+---
+title: "nf-kb"
+author: "Skim"
+date: "10/16/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(ggrepel)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+MOL <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1)
+MOL <- MOL[!MOL$gene %in% "Ttr", ]
+
+MOL.AD <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_Ctrl.csv", row.names = 1)
+MOL <- MOL[!MOL$gene %in% "Ttr", ]
+
+MFOL <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+MFOL <- MFOL[!MFOL$gene %in% "Ttr", ]
+
+MFOL.AD <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_Ctrl.csv", row.names = 1)
+MFOL.AD <- MFOL.AD[!MFOL.AD$gene %in% "Ttr", ]
+
+NFOL <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/NFOL_AD_ADp40KO.csv", row.names = 1)
+
+OPC <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_ADp40KO.csv", row.names = 1)
+
+MG <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv", row.names = 1)
+
+MG_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_ADp40KO_Ctrl.csv", row.names = 1)
+
+CA1 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_ADp40KO.csv", row.names = 1)
+
+CA23 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA2_3_AD_ADp40KO.csv", row.names = 1)
+
+CA23_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA2_3_ADp40KO_Ctrl.csv", row.names = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+Vln_plot <- function(df = DF){
+  ggplot(df, aes(x=pathway, y=logFC)) + 
+  geom_violin(trim=FALSE) + coord_flip() + geom_jitter(data = df[df$FDR < 0.01, ], position=position_jitter(0.1), alpha = 0.3) + theme(axis.title.y = element_blank())
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+
+FeaturePlot(data9set_cleaned.SO, features = "Rela", order = TRUE)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+sc <- readRDS("/data/rajewsky/projects/HSV_organoids_snRNA_seq/Benny_files/uc1109.rds")
+
+sc.meta <- sc@meta.data
+
+load(file = "/data/rajewsky/projects/HSV_organoids_snRNA_seq/sNucseq_hg38HSV1GFPtc_analyzed.Seurat.RDS")
+
+snrna.meta <- snrna@meta.data
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+sc.data <- GetAssayData(sc, slot = "data")
+sc.data_sub <- sc.data[,colnames(sc.data) %in% rownames(sc.meta[sc.meta$rep %in% "ctrl", ])]
+sc.data_genes <- Matrix::rowMeans(sc.data_sub) %>% as.data.frame
+colnames(sc.data_genes) <- "scRNA"
+sc.data_genes$gene <- rownames(sc.data_genes)
+
+sn.data <- GetAssayData(snrna, slot = "data")
+sn.data_sub <- sn.data[,colnames(sn.data) %in% rownames(snrna.meta[snrna.meta$timepoint %in% "ctrl", ])]
+sn.data_genes <- Matrix::rowMeans(sn.data_sub) %>% as.data.frame
+colnames(sn.data_genes) <- "snRNA"
+sn.data_genes$gene <- rownames(sn.data_genes)
+
+merged <- inner_join(sc.data_genes, sn.data_genes, by = "gene")
+
+ggplot(merged, aes(x = scRNA, y = snRNA)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[merged$gene %in% c("TTR", "NEAT1", "TRPM3", "HTR2C", "ACADVL", "SLC5A3", "COL11A1",
+                                                   "RPLP0", "RPS6", "RPS3", "PTN", "IFI6", "CKB", "HSP90B1",
+                                                   "NFKBIZ", "NFKBIA", 
+                                                   "TNFSF10", "TNFRSF1B", "TNFRSF11A", "TNFRSF11B", "TNFRSF12A"), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,4)) + xlim(c(0,4)) + 
+  ggtitle("HSV organoids CTRL scRNA vs snRNA")
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+
+sc.data_sub <- sc.data[,colnames(sc.data) %in% rownames(sc.meta[sc.meta$rep %in% "3dpi", ])]
+sc.data_genes <- Matrix::rowMeans(sc.data_sub) %>% as.data.frame
+colnames(sc.data_genes) <- "scRNA"
+sc.data_genes$gene <- rownames(sc.data_genes)
+
+
+sn.data_sub <- sn.data[,colnames(sn.data) %in% rownames(snrna.meta[snrna.meta$timepoint %in% "3dpi", ])]
+sn.data_genes <- Matrix::rowMeans(sn.data_sub) %>% as.data.frame
+colnames(sn.data_genes) <- "snRNA"
+sn.data_genes$gene <- rownames(sn.data_genes)
+
+merged <- inner_join(sc.data_genes, sn.data_genes, by = "gene")
+
+ggplot(merged, aes(x = scRNA, y = snRNA)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[merged$gene %in% c("TTR", "NEAT1", "TRPM3", "HTR2C", "ACADVL", "SLC5A3", "COL11A1",
+                                                   "RPLP0", "RPS6", "RPS3", "PTN", "IFI6", "CKB", "HSP90B1",
+                                                   "NFKBIZ", "NFKBIA", 
+                                                   "TNFSF10", "TNFRSF1B", "TNFRSF11A", "TNFRSF11B", "TNFRSF12A"), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,3)) + xlim(c(0,3)) +
+  ggtitle("HSV organoids Infection scRNA vs snRNA")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+hall.df <- read.csv("/data/rajewsky/projects/HSV_organoids_snRNA_seq/R_Scripts/20201009_GSEA_scRNA_create_table/All_Cell_GSEA_logFC_Hall.csv", stringsAsFactors = FALSE)
+hall.df$sig <- ifelse(hall.df$padj < .25, "True", "False")
+
+genes <- hall.df[hall.df$pathway == "HALLMARK_TNFA_SIGNALING_VIA_NFKB",]$leadingEdge
+# separate by comma
+genes <- strsplit(genes, ",")  %>% as.list
+# remove white space
+genes <- trimws(genes[[1]]) %>% as.vector
+
+sc.data_sub <- sc.data[,colnames(sc.data) %in% rownames(sc.meta[sc.meta$rep %in% "3dpi", ])]
+sc.data_genes <- Matrix::rowMeans(sc.data_sub) %>% as.data.frame
+colnames(sc.data_genes) <- "scRNA"
+sc.data_genes$gene <- rownames(sc.data_genes)
+
+
+sn.data_sub <- sn.data[,colnames(sn.data) %in% rownames(snrna.meta[snrna.meta$timepoint %in% "3dpi", ])]
+sn.data_genes <- Matrix::rowMeans(sn.data_sub) %>% as.data.frame
+colnames(sn.data_genes) <- "snRNA"
+sn.data_genes$gene <- rownames(sn.data_genes)
+
+merged <- inner_join(sc.data_genes, sn.data_genes, by = "gene")
+
+ggplot(merged, aes(x = scRNA, y = snRNA)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$scRNA > 0.2), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,3)) + xlim(c(0,3)) +
+  ggtitle("HSV organoids Infection scRNA vs snRNA")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+ggplot(merged, aes(x = scRNA, y = snRNA)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$scRNA > 0.2), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,1.5)) + xlim(c(0,1.5)) +
+  ggtitle("HSV organoids Infection scRNA vs snRNA")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+hall.df <- read.csv("/data/rajewsky/projects/HSV_organoids_snRNA_seq/R_Scripts/20201009_GSEA_scRNA_create_table/All_Cell_GSEA_logFC_Hall.csv", stringsAsFactors = FALSE)
+hall.df$sig <- ifelse(hall.df$padj < .25, "True", "False")
+
+genes <- hall.df[hall.df$pathway == "HALLMARK_TNFA_SIGNALING_VIA_NFKB",]$leadingEdge
+# separate by comma
+genes <- strsplit(genes, ",")  %>% as.list
+# remove white space
+genes <- trimws(genes[[1]]) %>% as.vector
+
+sc.data_sub <- sc.data[,colnames(sc.data) %in% rownames(sc.meta[sc.meta$rep %in% "ctrl", ])]
+sc.data_genes <- Matrix::rowMeans(sc.data_sub) %>% as.data.frame
+colnames(sc.data_genes) <- "ctrl"
+sc.data_genes$gene <- rownames(sc.data_genes)
+
+
+sc.data_sub2 <- sc.data[,colnames(sc.data) %in% rownames(sc.meta[sc.meta$rep %in% "3dpi", ])]
+sc.data_genes2 <- Matrix::rowMeans(sc.data_sub2) %>% as.data.frame
+colnames(sc.data_genes2) <- "infected"
+sc.data_genes2$gene <- rownames(sc.data_genes2)
+
+merged <- inner_join(sc.data_genes, sc.data_genes2, by = "gene")
+
+ggplot(merged, aes(x = ctrl, y = infected)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$ctrl > 0.1), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,3)) + xlim(c(0,3)) +
+  ggtitle("HSV organoids scRNA Infection vs ctrl")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+ggplot(merged, aes(x = ctrl, y = infected)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$ctrl > 0.1), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,1.1)) + xlim(c(0,1.1)) +
+  ggtitle("HSV organoids scRNA Infection vs ctrl")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+hall.df <- read.csv("/data/rajewsky/projects/HSV_organoids_snRNA_seq/R_Scripts/20201009_GSEA_scRNA_create_table/All_Cell_GSEA_logFC_Hall.csv", stringsAsFactors = FALSE)
+hall.df$sig <- ifelse(hall.df$padj < .25, "True", "False")
+
+genes <- hall.df[hall.df$pathway == "HALLMARK_TNFA_SIGNALING_VIA_NFKB",]$leadingEdge
+# separate by comma
+genes <- strsplit(genes, ",")  %>% as.list
+# remove white space
+genes <- trimws(genes[[1]]) %>% as.vector
+
+sc.data_sub <- sn.data[,colnames(sn.data) %in% rownames(snrna.meta[snrna.meta$timepoint %in% "ctrl", ])]
+sc.data_genes <- Matrix::rowMeans(sc.data_sub) %>% as.data.frame
+colnames(sc.data_genes) <- "ctrl"
+sc.data_genes$gene <- rownames(sc.data_genes)
+
+
+sc.data_sub2 <- sn.data[,colnames(sn.data) %in% rownames(snrna.meta[snrna.meta$timepoint %in% "3dpi", ])]
+sc.data_genes2 <- Matrix::rowMeans(sc.data_sub2) %>% as.data.frame
+colnames(sc.data_genes2) <- "infected"
+sc.data_genes2$gene <- rownames(sc.data_genes2)
+
+merged <- inner_join(sc.data_genes, sc.data_genes2, by = "gene")
+
+ggplot(merged, aes(x = ctrl, y = infected)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$ctrl > 0.02), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,3)) + xlim(c(0,3)) +
+  ggtitle("HSV organoids snRNA Infection vs ctrl")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+ggplot(merged, aes(x = ctrl, y = infected)) + geom_point(color = "red", alpha = 0.3) + 
+  geom_abline(intercept = 0, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = .5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_abline(intercept = -.5, slope = 1, color="darkgreen", linetype="dashed", size=.5) + 
+  geom_text_repel(data = merged[which(merged$gene %in% genes & merged$ctrl > 0.02), ],
+                  aes(label = gene),
+                  nudge_y = 0.05, force = 10) + ylim(c(0,1)) + xlim(c(0,1)) +
+  ggtitle("HSV organoids snRNA Infection vs ctrl")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+bm <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM.df")
+bm <- bm %>% distinct() %>% as_tibble() %>% na_if("") %>% na.omit() %>% as.data.frame()
+bm.df <- data.frame(ensembl_gene_id= bm$ensembl_gene_id, hsapiens_homolog_associated_gene_name = bm$hsapiens_homolog_associated_gene_name, stringsAsFactors = FALSE)
+  
+bm2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM2.df")
+bm2.df <- as.data.frame(bm2)
+  
+total <- merge(bm.df,bm2.df, by = "ensembl_gene_id")
+  
+total <- data.frame(Gene = total$mgi_symbol, HGene = total$hsapiens_homolog_associated_gene_name)
+  
+# only unique gene
+total_uni.df <- distinct(total, HGene, .keep_all = TRUE)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=6.5}
+GSEA_GO_MOL <- scRNA_GSEA_edgeR(MOL, pathway = "GO", metric = "logFC")
+
+GSEA_GO_MFOL <- scRNA_GSEA_edgeR(MFOL, pathway = "GO", metric = "logFC")
+
+GSEA_HALL_MFOL <- scRNA_GSEA_edgeR(MFOL, pathway = "Hall", metric = "logFC")
+
+GSEA_HALL_MFOL.AD <- scRNA_GSEA_edgeR(MFOL.AD, pathway = "Hall", metric = "logFC")
+
+
+genes <- GSEA_GO_MFOL[GSEA_GO_MFOL$pathway %in% "GO_DEVELOPMENTAL_CELL_GROWTH", ]$leadingEdge[[1]]
+genes <- strsplit(genes, ",")  %>% as.list
+# remove white space
+genes <- trimws(genes) %>% as.vector
+genes.df <- total_uni.df[total_uni.df$HGene %in% genes,  ]
+
+genes2 <- GSEA_GO_MFOL[GSEA_GO_MFOL$pathway %in% "GO_DEVELOPMENTAL_CELL_GROWTH", ]$leadingEdge[[1]]
+genes <- strsplit(genes, ",")  %>% as.list
+# remove white space
+genes <- trimws(genes) %>% as.vector
+genes.df <- total_uni.df[total_uni.df$HGene %in% genes,  ]
+
+
+DE.df1 <- MFOL[MFOL$gene %in% genes.df$Gene, ]
+DE.df1$pathway <- "GO_DEVELOPMENTAL_CELL_GROWTH"
+
+DE.df2 <- MFOL[MFOL$gene %in% genes.df$Gene, ]
+DE.df1$pathway <- "GO_DEVELOPMENTAL_CELL_GROWTH"
+
+
+
+Vln_plot(DE.df)
+```
+
+
+

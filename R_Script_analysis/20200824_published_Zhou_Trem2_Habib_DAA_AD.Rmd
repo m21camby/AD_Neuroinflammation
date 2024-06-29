@@ -1,0 +1,433 @@
+---
+title: "DAA Habib and Trem2_AD_published data analysis"
+author: "Skim"
+date: '2020 8 24 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for analysis published data to look at Il12b in other cell types. I analyzed Zhou et al., Nature medicine, 2020
+[Files download](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE140399) In here, I check 15 month old hippocampus / Cortex and WT and FAD to see Il12b expression in other cell type. I also tested Naomi Habib et al., DAA Nature Neuroscience paper. 
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/data/rajewsky/home/skim/R/usr_lib_Seurat/", "/data/rajewsky/home/skim/R/usr_lib_v4/"))
+.libPaths()
+# unloadNamespace("mgcv")
+# unloadNamespace("Matrix")
+
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(openxlsx)
+```
+
+### Data load
+
+```{r warning=FALSE, message=FALSE}
+excel.df <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/published_Trem2_AD_Zhou/41591_2019_695_MOESM2_ESM.xlsx", sheet = "Cluster 7")
+
+excel.df1 <- excel.df[c(3:16954),c(1:7)]
+colnames(excel.df1) <- excel.df1[1, ]
+excel.df1 <- excel.df1[-1, ]
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# Hippo
+WT <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/published_Trem2_AD_Zhou/GSM4160647_WT_Hip/")
+
+FAD <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/published_Trem2_AD_Zhou/GSM4160649_WT_5XFAD_Hip/")
+
+WT.SO <- CreateSeuratObject(counts =  WT,  min.cells = 3, min.features = 200, project = "Trem2")
+
+FAD.SO <- CreateSeuratObject(counts =  FAD,  min.cells = 3, min.features = 200, project = "Trem2")
+
+# Cortex
+Cor_WT <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/published_Trem2_AD_Zhou/GSM4160643_WT_Cor/")
+
+Cor_FAD <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/published_Trem2_AD_Zhou/GSM4160645_WT_5XFAD_Cor/")
+
+Cor_WT.SO <- CreateSeuratObject(counts =  Cor_WT,  min.cells = 3, min.features = 200, project = "Trem2")
+
+Cor_FAD.SO <- CreateSeuratObject(counts =  Cor_FAD,  min.cells = 3, min.features = 200, project = "Trem2")
+
+```
+
+## Hippo
+
+```{r warning=FALSE, message=FALSE}
+# calculate MT genes
+WT.SO[["percent.mt"]] <- PercentageFeatureSet(object = WT.SO, pattern = "^mt-")
+
+FAD.SO[["percent.mt"]] <- PercentageFeatureSet(object = FAD.SO, pattern = "^mt-")
+
+```
+
+### Hippo QC
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+plot1 <- FeatureScatter(WT.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle("Hip WT")
+plot2 <- FeatureScatter(FAD.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle("Hip FAD")
+plot1 + plot2
+
+```
+
+### Hippo mitochondrial
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+v1 <- VlnPlot(WT.SO, features = c("percent.mt"), pt.size = 0.2) + ggtitle("Hip WT percent.mt")
+v2 <- VlnPlot(FAD.SO, features = c("percent.mt"), pt.size = 0.2) + ggtitle("Hip FAD percent.mt")
+grid.arrange(v1, v2, ncol = 2)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+#####
+# WT
+#####
+WT.SO <- subset(x = WT.SO, subset = nCount_RNA < 5000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+WT.SO <- NormalizeData(object = WT.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+WT.SO <- FindVariableFeatures(object = WT.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+WT.SO <- ScaleData(object = WT.SO, vars.to.regress = c("percent.mt", "nCount_RNA"))
+
+# PCA
+WT.SO <- RunPCA(WT.SO, features = VariableFeatures(object = WT.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(WT.SO, ndims = 50)
+
+WT.SO <- FindNeighbors(object = WT.SO, reduction = "pca", dims = 1:20)
+WT.SO <- FindClusters(object = WT.SO, resolution = 1, verbose = FALSE)
+
+WT.SO <- RunUMAP(object = WT.SO, dims = 1:20, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d1 <- DimPlot(object = WT.SO, reduction = "umap")
+
+#####
+# FAD
+#####
+FAD.SO <- subset(x = FAD.SO, subset = nCount_RNA < 6000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+FAD.SO <- NormalizeData(object = FAD.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+FAD.SO <- FindVariableFeatures(object = FAD.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+FAD.SO <- ScaleData(object = FAD.SO, vars.to.regress = c("percent.mt", "nCount_RNA"))
+
+# PCA
+FAD.SO <- RunPCA(FAD.SO, features = VariableFeatures(object = FAD.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(FAD.SO, ndims = 50)
+
+FAD.SO <- FindNeighbors(object = FAD.SO, reduction = "pca", dims = 1:20)
+FAD.SO <- FindClusters(object = FAD.SO, resolution = 1, verbose = FALSE)
+
+FAD.SO <- RunUMAP(object = FAD.SO, dims = 1:20, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d2 <- DimPlot(object = FAD.SO, reduction = "umap")
+
+```
+
+### Hippo UMAP
+
+left is WT and right is FAD
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+grid.arrange(d1, d2, ncol = 2)
+```
+
+### Hippo Hexb (MG)
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+f1 <- FeaturePlot(WT.SO, features = c("Hexb"), by.col = 2)
+f2 <- FeaturePlot(FAD.SO, features = c("Hexb"), by.col = 2)
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### Hippo Il1- genes
+
+WT expression of Il1- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+WT.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il1", WT.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+
+WT@Dimnames[[1]][grepl("^Il12", WT@Dimnames[[1]])]
+
+
+
+```
+
+FAD expression of Il1- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+FAD.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il1", FAD.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+
+FAD@Dimnames[[1]][grepl("^Il12", FAD@Dimnames[[1]])]
+
+
+
+```
+
+### Hippo Il12a 
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+f1 <- FeaturePlot(WT.SO, features = c("Il12a"), by.col = 2)
+f2 <- FeaturePlot(FAD.SO, features = c("Il12a"), by.col = 2)
+grid.arrange(f1, f2, ncol = 2)
+```
+
+## Cortex
+
+```{r warning=FALSE, message=FALSE}
+# calculate MT genes
+Cor_WT.SO[["percent.mt"]] <- PercentageFeatureSet(object = Cor_WT.SO, pattern = "^mt-")
+
+Cor_FAD.SO[["percent.mt"]] <- PercentageFeatureSet(object = Cor_FAD.SO, pattern = "^mt-")
+
+```
+
+
+### Cortex QC
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+plot1 <- FeatureScatter(Cor_WT.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle("Cor WT")
+plot2 <- FeatureScatter(Cor_FAD.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle("Cor FAD")
+plot1 + plot2
+
+```
+
+### Cortex mitochondrial
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+v1 <- VlnPlot(Cor_WT.SO, features = c("percent.mt"), pt.size = 0.2) + ggtitle("Cor WT percent.mt")
+v2 <- VlnPlot(Cor_FAD.SO, features = c("percent.mt"), pt.size = 0.2) + ggtitle("Cor FAD percent.mt")
+grid.arrange(v1, v2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE}
+#####
+# WT
+#####
+Cor_WT.SO <- subset(x = Cor_WT.SO, subset = nCount_RNA < 6000 & nCount_RNA > 200 & percent.mt < 5)  
+
+Cor_WT.SO <- NormalizeData(object = Cor_WT.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+Cor_WT.SO <- FindVariableFeatures(object = Cor_WT.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+Cor_WT.SO <- ScaleData(object = Cor_WT.SO, vars.to.regress = c("percent.mt", "nCount_RNA"))
+
+# PCA
+Cor_WT.SO <- RunPCA(Cor_WT.SO, features = VariableFeatures(object = Cor_WT.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(Cor_WT.SO, ndims = 50)
+
+Cor_WT.SO <- FindNeighbors(object = Cor_WT.SO, reduction = "pca", dims = 1:20)
+Cor_WT.SO <- FindClusters(object = Cor_WT.SO, resolution = 1, verbose = FALSE)
+
+Cor_WT.SO <- RunUMAP(object = Cor_WT.SO, dims = 1:20, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d3 <- DimPlot(object = Cor_WT.SO, reduction = "umap")
+
+#####
+# FAD
+#####
+Cor_FAD.SO <- subset(x = Cor_FAD.SO, subset = nCount_RNA < 6000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+Cor_FAD.SO <- NormalizeData(object = Cor_FAD.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+Cor_FAD.SO <- FindVariableFeatures(object = Cor_FAD.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+Cor_FAD.SO <- ScaleData(object = Cor_FAD.SO, vars.to.regress = c("percent.mt", "nCount_RNA"))
+
+# PCA
+Cor_FAD.SO <- RunPCA(Cor_FAD.SO, features = VariableFeatures(object = Cor_FAD.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(Cor_FAD.SO, ndims = 50)
+
+Cor_FAD.SO <- FindNeighbors(object = Cor_FAD.SO, reduction = "pca", dims = 1:20)
+Cor_FAD.SO <- FindClusters(object = Cor_FAD.SO, resolution = 1, verbose = FALSE)
+
+Cor_FAD.SO <- RunUMAP(object = Cor_FAD.SO, dims = 1:20, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d4 <- DimPlot(object = Cor_FAD.SO, reduction = "umap")
+
+```
+
+### Cortex UMAP
+
+left is WT and right is FAD
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+grid.arrange(d3, d4, ncol = 2)
+```
+
+### Cortex Hexb (MG)
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+f1 <- FeaturePlot(Cor_WT.SO, features = c("Hexb"), by.col = 2)
+f2 <- FeaturePlot(Cor_FAD.SO, features = c("Hexb"), by.col = 2)
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### Cortex Il1- genes
+
+WT expression of Il1- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Cor_WT.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il1", Cor_WT.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+WT expression of Il2- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Cor_WT.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il2", Cor_WT.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+FAD expression of Il1- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Cor_FAD.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il1", Cor_FAD.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+FAD expression of Il2- genes
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Cor_FAD.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il2", Cor_FAD.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+## Naomi Hippo
+
+In here, Ad mouse_Hippocampus_7m_All Nuclei UMIcounts [Naomi paper](https://www.nature.com/articles/s41593-020-0624-8?proof=trueIn%EF%BB%BF), [Naomi GEO](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE143758)
+
+single nucleus RNA-seq shows in 5xFAD mouse model of AD and WT (batches = EZ Lysis Buffer + NP40 Lysis Buffer)
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Naomi <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/published_DAA_Habib/GSE143758_Admouse_Hippocampus_7m_AllNuclei_UMIcounts.txt.gz", row.names = 1, header = TRUE)
+
+
+Naomi.SO <- CreateSeuratObject(counts =  Naomi,  min.cells = 3, min.features = 200, project = "DAA")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+# calculate MT genes
+Naomi.SO[["percent.mt"]] <- PercentageFeatureSet(object = Naomi.SO, pattern = "^mt-")
+
+```
+
+### Naomi Hippo QC
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=6}
+FeatureScatter(Naomi.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + ggtitle("Naomi DAA")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=6}
+VlnPlot(Naomi.SO, features = c("percent.mt"), pt.size = 0.2) + ggtitle("Naomi Hippo percent.mt")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Naomi.SO <- subset(x = Naomi.SO, subset = nCount_RNA < 6000 & nCount_RNA > 200 & percent.mt < 5)  
+
+Naomi.df <- Naomi.SO@meta.data
+
+CB_WT <- rownames(Naomi.df)[grepl("WT|Wt", rownames(Naomi.df))]
+CB_AD <- rownames(Naomi.df)[grepl("AD|Ad", rownames(Naomi.df))]
+CB_Unknwon <- rownames(Naomi.df)[grepl("Untreated", rownames(Naomi.df))]
+
+Naomi.df$ID <- rownames(Naomi.df)
+
+Naomi.df <- Naomi.df %>% mutate(exp = case_when(ID %in% CB_WT ~ "WT",
+                                    ID %in% CB_AD ~ "AD",
+                                    ID %in% CB_Unknwon ~ "Untreated"))
+
+Naomi.SO$exp <- Naomi.df$exp
+
+Naomi.df2 <- Naomi.SO@meta.data
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+
+Naomi.SO <- NormalizeData(object = Naomi.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+Naomi.SO <- FindVariableFeatures(object = Naomi.SO, nfeatures = 2000, selection.method = "vst", verbose = FALSE)
+Naomi.SO <- ScaleData(object = Naomi.SO, vars.to.regress = c("percent.mt", "nCount_RNA"))
+
+# PCA
+Naomi.SO <- RunPCA(Naomi.SO, features = VariableFeatures(object = Naomi.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(Naomi.SO, ndims = 50)
+
+Naomi.SO <- FindNeighbors(object = Naomi.SO, reduction = "pca", dims = 1:20)
+Naomi.SO <- FindClusters(object = Naomi.SO, resolution = 1, verbose = FALSE)
+
+Naomi.SO <- RunUMAP(object = Naomi.SO, dims = 1:20, n.neighbors = 20, min.dist = 0.35, n.epochs = 500, spread = 2)
+d5 <- DimPlot(object = Naomi.SO, reduction = "umap")
+
+d6 <- DimPlot(object = Naomi.SO, reduction = "umap", group.by = "exp")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+grid.arrange(d5, d6, ncol = 2)
+
+```
+
+
+### Naomi Hippo Hexb (MG)
+
+```{r warning=FALSE, message=FALSE, fig.width=7, fig.height=6}
+FeaturePlot(Naomi.SO, features = c("Hexb"))
+```
+
+### Naomi Hippo Il12b 
+
+Il12b didn't exist while Il12rb2, Il12rb1 only exist
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+f1 <- FeaturePlot(Naomi.SO, features = c("Il12rb1"), pt.size = 1, order = TRUE)
+f2 <- FeaturePlot(Naomi.SO, features = c("Il12rb2"), pt.size = 1, order = TRUE)
+grid.arrange(f1, f2, ncol = 2)
+```
+
+Naomi expression of Il12- genes in Seurat
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+Naomi.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il12", Naomi.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+Naomi expression of Il12- genes original matrix
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+rownames(Naomi)[grepl("^Il12", rownames(Naomi))]
+```
+
+### Naomi Hippo Oligo 
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=12}
+f1 <- FeaturePlot(Naomi.SO, features = c("Apod"), pt.size = 1, order = FALSE)
+f2 <- FeaturePlot(Naomi.SO, features = c("C4b"), pt.size = 1, order = FALSE)
+f3 <- FeaturePlot(Naomi.SO, features = c("Mbp"), pt.size = 1, order = FALSE)
+f4 <- FeaturePlot(Naomi.SO, features = c("Mog"), pt.size = 1, order = FALSE)
+
+grid.arrange(f1, f2, f3, f4,  ncol = 2)
+
+```
+
+### Naomi Hippo Neurons 
+
+Grip1 = IN, Kcnip4 = EX
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+f1 <- FeaturePlot(Naomi.SO, features = c("Grip1"), pt.size = 1, order = FALSE)
+f2 <- FeaturePlot(Naomi.SO, features = c("Kcnip4"), pt.size = 1, order = FALSE)
+grid.arrange(f1, f2, ncol = 2)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=6}
+sessionInfo()
+
+```

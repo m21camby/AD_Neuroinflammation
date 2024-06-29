@@ -1,0 +1,41 @@
+---
+title: "CCI featureplot"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(cowplot)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=20}
+f1 <- FeaturePlot(data9set_cleaned.SO, features = "Erbb3")
+f2 <- FeaturePlot(data9set_cleaned.SO, features = "Erbb4")
+f3 <- FeaturePlot(data9set_cleaned.SO, features = "Vegfa")
+f4 <- FeaturePlot(data9set_cleaned.SO, features = "Grin2b")
+f5 <- FeaturePlot(data9set_cleaned.SO, features = "Ephb2", order = TRUE)
+f6 <- FeaturePlot(data9set_cleaned.SO, features = "Nrp1")
+f7 <- FeaturePlot(data9set_cleaned.SO, features = "Nrg1")
+f8 <- FeaturePlot(data9set_cleaned.SO, features = "Nrg4", order = TRUE)
+
+grid.arrange(f1, f2, f3, f4, f5, f6, f7, f8, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=20}
+sessionInfo()
+```

@@ -1,0 +1,220 @@
+---
+title: "test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+# .libPaths()
+# .libPaths( c( .libPaths(), "/data/local/rajewsky/shared_libs/R") )
+
+library(destiny)
+library(slingshot)
+library(RColorBrewer)
+library(gam)
+
+# read in data
+sce <- readRDS(url("https://scrnaseq-public-datasets.s3.amazonaws.com/scater-objects/deng-reads.rds"))
+
+# convert SingleCellExperiment to Seurat
+sobj <- CreateSeuratObject(counts(sce), meta.data = as.data.frame(colData(sce)))
+sobj <- NormalizeData(sobj)
+sobj <- FindVariableFeatures(sobj)
+sobj <- ScaleData(sobj)
+sobj <- RunPCA(sobj, verbose = FALSE)
+Idents(sobj) <- "cell_type1"
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+# get the PC1 values for each cell, and store in a data frame
+plt_dat <- FetchData(sobj, c("PC_1", "cell_type1"))
+
+# reorder cell_type based on known developmental time
+cell_type <- factor(plt_dat$cell_type1,
+                    levels = c("zygote",
+                               "2cell",
+                               "4cell",
+                               "8cell",
+                               "16cell",
+                               "blast"))
+
+# add the reordered cell_type info as a new column to plt_data
+plt_dat$cell_type <- cell_type
+
+# Add UMAP dimensional reduction
+sobj <- RunUMAP(sobj, dims = 1:15)
+
+# get PC1 values and rank to generate a 'pseudotime'
+ptime <- FetchData(sobj, "PC_1")
+ptime$ptime <- rank(ptime$PC_1)
+
+# add pseudotime to the metadata
+sobj <- AddMetaData(sobj, 
+                    ptime$ptime, 
+                    col.name = "Pseudotime")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+# Generating a diffusion map requires a matrix of expression data:
+# prepare a counts matrix
+logcounts <- GetAssayData(sobj, "data")
+
+# transpose matrix (genes as columns, cells as rows)
+input_matrix <- t(logcounts[VariableFeatures(sobj), ])
+
+# generate a diffusion map
+set.seed(42)
+dm <- DiffusionMap(as.matrix(input_matrix))
+
+# store the diffusion map as a custom dimensional reduction in the Seurat object
+sobj[["DM"]] <- CreateDimReducObject(embeddings = dm@eigenvectors, key = "DM_", assay = DefaultAssay(sobj))
+```
+```{r echo=FALSE}
+# calculate the diffusion pseudotime (DPT)
+dpt <- DPT(dm)
+
+# color single cells on diffusion map plot according to DPT
+p1 <- plot(dpt, 1:2) + ggtitle("Diffusion Pseudotime (DPT)")
+
+# create data.frame for easy plotting of DPT
+tmp <- data.frame(DC1 = dm$DC1,
+                  DC2 = dm$DC2,
+                  timepoint = cell_type,
+                  dpt = dpt$DPT1)
+
+
+
+
+#convert to SingleCellExperiment
+sce <- as.SingleCellExperiment(sobj)
+
+#subset to only a few PCA dimensions
+reducedDim(sce) <- reducedDim(sce)[, 1:10]
+
+sce <- suppressWarnings(slingshot(
+  sce,
+  reducedDim = 'PCA',
+  clusterLabels = 'cell_type2',
+  start.clus = "4"
+))
+
+# extract info about pseudotimes from sce
+sds <- SlingshotDataSet(sce)
+sds
+```
+```{r echo=FALSE}
+par(xpd=TRUE)
+par(mar=c(4.5,5.5,2,7))
+plot(reducedDims(sce)$PCA, col = brewer.pal(9,'Set1')[sce$cell_type2], pch=16)
+lines(SlingshotDataSet(sce), lwd=2, col='black')
+legend(x=25, y=20, legend=unique(colData(sce)$cell_type2), fill=brewer.pal(11,'Set1')[as.integer(unique(colData(sce)$cell_type2))])
+```
+```{r echo=FALSE}
+# select the ptime values 
+ptime <- sce$slingPseudotime_2
+
+# get cells in that lineage
+lineage_cells <- colnames(sce)[!is.na(ptime)]
+
+# remove values for cells not in the lineage
+ptime <- ptime[!is.na(ptime)]
+
+# just test variable genes to save some time
+genes_to_test <- VariableFeatures(sobj)[1:1000]
+
+# get log normalized data to test
+cnts <- logcounts(sce)[genes_to_test, lineage_cells]
+```
+
+```{r echo=FALSE}
+# fit a GAM with a loess term for pseudotime
+gam.pval <- apply(cnts, 1, function(z){
+    d <- data.frame(z = z, ptime = ptime)
+    tmp <- suppressWarnings(gam(z ~ lo(ptime), data=d))
+    p <- summary(tmp)[4][[1]][1, 5]
+    p
+})
+
+
+
+# adjust pvalues 
+res <- tibble(
+  id = names(gam.pval),
+  pvals = gam.pval,
+  qval = p.adjust(gam.pval, method = "fdr")) %>% 
+  arrange(qval)
+
+head(res)
+```
+
+
+
+
+
+```{r echo=FALSE}
+library(slingshot)
+library(mgcv)
+data("slingshotExample")
+
+
+condition <- factor(rep(c('A','B'), length.out = nrow(rd)))
+condition[110:140] <- 'A'
+pto <- slingshot(rd, cl)
+
+condition
+
+# Permutation test
+t1 <- slingPseudotime(pto, na=FALSE)[,1]
+w1 <- slingCurveWeights(pto)[,1]
+d1 <- weighted.mean(t1[condition=='A'], w1[condition=='A']) - 
+    weighted.mean(t1[condition=='B'], w1[condition=='B'])
+dist1 <- replicate(1e4, {
+    condition.i <- sample(condition)
+    weighted.mean(t1[condition.i=='A'], w1[condition.i=='A']) - 
+        weighted.mean(t1[condition.i=='B'], w1[condition.i=='B'])
+})
+
+
+ks.test(slingPseudotime(pto)[condition=='A',1], slingPseudotime(pto)[condition=='B',1])
+ks.test(slingPseudotime(pto)[condition=='A',2], slingPseudotime(pto)[condition=='B',2])
+
+a1 <- slingPseudotime(pto)[condition=='A',1] %>% as.data.frame
+b1 <- slingPseudotime(pto)[condition=='B',1]
+
+
+
+
+pt <- slingPseudotime(pto, na=FALSE)
+cw <- slingCurveWeights(pto)
+assignment <- apply(cw, 1, which.max)
+ptAs <- c() #assigned pseudotime
+for(ii in 1:nrow(pt)) ptAs[ii] <- pt[ii,assignment[ii]]
+
+cond1 <- factor(condition[assignment == 1])
+t1 <- ptAs[assignment == 1]
+m1 <- glm(cond1 ~ t1, family = quasibinomial(link = "logit"))
+summary(m1)
+
+plot(pt)
+l1
+t1 <- pt[,1]
+t2 <- pt[,2]
+l1 <- as.numeric(assignment == 1)
+l2 <- as.numeric(assignment == 2)
+
+m <- gam(condition ~ s(t1, by=l1, id=1) + s(t2, by=l2, id=1),
+         family = quasibinomial(link = "logit"))
+summary(m)
+```
+
+

@@ -1,0 +1,85 @@
+---
+title: "Oligo_3rd_Analysis"
+author: "Skim"
+date: '2020 5 7 '
+output: html_document
+---
+
+```{r}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned_OL_1.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1))
+data9set_cleaned_OL_5.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(5))
+data9set_cleaned_OL_6.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(6))
+data9set_cleaned_OL.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1,5,6))
+
+
+data9set_cleaned_OL_1_5.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1,5))
+```
+
+```{r}
+FeaturePlot(data9set_cleaned.SO, features = c("Mbp","Mag","Mog","Mobp"))
+```
+
+```{r, fig.height=10, fig.width=12}
+VlnPlot(data9set_cleaned.SO, features = c("Mbp","Mag","Mog","Mobp"), group.by = "sample", ncol = 2, pt.size = 0)
+```
+
+```{r, fig.height=10, fig.width=12}
+VlnPlot(data9set_cleaned_OL.SO, features = c("Mbp","Mag","Mog","Mobp"), group.by = "sample", ncol = 2, pt.size = 0) + geom_boxplot()
+```
+
+
+```{r}
+OL_1_AD_Ctrl <- FindMarkers(data9set_cleaned_OL_1.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_1_AD_Ctrl$gene <- rownames(OL_1_AD_Ctrl)
+
+OL_1_AD_ADp40KO <- FindMarkers(data9set_cleaned_OL_1.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_1_AD_ADp40KO$gene <- rownames(OL_1_AD_ADp40KO)
+
+```
+
+```{r}
+OL_5_AD_Ctrl <- FindMarkers(data9set_cleaned_OL_5.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_5_AD_Ctrl$gene <- rownames(OL_5_AD_Ctrl)
+
+OL_5_AD_ADp40KO <- FindMarkers(data9set_cleaned_OL_5.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_5_AD_ADp40KO$gene <- rownames(OL_5_AD_ADp40KO)
+
+```
+
+```{r}
+OL_6_AD_Ctrl <- FindMarkers(data9set_cleaned_OL_6.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_6_AD_Ctrl$gene <- rownames(OL_6_AD_Ctrl)
+
+OL_6_AD_ADp40KO <- FindMarkers(data9set_cleaned_OL_6.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_6_AD_ADp40KO$gene <- rownames(OL_6_AD_ADp40KO)
+
+```
+
+```{r}
+OL_AD_Ctrl <- FindMarkers(data9set_cleaned_OL.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_AD_Ctrl$gene <- rownames(OL_AD_Ctrl)
+
+OL_AD_ADp40KO <- FindMarkers(data9set_cleaned_OL.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_AD_ADp40KO$gene <- rownames(OL_AD_ADp40KO)
+
+```
+
+```{r}
+OL_1_5_AD_Ctrl <- FindMarkers(data9set_cleaned_OL_1_5.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_1_5_AD_Ctrl$gene <- rownames(OL_1_5_AD_Ctrl)
+
+OL_1_5_AD_ADp40KO <- FindMarkers(data9set_cleaned_OL_1_5.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+OL_1_5_AD_ADp40KO$gene <- rownames(OL_1_5_AD_ADp40KO)
+
+```

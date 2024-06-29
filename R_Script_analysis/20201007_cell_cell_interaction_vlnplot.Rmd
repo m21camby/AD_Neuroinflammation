@@ -1,0 +1,287 @@
+---
+title: "Vlnplot cell-cell interaction"
+author: "Skim"
+date: '2020 10 7 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+
+# give levels to large cell type
+data9set_cleaned.SO$cell_type <- factor(data9set_cleaned.SO$cell_type, levels = c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum",  "Unidentified_Neurons", 
+                                                                                  "Inhibitory_Neurons", "MOL", "MFOL", "OPC", "NFOL", "Microglia","Astrocytes",
+                                                                                  "Vascular", "VLMC", "Choroid", "Fibroblast", "Cajal", "Pericyte", "Macrophage"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=10, fig.width=12}
+
+Vlnplot_gene_subset <- function(Cell_type = c("Inhibitory_Neurons"), gene = "Vegfa", ymax1 = 2.8, ymax2 = 2.9){
+   data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% Cell_type)
+
+  data9set_sub_ctrl.SO <- subset(data9set_sub.SO, subset = sample %in% c("Ctrl"))
+  data9set_sub_AD.SO <- subset(data9set_sub.SO, subset = sample %in% c("AD"))
+  data9set_sub_ADp40KO.SO <- subset(data9set_sub.SO, subset = sample %in% c("ADp40KO"))
+
+  IN_Ctrl_Vegfa <- data9set_sub_ctrl.SO@assays$RNA@data[rownames(data9set_sub_ctrl.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_Ctrl_Vegfa) <- "gene"
+  IN_Ctrl_Vegfa$celltype <- "Ctrl"
+
+  IN_AD_Vegfa <- data9set_sub_AD.SO@assays$RNA@data[rownames(data9set_sub_AD.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_AD_Vegfa) <- "gene"
+  IN_AD_Vegfa$celltype <- "AD"
+
+  IN_ADp40KO_Vegfa <- data9set_sub_ADp40KO.SO@assays$RNA@data[rownames(data9set_sub_ADp40KO.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_ADp40KO_Vegfa) <- "gene"
+  IN_ADp40KO_Vegfa$celltype <- "ADp40KO"
+  
+  IN_Vegfa <- rbind(IN_Ctrl_Vegfa, IN_AD_Vegfa, IN_ADp40KO_Vegfa)
+  
+  IN_Vegfa$celltype <- factor(IN_Vegfa$celltype, levels = c("Ctrl", "AD", "ADp40KO"))
+  
+  IN_Vegfa2 <- IN_Vegfa[IN_Vegfa$gene != 0, ]
+  IN_Ctrl_Vegfa2 <- IN_Vegfa2[IN_Vegfa2$celltype %in% "Ctrl", ]
+  IN_AD_Vegfa2 <- IN_Vegfa2[IN_Vegfa2$celltype %in% "AD", ]
+  IN_ADp40KO_Vegfa2 <- IN_Vegfa2[IN_Vegfa2$celltype %in% "ADp40KO", ]
+  
+  IN_Vegfa2$celltype <- factor(IN_Vegfa2$celltype, levels = c("Ctrl", "AD", "ADp40KO"))
+  
+  g1 <- ggplot(IN_Vegfa, aes(x=celltype, y=gene, color=celltype)) + 
+    geom_violin(trim=FALSE) + 
+    geom_jitter(position=position_jitter(0.2), size = 0.3, alpha = 0.3) +
+    geom_text(x=1, y=ymax1, label=paste0("avg: ", round(mean(IN_Ctrl_Vegfa$gene),3)), size = 3, color = "black") +
+    geom_text(x=2, y=ymax1, label=paste0("avg: ", round(mean(IN_AD_Vegfa$gene),3)), size = 3, color = "black") +
+    geom_text(x=3, y=ymax1, label=paste0("avg: ", round(mean(IN_ADp40KO_Vegfa$gene),3)), size = 3, color = "black") + theme(legend.position = "none") +
+    ggtitle(paste0(Cell_type, ": ", gene, " w/ zero counts"))
+
+  g2 <- ggplot(IN_Vegfa2, aes(x=celltype, y=gene, color=celltype)) + 
+    geom_violin(trim=FALSE) + 
+    geom_jitter(position=position_jitter(0.2), size = 0.3, alpha = 0.3)  +
+    geom_text(x=1, y=ymax2, label=paste0("avg: ", round(mean(IN_Ctrl_Vegfa2$gene),3)), size = 3, color = "black") +
+    geom_text(x=2, y=ymax2, label=paste0("avg: ", round(mean(IN_AD_Vegfa2$gene),3)), size = 3, color = "black") +
+    geom_text(x=3, y=ymax2, label=paste0("avg: ", round(mean(IN_ADp40KO_Vegfa2$gene),3)), size = 3, color = "black") + theme(legend.position = "none") + 
+    ggtitle(paste0(Cell_type, ": ", gene, " w/o zero counts"))
+    
+    
+  grid.arrange(g1, g2, ncol =2)
+  
+   
+}
+
+```
+
+### Inhibitory Vegfa
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+IN_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Inhibitory_Neurons_AD_ADp40KO.csv", row.names = 1)
+
+CA1_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_ADp40KO.csv", row.names = 1)
+
+AS_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1)
+
+subi_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1)
+
+MOL_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Inhibitory_Neurons"), gene = "Vegfa")
+```
+
+### OL Bdnf
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL", "MFOL"), gene = "Bdnf", ymax1 = 3.9, ymax2 = 3.9)
+```
+
+### OL Sort1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL", "MFOL"), gene = "Sort1", ymax1 = 4.5, ymax2 = 4.5)
+
+```
+
+### OL Ncam1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL", "MFOL"), gene = "Ncam1", ymax1 = 4.5, ymax2 = 4.5)
+
+```
+
+### OL Fgf1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL", "MFOL"), gene = "Fgf1", ymax1 = 4.2, ymax2 = 4.2)
+
+```
+
+### OL Fgfr2
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL", "MFOL"), gene = "Fgfr2", ymax1 = 5, ymax2 = 5)
+
+```
+
+### CA1 Fgf1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Fgf1", ymax1 = 3.2, ymax2 = 3.2)
+```
+
+### CA1 Fgfr2
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Fgfr2", ymax1 = 3.9, ymax2 = 3.9)
+```
+
+### OPC Erbb3
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("OPC"), gene = "Erbb3", ymax1 = 3, ymax2 = 2.9)
+```
+
+### subiculum Nrg1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Nrg1", ymax1 = 6, ymax2 = 6)
+```
+
+### subiculum Cadm1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Cadm1", ymax1 = 4.5, ymax2 = 4.5)
+```
+
+### CA2/3 Cadm1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Cadm1", ymax1 = 3.9, ymax2 = 3.9)
+```
+
+### Dentate Gyrus Nrg1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Nrg1", ymax1 = 5, ymax2 = 5)
+```
+
+### Dentate Gyrus Erbb4
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Erbb4", ymax1 = 4.5, ymax2 = 4.5)
+```
+
+### Dentate Gyrus Nrg2
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Nrg2", ymax1 = 4, ymax2 = 3.7)
+```
+
+### MOL Erbb4
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("MOL"), gene = "Erbb4", ymax1 = 4.5, ymax2 = 4.5)
+```
+
+### NFOL Epha4
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("NFOL"), gene = "Epha4", ymax1 = 3.8, ymax2 = 3.8)
+```
+
+### NFOL Fgfr1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("NFOL"), gene = "Fgfr1", ymax1 = 3.3, ymax2 = 3.3)
+```
+
+### subiculum Bdnf
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Bdnf", ymax1 = 2.9, ymax2 = 3.1)
+```
+
+### Astrocytes Ntrk2
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Astrocytes"), gene = "Ntrk2", ymax1 = 4.6, ymax2 = 4.6)
+```
+
+### subiculum Ntrk2
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Ntrk2", ymax1 = 4.5, ymax2 = 4.5)
+```
+
+### Astrocytes Bdnf
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("Astrocytes"), gene = "Bdnf", ymax1 = 3.2, ymax2 = 3.4)
+```
+
+### Subiculum Adgrl1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Adgrl1", ymax1 = 3.2, ymax2 = 3.4)
+```
+
+### CA2/3 Nrg1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Nrg1", ymax1 = 4.5, ymax2 = 4.5)
+```
+
+### CA2/3 Adgrl1
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Adgrl1", ymax1 = 3.2, ymax2 = 3.1)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=10}
+sessionInfo()
+```
+
+
+

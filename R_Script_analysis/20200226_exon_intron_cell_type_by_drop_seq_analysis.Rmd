@@ -1,0 +1,63 @@
+---
+title: "Intron_Exon_by_cell_type_analysis"
+author: "Skim"
+date: "2/26/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for checking intronic reads per cell type. I created exon and intron DGE matrix by drop-seq pipeline and sum all counts by each cell barcode. 
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+library(ggpubr)
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set_cleaned.meta_final <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200222_exon_intron_cell_type_by_drop_seq_meta_results_DF.csv", row.names = 1)
+
+```
+
+This plot is for intron percentage per cell type and compare by experiment. I used **one-way ANOVA** (**one-way ANOVA** is an extension of independent two-samples t-test for comparing means in a situation where there are more than two groups. **Two-way ANOVA** test is used to evaluate simultaneously the effect of two grouping variables (A and B) on a response variable). **Kruskal-Wallis test** gives more or less similar results.
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=12}
+plot.data <- data9set_cleaned.meta_final %>%
+    dplyr::select(cell_type, sample, exon_prop, intron_prop) 
+
+plot.data$sample <- factor(plot.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+plot.data$cell_type <- factor(plot.data$cell_type, levels = c("Dentate Gyrus", "CA2/CA3 Neuron", "CA1 Neurons", "Subiculum",
+                                                              "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Astrocytes",
+                                                              "Microglia", "Oligo", "OPC",
+                                                              "Vascular Endothelial", "VLMC", "Fibroblast", "Pericytes", "Choroid Plexus"))
+
+
+ggplot(plot.data, aes(x=cell_type, y=intron_prop, fill=sample)) +
+  geom_boxplot() + scale_fill_viridis_d() + theme_classic() +  theme(axis.text.x = element_text(angle = 90), axis.title.x = element_blank()) + ylim(0, 1) + stat_compare_means(aes(group = sample), label = "p.signif", method = "anova") + ylim(0.05, 0.9)
+
+
+#+ stat_compare_means(comparisons = list( c("Ctrl", "AD"), c("Ctrl", "ADp40KO"), c("AD", "ADp40KO") ), label = "p.signif") +
+#  stat_compare_means(label.y = 0.9, size = 0.1)
+#compare_means(intron_prop ~ sample, data = plot.data[plot.data$cell_type == "Astrocytes", ], paired = FALSE)
+#res.aov <- aov(intron_prop ~ sample, data = plot.data[plot.data$cell_type == "Astrocytes", ])
+#summary(res.aov)
+#TukeyHSD(res.aov)
+```
+
+The conclusion from the figure is that Neurons seem to have more intronic reads than glial cells. 
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=8}
+sessionInfo()
+```

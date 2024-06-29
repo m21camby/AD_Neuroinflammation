@@ -1,0 +1,2234 @@
+---
+title: "Untitled"
+author: "Skim"
+date: '2021 8 19 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+[conditional background ref](https://stackoverflow.com/questions/62647726/ggplot-conditional-background)
+
+[add confidence interval ref](https://www.roelpeters.be/add-confidence-interval-line-ggplot/)
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/data/rajewsky/home/skim/R/usr_lib_Seurat/", "/data/rajewsky/home/skim/R/usr_lib_v4/"))
+.libPaths()
+library(itsadug)
+library(mgcv)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+require(mgcv, quietly = TRUE)
+library(gridExtra)
+library(readxl)
+library(cowplot)
+```
+
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo", "OPC"))
+
+rm(data9set_cleaned.SO)
+
+data9set_sub.meta <- data9set_sub.SO@meta.data %>% as.data.frame
+
+data9set_sub.meta$cell_barcode <- rownames(data9set_sub.meta)
+
+data9set_sub.meta <- data9set_sub.meta %>% mutate(cell_type_precise = case_when(seurat_clusters %in% 6 ~ "MOL",
+                                                                                            seurat_clusters %in% c(1,5) ~ "MFOL",
+                                                                                            seurat_clusters %in% 12 ~ "OPC",
+                                                                                            seurat_clusters %in% 38 ~ "NFOL"))
+
+
+rownames(data9set_sub.meta) <- data9set_sub.meta$cell_barcode
+
+expression.df <- as.data.frame(data9set_sub.SO@assays$RNA@data)
+
+# z-score
+expression_z.df <- apply(expression.df, 1, function(x) (x - mean(x)) / sd(x)) %>% t %>% as.data.frame
+
+expression_z.df2 <- na.omit(expression_z.df)
+
+# normalize by max 1
+expression_max.df <- expression.df
+
+# calculate max for each gene
+expression_max.df$max <- apply(expression_max.df, 1, max)
+# divide by max for each gene
+expression_max.df <- sweep(expression_max.df, MARGIN = 1, expression_max.df$max, FUN = "/")
+# remove max value
+expression_max.df <- expression_max.df[, c(-19717)]
+
+expression_max.df2 <- na.omit(expression_max.df)
+
+# test <- expression_max.df[c(1:20),c(1:20,19717)]
+# test2 <- sweep(test[, -1], MARGIN = 1, test$max, FUN = "/")
+# test3 <- sweep(test[, -1], MARGIN = 2, test$max, FUN = "/")
+
+```
+
+```{r warning=FALSE, message=FALSE}
+traj <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_trajectory.rda")
+
+traj.df <- traj$time %>% as.data.frame
+colnames(traj.df) <- "pseudotime"
+
+traj.df <- cbind(traj.df, data9set_sub.meta)
+
+traj.df <- traj.df[, c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise")]
+```
+
+```{r warning=FALSE, message=FALSE}
+# 1. OL differentiation positive
+diff.positive <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/20200930_GO_term_GO_0048714.csv", row.names = 1)
+
+diff.positive <- diff.positive$Symbol %>% unique
+diff.positive <- diff.positive[diff.positive %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+# 2. OL differentiation negative
+diff.negative <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210819_092742.csv", row.names = 1)
+
+diff.negative <- diff.negative$Symbol %>% unique
+diff.negative <- diff.negative[diff.negative %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+
+# 3. myelination positive
+GO_myelination <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.csv", row.names = 1)
+
+myel_positive <- unique(as.character(GO_myelination[GO_myelination$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+# remove myelination genes not in the list
+myel_positive <- myel_positive[myel_positive %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+# 4. myelination negative
+myel_negative <- unique(as.character(GO_myelination[GO_myelination$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+# remove myelination genes not in the list
+myel_negative <- myel_negative[myel_negative %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+
+# 5. ERK negative
+GO_ERK_negative <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210803_101421_GO_0070373_sub.txt", sep = " ")
+# remove overlap genes 
+GO_ERK_negative_genes <- as.vector(as.character(unique(GO_ERK_negative$Gene.Marker)))
+# remove myelination genes not in the list
+GO_ERK_negative_genes <- GO_ERK_negative_genes[GO_ERK_negative_genes %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+# 6. ERK positive
+GO_ERK_positive <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_term_summary_20210803_101453_GO_0070374_sub.txt", sep = " ")
+# remove overlap genes 
+GO_ERK_positive_genes <- as.vector(as.character(unique(GO_ERK_positive$Gene.Marker)))
+# remove myelination genes not in the list
+GO_ERK_positive_genes <- GO_ERK_positive_genes[GO_ERK_positive_genes %in% data9set_sub.SO@assays$RNA@data@Dimnames[[1]]]
+
+
+```
+
+## 1. OL differentiation positive
+
+```{r warning=FALSE, message=FALSE}
+GO_genes_plot <- function(traj_gene.df = traj_gene.df, 
+                          traj.df = traj.df, 
+                          title = "ERK positive genes (highly expressed 47 genes) gam",
+                          ylimit = c(-0.25,1)){
+  
+  g1 <- ggplot(traj_gene.df, aes(x = pseudotime, y = gene, color = sample)) + 
+    geom_point(size = 0.1, alpha = 0.1) + 
+    stat_smooth(method = "gam", formula = y ~ s(x), size = 1, se = FALSE) + 
+    ggtitle(title) + ylim(c(-1, 2)) + theme_cowplot()
+
+  g2 <- ggplot(data = traj.df) + 
+    geom_segment(mapping=aes(x=pseudotime, y=-0.8, xend=pseudotime, yend=-.5, color = cell_type_precise),
+                 size=0.2, show.legend = FALSE) + 
+    theme_void()
+
+  g2_grob = ggplotGrob(g2)
+  g1 + annotation_custom(grob = g2_grob, xmin = -0.05, xmax = 1.05, 
+                       ymin = -0.25, ymax = 0) + coord_cartesian(ylim = ylimit)
+}
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+
+
+
+test <- diff.positive.df[colnames(diff.positive.df) %in% c("Nkx2-2","Nkx2-2os","Tlr2","Hdac1")]
+test$avg <- rowMeans(test)
+test.df <- cbind(traj.df, test)
+
+colnames(test.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise","Nkx2-2","Nkx2-2os","Tlr2","Hdac1", "gene")
+
+
+m <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10) + s(Tlr2, by=sample, k = 2) + s(Hdac1, by=sample, k =2),
+         data=test.df)
+summary(m)
+plot(m)
+
+```
+
+
+### 1-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% diff.positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive all 27 genes")
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive 12 genes(avg > 0.1)", ylimit = c(-0.25,1.5))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 10 genes", ylimit = c(-0.25,1.5))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 50 % genes", ylimit = c(-0.25,1.2))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+summary(m1_4)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m1_1)
+summary(m1_2)
+summary(m1_3)
+summary(m1_4)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 1-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% diff.positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive all 27 genes", ylimit = c(-0.25,0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive 3 genes(avg > 0.1)", ylimit = c(-0.25,1.25))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 1-3. max noralization
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% diff.positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive all 27 genes", ylimit = c(-0.25,0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive 3 genes(avg > 0.1)", ylimit = c(-0.25,1.25))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m1_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m1_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+## 2. OL differentiation negative
+
+### 2-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% diff.negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative all 16 genes", ylimit = c(-0.25, 0.8))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative 6 genes(avg > 0.1)", ylimit = c(-0.25,1))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 10 genes", ylimit = c(-0.25,1))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 50 % genes", ylimit = c(-0.25,1))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m2_1)
+summary(m2_2)
+summary(m2_3)
+summary(m2_4)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 2-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% diff.negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative all 16 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative 2 genes(avg > 0.1)", ylimit = c(-0.25,0.6))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 10 genes", ylimit = c(-0.25,0.6))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 50 % genes", ylimit = c(-0.25,0.6))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 2-3. max normalized
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% diff.negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative all 16 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative 2 genes(avg > 0.1)", ylimit = c(-0.25,0.6))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 10 genes", ylimit = c(-0.25,0.6))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m2_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL differentiation negative top 50 % genes", ylimit = c(-0.25,0.6))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m2_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+## 3. myelination positive
+
+### 3-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% myel_positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive all 23 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive 11 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m3_1)
+summary(m3_2)
+summary(m3_3)
+summary(m3_4)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 3-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% myel_positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive all 23 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive 11 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 3-3. max normalize
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% myel_positive, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive all 23 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive 11 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m3_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m3_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+## 4. myelination negative
+
+### 4-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% myel_negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative all 10 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative 3 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m4_1)
+summary(m4_2)
+summary(m4_3)
+summary(m4_4)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 4-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% myel_negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative all 10 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative 3 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 4-3. max normalize
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% myel_negative, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative all 10 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative 3 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m4_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL myelin negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m4_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+## 5. ERK positive
+
+### 5-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% GO_ERK_positive_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive all 222 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive 46 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m5_1)
+summary(m5_2)
+summary(m5_3)
+summary(m5_4)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 5-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% GO_ERK_positive_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive all 222 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive 46 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 5-3. max normalize
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% GO_ERK_positive_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive all 222 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive 46 genes(avg > 0.1)", ylimit = c(-0.25,0.8))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m5_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK positive top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m5_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+## 6. ERK negative
+
+### 6-1. original
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression.df) %in% GO_ERK_negative_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative all 79 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.1, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative 19 genes(avg > 0.1)", ylimit = c(-0.25,1))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+summary(m6_1)
+summary(m6_2)
+summary(m6_3)
+summary(m6_4)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+
+### 6-2. z-score
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_z.df2) %in% GO_ERK_negative_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative all 79 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative 19 genes(avg > 0.1)", ylimit = c(-0.25,1))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+### 6-3. max normalize
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+diff.positive.df <- expression.df[rownames(expression_max.df2) %in% GO_ERK_negative_genes, ] %>% t %>% as.data.frame
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_1 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g1 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative all 79 genes", ylimit = c(-0.25, 0.5))
+
+
+# average is higher than 0.1
+
+check <- colMeans(diff.positive.df) %>% as.data.frame
+high_genes <- rownames(check[check$. > 0.01, , drop = FALSE])
+
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_2 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g2 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative 19 genes(avg > 0.1)", ylimit = c(-0.25,1))
+
+
+# highly top 10 genes
+high_genes2 <- rownames(check[rev(order(check$.))[1:10], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes2]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_3 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+
+g3 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 10 genes", ylimit = c(-0.25,0.8))
+
+
+# highly top 50%
+high_genes3 <- rownames(check[rev(order(check$.))[1:round(nrow(check)/2)], , drop = FALSE])
+diff.positive.df2 <- diff.positive.df
+diff.positive.df2 <- diff.positive.df2[, colnames(diff.positive.df2) %in% high_genes3]
+
+diff.positive.df2$avg <- rowMeans(diff.positive.df2)
+diff.positive.df2 <- diff.positive.df2[,c("avg"),  drop = FALSE] %>% as.data.frame
+
+traj_gene.df <- cbind(traj.df, diff.positive.df2)
+colnames(traj_gene.df) <- c("pseudotime", "orig.ident", "sample", "cell_type", "cell_barcode", "cell_type_precise", "gene")
+m6_4 <- bam(gene ~ s(pseudotime, by=sample, bs="tp", k=10), data=traj_gene.df)
+
+g4 <- GO_genes_plot(traj_gene.df = traj_gene.df, traj.df = traj.df, title ="OL ERK negative top 50 % genes", ylimit = c(-0.25,0.8))
+
+
+grid.arrange(g1, g2, g3, g4, ncol = 2)
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width=15, fig.height=20}
+par(mfrow = c(4, 3))
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_1, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_2, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_3, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","AD")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), print.summary = FALSE)
+plot_diff(m6_4, view="pseudotime", comp=list(sample=c("Ctrl","ADp40KO")), print.summary = FALSE)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+get_difference <- function(model, comp, cond = NULL, rm.ranef = TRUE, se = TRUE, sim.ci = FALSE, f = 1.96, 
+    return.n.posterior = 0, print.summary = getOption("itsadug_print")) {
+    if (!"lm" %in% class(model)) {
+        stop("This function does not work for class %s models.", class(model)[1])
+    } else {
+        newd <- NULL
+        su <- model$var.summary
+        dat <- model$model
+        # check comp
+        if (is.null(names(comp))) {
+            stop("Predictor specified in 'comp' unknown. Please provide a named list for 'comp', in the form of 'comp=list(Predictor=c('level1', 'level2'))'.")
+        }
+        if (all(names(comp) %in% colnames(dat))) {
+            for (i in 1:length(comp)) {
+                if (length(comp[[i]]) < 2) {
+                  stop(sprintf("Provide two levels for %s to calculate difference.", names(comp)[i]))
+                } else if (length(comp[[i]]) > 2) {
+                  warning(sprintf("More than two levels provided for predictor %s. Only first two levels are being used.", 
+                    names(comp)[i]))
+                }
+            }
+        } else {
+            errname <- paste(which(!names(comp) %in% colnames(dat)), collapse = ", ")
+            stop(sprintf("Grouping predictor(s) not found in model: %s.", errname))
+        }
+        if (any(names(cond) %in% names(comp))) {
+            for (i in names(cond)[names(cond) %in% names(comp)]) {
+                cond[[i]] <- NULL
+                warning(sprintf("Predictor %s specified in comp and cond. (The value in cond will be ignored.)", 
+                  i))
+            }
+        }
+        new.cond1 <- list()
+        new.cond2 <- list()
+        for (i in names(su)) {
+            if (i %in% names(comp)) {
+                new.cond1[[i]] <- comp[[i]][1]
+                new.cond2[[i]] <- comp[[i]][2]
+            } else if (i %in% names(cond)) {
+                new.cond1[[i]] <- new.cond2[[i]] <- cond[[i]]
+            } else {
+                if (class(su[[i]]) == "factor") {
+                  new.cond1[[i]] <- as.character(su[[i]][1])
+                  new.cond2[[i]] <- as.character(su[[i]][1])
+                } else if (class(su[[i]]) == "numeric") {
+                  new.cond1[[i]] <- su[[i]][2]
+                  new.cond2[[i]] <- su[[i]][2]
+                }
+            }
+        }
+        newd1 <- expand.grid(new.cond1)
+        newd2 <- expand.grid(new.cond2)
+        p1 <- mgcv::predict.gam(model, newd1, type = "lpmatrix")
+        p2 <- mgcv::predict.gam(model, newd2, type = "lpmatrix")
+        newd <- as.data.frame(newd1, stringsAsFactors = TRUE)
+        newd.names <- colnames(newd)
+        for (nn in newd.names) {
+            if (nn %in% names(comp)) {
+                newd[, nn] <- NULL
+            }
+            
+        }
+        mysummary <- summary_data(newd, print = FALSE)
+        # Check for random effects:
+        if (class(rm.ranef) == "logical") {
+            if (rm.ranef[1] == FALSE) {
+                rm.ranef <- NULL
+            }
+        }
+        if (!is.null(rm.ranef)) {
+            # get random effects columns:
+            smoothlabels.table <- as.data.frame(do.call("rbind", lapply(model$smooth, function(x) {
+                data.frame(Label = x[["label"]], Dim = x[["null.space.dim"]], Class = attr(x, "class")[1], 
+                  stringsAsFactors = FALSE)
+            })), stringsAsFactors = FALSE)
+            # smoothlabels <- as.vector( smoothlabels.table[smoothlabels.table$Class %in%
+            # c('random.effect','fs.interaction'), 'Label'] )
+            smoothlabels <- as.vector(smoothlabels.table[smoothlabels.table$Dim == 0, "Label"])
+            if (class(rm.ranef) == "logical") {
+                if (rm.ranef[1] == TRUE) {
+                  rm.ranef <- smoothlabels
+                } else {
+                  rm.ranef <- ""
+                }
+            } else if (inherits(rm.ranef, c("numeric", "integer"))) {
+                smoothlabels.table <- smoothlabels.table[rm.ranef, ]
+                smoothlabels <- as.vector(smoothlabels.table[smoothlabels.table$Class %in% c("random.effect", 
+                  "fs.interaction"), "Label"])
+            }
+            rm.col <- unlist(lapply(rm.ranef, function(x) {
+                colnames(p1)[grepl(x, colnames(p1), fixed = TRUE)]
+            }))
+            rm.col <- unlist(lapply(smoothlabels, function(x) {
+                rm.col[grepl(x, rm.col, fixed = TRUE)]
+            }))
+            # cancel random effects
+            p1[, rm.col] <- 0
+            p2[, rm.col] <- 0
+            # find terms that only occur in random effects:
+            predictors <- do.call("rbind", lapply(model$smooth, function(x) {
+                data.frame(Label = x[["label"]], Terms = x[["term"]], stringsAsFactors = TRUE)
+            }))
+            test <- table(predictors$Terms) - table(predictors[predictors$Label %in% rm.ranef, ]$Terms)
+            for (pred in names(test[test == 0])) {
+                if (pred %in% names(mysummary)) {
+                  mysummary[[pred]] <- paste(mysummary[[pred]], "(Might be canceled as random effect, check below.)")
+                }
+            }
+            if (length(rm.col) > 0) {
+                mysummary[["NOTE"]] = sprintf("The following random effects columns are canceled: %s\n", paste(smoothlabels, 
+                  collapse = ","))
+            } else {
+                mysummary[["NOTE"]] = "No random effects in the model to cancel.\n"
+                # warning('No random effects to cancel.\n')
+            }
+        }
+        # calculate the difference:
+        p <- p1 - p2
+        newd$difference <- as.vector(p %*% coef(model))
+        if (se) {
+            newd$CI <- f * sqrt(rowSums((p %*% vcov(model)) * p))
+        }
+        # simultaneous CI See http://www.fromthebottomoftheheap.net/2016/12/15/simultaneous-interval-revisited/
+        stackFits <- NULL
+        if (sim.ci == TRUE) {
+            Vb <- vcov(model, freq = FALSE, unconditional = TRUE)
+            se.fit <- sqrt(rowSums((p %*% Vb) * p))
+            sim <- mgcv::rmvn(10000, mu = rep(0, nrow(Vb)), V = Vb)
+            # Cg <- predict(model, newd, type='lpmatrix') Cg replaced by p
+            simDev <- p %*% t(sim)
+            # Evaluate the basis function at g and compute the deviations between the fitted and true parameters. Then
+            # we find the absolute values of the standardized deviations from the true model:
+            absDev <- abs(sweep(simDev, 1, se.fit, FUN = "/"))
+            # maximum of the absolute standardized deviations:
+            masd <- apply(absDev, 2L, max)
+            # set simultaneous X% CI on the basis of original se multiplication specified by f:
+            crit <- quantile(masd, prob = 1 - round(2 * (1 - pnorm(f)), 2), type = 8)
+            newd$sim.CI <- crit * se.fit
+            
+            if ((return.n.posterior > 0) | (print.summary == TRUE)) {
+                # coverage pointwise and simultaneous CIs:
+                sims <- rmvn(max(10000, return.n.posterior), mu = coef(model), V = Vb)
+                fits <- p %*% t(sims)
+                inCI <- function(x, upr, lwr) {
+                  all(x >= lwr & x <= upr)
+                }
+                fitsInPCI <- apply(fits, 2L, inCI, upr = newd$fit + newd$CI, lwr = newd$fit - newd$CI)
+                fitsInSCI <- apply(fits, 2L, inCI, upr = newd$fit + newd$sim.CI, lwr = newd$fit - newd$sim.CI)
+                mysummary[[paste("Simultaneous ", 100 * (1 - round(2 * (1 - pnorm(f)), 2)), "%-CI used", sep = "")]] = sprintf("\n\t\t%s\n\t\t%s\n\t\t%s\n", 
+                  paste("Critical value: ", round(crit, 3), sep = ""), paste("Proportion posterior simulations in pointwise CI: ", 
+                    round(sum(fitsInPCI)/length(fitsInPCI), 2), " (10000 samples)", sep = ""), paste("Proportion posterior simulations in simultaneous CI: ", 
+                    round(sum(fitsInSCI)/length(fitsInSCI), 2), " (10000 samples)", sep = ""))
+                
+                if (return.n.posterior > 0) {
+                  rnd <- sample(max(10000, return.n.posterior), return.n.posterior)
+                  fits <- stack(as.data.frame(fits[, rnd], stringsAsFactors = FALSE))[, 1]
+                  stackFits <- newd[rep(1:nrow(newd), length(rnd)), colnames(newd)[!colnames(newd) %in% c("fit", 
+                    "CI", "sim.CI", "rm.ranef")]]
+                  row.names(stackFits) <- NULL
+                  stackFits$posterior.fit <- fits
+                  stackFits$draw <- rep(rnd, each = nrow(newd))
+                }
+            }
+        }
+        # print summary of chosen values
+        if (print.summary == TRUE) {
+            print_summary(mysummary)
+        }
+        
+        if (return.n.posterior > 0) {
+            return(list(newd = newd, posterior.fit = stackFits))
+        } else {
+            return(newd)
+        }
+    }
+}
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+plot_diff <- function(model, view, comp, cond = NULL, se = 1.96, sim.ci = FALSE, n.grid = 100, add = FALSE, 
+    rm.ranef = TRUE, mark.diff = TRUE, col.diff = "red", col = "black", eegAxis = FALSE, transform.view = NULL, 
+    print.summary = getOption("itsadug_print"), plot = TRUE, main = NULL, ylab = NULL, xlab = NULL, xlim = NULL, 
+    ylim = NULL, hide.label = FALSE, ...) {
+    # For simultaneous CI, n.grid needs to be at least 200, otherwise the simulations for the simultaneous CI
+    # is not adequate
+    if (sim.ci == TRUE) {
+        n.grid = max(n.grid, 200)
+    }
+    # global variables
+    dat = model$model
+    xvar <- NULL
+    by_predictor <- NULL
+    # check view
+    if (length(view) > 1) {
+        warning("Only first element of 'view' is being used. Use plot_diff2 for plotting difference surfaces.")
+    } else {
+        xvar <- view[1]
+        if (xvar %in% names(cond)) {
+            warning(sprintf("Predictor %s specified in view and cond. Values in cond being used, rather than the whole range of %s.", 
+                xvar, xvar))
+        } else {
+            cond[[xvar]] <- seq(min(na.exclude(dat[, xvar])), max(na.exclude(dat[, xvar])), length = n.grid)
+        }
+    }
+    if (!is.null(xlim)) {
+        if (length(xlim) != 2) {
+            warning("Invalid xlim values specified. Argument xlim is being ignored.")
+        } else {
+            cond[[xvar]] <- seq(xlim[1], xlim[2], length = n.grid)
+        }
+    }
+    # generate predictions:
+    newd <- c()
+    newd <- get_difference(model, comp = comp, cond = cond, se = ifelse(se > 0, TRUE, FALSE), f = ifelse(se > 
+        0, se, 1.96), sim.ci = sim.ci, print.summary = print.summary, rm.ranef = rm.ranef)
+    # for certainty:
+    newd <- as.data.frame(unclass(newd), stringsAsFactors = TRUE)
+    # transform values x-axis:
+    errormessage <- function() {
+        return("Error: the function specified in transformation.view cannot be applied to x-values, because infinite or missing values are not allowed.")
+        
+    }
+    if (!is.null(transform.view)) {
+        tryCatch(newd[, xvar] <- sapply(newd[, xvar], transform.view), error = function(x) {
+        }, warning = function(x) {
+        })
+        
+        if (any(is.infinite(newd[, xvar])) | any(is.nan(newd[, xvar])) | any(is.na(newd[, xvar]))) {
+            stop(errormessage())
+        }
+        
+        if (print.summary) {
+            cat("\t* Note: x-values are transformed.\n")
+        }
+    }
+    # output data:
+    out <- data.frame(est = newd$difference, x = newd[, xvar], stringsAsFactors = TRUE)
+    names(out)[2] <- xvar
+    if (se > 0) {
+        out$CI <- newd$CI
+        out$f <- se
+        if (sim.ci == TRUE) {
+            out$sim.CI <- newd$sim.CI
+        }
+    }
+    out$comp = list2str(names(comp), comp)
+    # graphical parameters:
+    if (is.null(main)) {
+        levels1 <- paste(sapply(comp, function(x) x[1]), collapse = ".")
+        levels2 <- paste(sapply(comp, function(x) x[2]), collapse = ".")
+        main = sprintf("Difference %s - %s", levels1, levels2)
+    }
+    if (is.null(ylab)) {
+        ylab = sprintf("Est. difference in %s", as.character(model$formula[[2]]))
+    }
+    if (is.null(xlab)) {
+        xlab = xvar
+    }
+    if (is.null(ylim)) {
+        ylim <- range(newd$difference)
+        if (se > 0) {
+            ylim <- with(newd, range(c(difference + CI, difference - CI)))
+        }
+    }
+    if (is.null(xlim)) {
+        xlim <- range(newd[, xvar])
+    }
+    par = list(...)
+    # check for 'f'
+    if ("f" %in% names(par)) {
+        warning("Parameter f is deprecated. Change the value of se instead.")
+    }
+    if (!"h0" %in% names(par)) {
+        par[["h0"]] <- 0
+    }
+    if (!"shade" %in% names(par)) {
+        par[["shade"]] <- TRUE
+    }
+    area.par <- c("shade", "type", "pch", "lty", "bg", "cex", "lwd", "lend", "ljoin", "lmitre", "ci.lty", 
+        "ci.lwd", "border", "alpha", "density", "angle")
+    line.par <- c("type", "pch", "lty", "bg", "cex", "lwd", "lend", "ljoin", "lmitre")
+    area.args <- list2str(area.par, par)
+    line.args <- list2str(line.par, par)
+    plot.args <- list2str(x = names(par)[!names(par) %in% c(line.par, area.par)], par)
+    # plot:
+    if (plot == TRUE) {
+        if (add == FALSE) {
+            eval(parse(text = sprintf("emptyPlot(xlim, ylim, 
+\t\t\t\tmain=main, xlab=xlab, ylab=ylab, 
+\t\t\t\teegAxis=eegAxis, %s)", 
+                plot.args)))
+            if (hide.label == FALSE) {
+                addlabel = "difference"
+                if (!is.null(rm.ranef)) {
+                  if (rm.ranef != FALSE) {
+                    addlabel = paste(addlabel, "excl. random", sep = ", ")
+                  }
+                }
+                if (sim.ci == TRUE) {
+                  addlabel = paste(addlabel, "simult.CI", sep = ", ")
+                }
+                mtext(addlabel, side = 4, line = 0, adj = 0, cex = 0.75, col = "gray35", xpd = TRUE)
+            }
+        }
+        if (se > 0) {
+            if (sim.ci == TRUE) {
+                eval(parse(text = sprintf("plot_error(newd[,xvar], newd$difference, newd$sim.CI, col=col, %s)", 
+                  area.args)))
+            } else {
+                eval(parse(text = sprintf("plot_error(newd[,xvar], newd$difference, newd$CI, col=col, %s)", 
+                  area.args)))
+            }
+        } else {
+            if (line.args == "") {
+                lines(newd[, xvar], newd$difference, col = col)
+            } else {
+                eval(parse(text = sprintf("lines(newd[,xvar], newd$difference, col=col, %s)", line.args)))
+            }
+        }
+        diff <- find_difference(newd$difference, newd$CI, newd[, xvar])
+        if (sim.ci == TRUE) {
+            diff <- find_difference(newd$difference, newd$sim.CI, newd[, xvar])
+        }
+        if (mark.diff == TRUE) {
+            
+            if (length(diff$start) > 0) {
+                addInterval(pos = getFigCoords("p")[3], lowVals = diff$start, highVals = diff$end, col = col.diff, 
+                  lwd = 2 * par()$lwd, length = 0, xpd = TRUE)
+                abline(v = c(diff$start, diff$end), lty = 3, col = col.diff)
+            }
+        }
+        if (print.summary) {
+            if (length(diff$start) > 0) {
+                tmp <- c(sprintf("%s window(s) of significant difference(s):", xvar), sprintf("\t%f - %f", 
+                  diff$start, diff$end))
+            } else {
+                tmp <- "Difference is not significant."
+            }
+            cat("\n")
+            cat(paste(tmp, collapse = "\n"))
+            cat("\n")
+        }
+        invisible(out)
+    } else {
+        return(out)
+    }
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=10}
+# newd <- c()
+# newd <- get_difference(m3, comp = list(sample=c("AD","ADp40KO")), cond = NULL, se = TRUE, f = 1.96, sim.ci = TRUE, print.summary = getOption("itsadug_print"), rm.ranef = TRUE)
+#     
+# newd <- as.data.frame(unclass(newd), stringsAsFactors = TRUE)   
+# 
+# 
+# se = 1.96
+# 
+# newd <- get_difference(m3, comp = list(sample=c("AD","ADp40KO")), cond = NULL, se = ifelse(se > 0, TRUE, FALSE), f = ifelse(se > 
+#         0, se, 1.96), sim.ci = FALSE, print.summary = getOption("itsadug_print"), rm.ranef = TRUE)
+# 
+# 
+# #plot_diff(m3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), plot = TRUE, n.grid = 200)
+# 
+# data <- plot_diff(m3, view="pseudotime", comp=list(sample=c("AD","ADp40KO")), plot = FALSE, n.grid = 200)
+# data$lower_CI <- data$est - data$CI
+# data$upper_CI <- data$est + data$CI
+# 
+# data$diff <- ifelse(data$lower_CI < 0  & data$upper_CI < 0, "diff", 
+#                     ifelse(data$lower_CI > 0  & data$upper_CI > 0, "diff", "no_diff"))
+# 
+# data1 <- plot_diff(m3, view="pseudotime", comp=list(sample=c("AD","Ctrl")), plot = FALSE, n.grid = 200)
+# data1$lower_CI <- data1$est - data1$CI
+# data1$upper_CI <- data1$est + data1$CI
+# data1$diff <- ifelse(data1$lower_CI < 0  & data1$upper_CI < 0, "diff", 
+#                     ifelse(data1$lower_CI > 0  & data1$upper_CI > 0, "diff", "no_diff"))
+# 
+# 
+# ggplot(data, aes(x = pseudotime, y = est))  +
+#   geom_tile(aes(x=pseudotime, y =0, height = 0.04, fill=diff), alpha = 0.1) + geom_line() + 
+#   geom_ribbon(aes(ymin = lower_CI, ymax = upper_CI), alpha = 0.1) +
+#   scale_fill_manual(values=c("red", "white")) + geom_hline(yintercept=0, linetype="dashed", color = "red") +
+#   theme_cowplot() 
+# 
+# ggplot(data1, aes(x = pseudotime, y = est))  +
+#   geom_tile(aes(x=pseudotime, y =0, height = 0.04, fill=diff), alpha = 0.07) + geom_line() + 
+#   geom_ribbon(aes(ymin = lower_CI, ymax = upper_CI), alpha = 0.2) +
+#   scale_fill_manual(values=c("red", "white")) + geom_hline(yintercept=0, linetype="dashed", color = "red") +
+#   theme_cowplot() 
+
+
+```
+

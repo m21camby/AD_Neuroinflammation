@@ -1,0 +1,112 @@
+---
+title: "10X_antisense_dropseq_pipeline"
+author: "Skim"
+date: "1/17/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for analyzing reads assigned antisense when mapping to premrna. I re-run antisense reads to 10x cellragner with normal gtf and Drop-seq. In drop-seq I, created two DGEm which is exon DGEm and intron+exon DGEm. In here, I extracted 12560 C.B. same as cellranger 10X results. exon DGEm identify 3546 genes while intron+exon DGEm identify 8513 genes. Overall, I compared 3 samples with antisense reads, 1) 10X cellranger normal GTF, 2) drop-seq exon DGEm 3) drop-seq intron+exon DGEm
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(DT)
+exon.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_Drop_seq_pipe/out_gene_exon_tagged.dge_exon_antisense_SP064_028_TXZ.txt.gz", header = TRUE, row.names = 1)
+intron_exon.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_Drop_seq_pipe/out_gene_exon_tagged.dge_intron_exonantisense_SP064_028_TXZ.txt.gz", header = TRUE, row.names = 1)
+cellranger10X <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_TXZ/outs/filtered_feature_bc_matrix/")
+cellranger10X.SO <- CreateSeuratObject(counts =  cellranger10X,  min.cells = 0, min.features = 0, project = "ADp40KO")
+```
+
+### 1. overall BAM file QC metrics
+
+I modified 10X metrics to drop-seq metrics
+
+```{r warning=FALSE, message=FALSE}
+
+QC_Metric_dropseq <-  c(58723139, 94.3, 12.3, 87.3, 0)
+
+QC_Metric_10X <- c(59454376, 97.4, 12.8, 87.2, 0)
+
+Q <- t(data.frame(QC_Metric_10X, QC_Metric_dropseq))
+colnames(Q) <- c("total reads", "uniquely mapped reads to genome","exon", "intronic", "intergenic") 
+knitr::kable(Q, format="html", align = "c", booktabs = T) %>% kableExtra::kable_styling(bootstrap_options = c("striped", "hover")) 
+```
+
+
+### 2. top 10 exon drop-seq DGEm genes
+
+```{r warning=FALSE, message=FALSE}
+head(rev(sort(rowSums(exon.df))), 10)
+```
+
+### 3. top 10 intron+exon drop-seq DGEm genes
+
+```{r warning=FALSE, message=FALSE}
+head(rev(sort(rowSums(intron_exon.df))), 10)
+```
+
+### 4. top 10 exon DGEm from 10X genes
+
+```{r warning=FALSE, message=FALSE}
+head(rev(sort(rowSums(as.matrix(cellranger10X.SO@assays$RNA@data)))), 10)
+```
+
+### 5. exon drop-seq DGEm summary
+
+```{r warning=FALSE, message=FALSE}
+exon.df.SO <- CreateSeuratObject(counts = exon.df, project = "ss001", min.cells = 0, min.features = 0) 
+intron_exon.df.SO <- CreateSeuratObject(counts = intron_exon.df, project = "ss002", min.cells = 0, min.features = 0)
+
+summary(exon.df.SO$nCount_RNA)
+FeatureScatter(exon.df.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+### 6. intron+exon drop-seq DGEm summary
+
+```{r warning=FALSE, message=FALSE}
+summary(intron_exon.df.SO$nCount_RNA)
+FeatureScatter(intron_exon.df.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+### 7. exon DGEm from 10X summary
+
+```{r warning=FALSE, message=FALSE}
+summary(cellranger10X.SO$nCount_RNA)
+FeatureScatter(cellranger10X.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+### 8. 10 samples reads analysis
+
+I just randomly extract 10 reads from both BAM file and compare between them. 
+10X_chr: chromosome from 10X BAM file  
+10X_mapping_region: mapping regions from 10X BAM file (RE:A:N is Intron, RE:A:I is intergenic)  
+dropseq_chr: chromosome from dropseq BAM file  
+dropseq_mapping_region: mapping regions from dropseq BAM file (gf:Z:INTRONIC is intergenic)
+
+```{r warning=FALSE, message=FALSE}
+BAM_10_D <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_Drop_seq_pipe/BAM_files_10_samples_drop_seq_pipe.txt", sep = "\t", header = FALSE)
+BAM_10_10x <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_TXZ/outs/BAM_files_10_samples_10xcellragner_normal_gtf.txt", sep = "\t", header = FALSE)
+
+BAM_10_10x <- BAM_10_10x[, c(1,3,16)]
+colnames(BAM_10_10x) <- c("Read_ID", "10X_chr", "10X_mapping_region")
+BAM_10_D <- BAM_10_D[, c(1,3,22)]
+colnames(BAM_10_D) <- c("Read_ID", "dropseq_chr", "dropseq_mapping_region")
+
+BAM_all <- inner_join(BAM_10_10x, BAM_10_D, by = "Read_ID")
+datatable(BAM_all)
+```
+
+### 9. UCSC genome browser Eif1
+
+<p float="middle">
+  <img src="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/20200130_UCSC_Browser_Eif1_gene.png"/ width="1000">
+</p>
+

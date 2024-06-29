@@ -1,0 +1,83 @@
+---
+title: "Il12b homo&dimer"
+author: "Skim"
+date: '2020 10 28 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+MG_AD_WT <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv")
+MG_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv")
+
+
+MG_AD_WT_GO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/Microglia_AD_Ctrl.csv_GO.csv")
+
+MG_AD_WT_GO_UP[MG_AD_WT_GO_UP$Term == "positive regulation of ERK1 and ERK2 cas...", ]$genes 
+
+
+MG_AD_WT_GO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/2019pd12_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/Microglia_AD_Ctrl.csv_GO.csv")
+
+MG_AD_WT_GO_DOWN[MG_AD_WT_GO_DOWN$Term == "positive regulation of MAPK cascade", ]$genes 
+
+
+
+MG_AD_ADp40KO_GO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/Microglia_AD_ADp40KO.csv_GO.csv")
+MG_AD_ADp40KO_GO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/Microglia_AD_ADp40KO.csv_GO.csv")
+
+
+
+MG_ADp40KO_WT_GO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/Microglia_ADp40KO_Ctrl.csv_GO.csv")
+MG_ADp40KO_WT_GO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/Microglia_ADp40KO_Ctrl.csv_GO.csv")
+
+
+MG_ADp40KO_WT_GO_DOWN[MG_ADp40KO_WT_GO_DOWN$Term == "positive regulation of MAPK cascade", ]$genes  
+
+```
+
+
+```{r cars}
+MFOL_AD_WT <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_Ctrl.csv")
+
+
+MFOL_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv")
+
+MFOL_ADp40KO_WT <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_ADp40KO_Ctrl.csv")
+
+
+
+MFOL_AD_ADp40KO_GO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/MFOL_AD_ADp40KO.csv_GO.csv")
+
+
+MFOL_AD_ADp40KO_GO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/MFOL_AD_ADp40KO.csv_GO.csv")
+
+```
+
+```{r cars}
+
+
+
+NFOL_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/NFOL_AD_ADp40KO.csv")
+
+NFOL_ADp40KO_WT <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/NFOL_ADp40KO_Ctrl.csv")
+
+
+
+NFOL_AD_ADp40KO_GO_UP <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/NFOL_AD_ADp40KO.csv_GO.csv")
+
+
+NFOL_AD_ADp40KO_GO_DOWN <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/NFOL_AD_ADp40KO.csv_GO.csv")
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE, check.names = FALSE)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,143 @@
+---
+title: "Ttr 2nd analysis"
+author: "Skim"
+date: '2020 4 29 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for Ttr heatmap in below cell types (Choroid Plexus, Neurons, Microglia, Oligodendrocytes). However, while creating heatmap, I found other cell types except Choroid Plexus, expression of Ttr depends on exist of Choroid Plexus in their data set.  
+
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(ggrepel)
+library(tidyr)
+library(dplyr)
+```
+
+```{r warning=FALSE, message=FALSE}
+
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+```
+
+```{r warning=FALSE, message=FALSE}
+data9set_CP.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(26))
+data9set_OL.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6))
+data9set_MG.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(3, 8))
+```
+
+#### 1. Number of Choroid Plexus in each sample
+
+```{r warning=FALSE, message=FALSE}
+cp.df <- table(data9set_CP.SO$gemgroup) %>% as.data.frame
+colnames(cp.df) <- c("sample", "Freq")
+ggplot(cp.df, aes(x = sample, y = Freq)) + geom_bar(stat="identity") + ggtitle("Number of Choroid Plexus cells in each sample")
+```
+
+#### 2. Ttr expression in Choroid Plexus
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_CP.SO, features = "Ttr", group.by = "gemgroup") + ggtitle("Ttr in Choroid Plexus")
+```
+
+#### 2. Ttr expression in Oligodendrocytes
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_OL.SO, features = "Ttr", group.by = "gemgroup") + ggtitle("Ttr in Oligo")
+```
+
+#### 3. Ttr expression in Microglia
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_MG.SO, features = "Ttr", group.by = "gemgroup") + ggtitle("Ttr in Microglia")
+```
+
+#### 4. Ttr expression in total sample
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_cleaned.SO, features = "Ttr", group.by = "gemgroup", pt.size = 0)
+```
+
+#### 5. heatmap of Ttr in Choroid Plexus
+
+```{r warning=FALSE, message=FALSE}
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OL_1.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "1")
+data9set_cleaned_OL_2.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "2")
+data9set_cleaned_OL_3.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "3")
+data9set_cleaned_OL_4.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "4")
+data9set_cleaned_OL_5.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "5")
+data9set_cleaned_OL_6.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "6")
+data9set_cleaned_OL_7.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "7")
+data9set_cleaned_OL_8.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "8")
+data9set_cleaned_OL_9.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "9")
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  #df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+OL1.df <- z_score_from_gene_list(data9set_cleaned_OL_1.SO, "Ttr") %>% as.data.frame
+colnames(OL1.df) <- c("Ctrl_1")
+rownames(OL1.df) <- c("Ttr")
+OL2.df <- z_score_from_gene_list(data9set_cleaned_OL_2.SO, "Ttr") %>% as.data.frame
+colnames(OL2.df) <- c("ADp40KO_1")
+rownames(OL2.df) <- c("Ttr")
+OL3.df <- z_score_from_gene_list(data9set_cleaned_OL_3.SO, "Ttr") %>% as.data.frame
+colnames(OL3.df) <- c("AD_1")
+rownames(OL3.df) <- c("Ttr")
+OL4.df <- z_score_from_gene_list(data9set_cleaned_OL_4.SO, "Ttr") %>% as.data.frame
+colnames(OL4.df) <- c("Ctrl_2")
+rownames(OL4.df) <- c("Ttr")
+OL5.df <- z_score_from_gene_list(data9set_cleaned_OL_5.SO, "Ttr") %>% as.data.frame
+colnames(OL5.df) <- c("ADp40KO_2")
+rownames(OL5.df) <- c("Ttr")
+OL6.df <- z_score_from_gene_list(data9set_cleaned_OL_6.SO, "Ttr") %>% as.data.frame
+colnames(OL6.df) <- c("AD_2")
+rownames(OL6.df) <- c("Ttr")
+OL7.df <- z_score_from_gene_list(data9set_cleaned_OL_7.SO, "Ttr") %>% as.data.frame
+colnames(OL7.df) <- c("Ctrl_3")
+rownames(OL7.df) <- c("Ttr")
+OL8.df <- z_score_from_gene_list(data9set_cleaned_OL_8.SO, "Ttr") %>% as.data.frame
+colnames(OL8.df) <- c("ADp40KO_3")
+rownames(OL8.df) <- c("Ttr")
+OL9.df <- z_score_from_gene_list(data9set_cleaned_OL_9.SO, "Ttr") %>% as.data.frame
+colnames(OL9.df) <- c("AD_3")
+rownames(OL9.df) <- c("Ttr")
+
+# merge all data frame
+OL.df <- cbind(OL1.df, OL2.df, OL3.df, OL4.df, OL5.df, OL6.df, OL7.df, OL8.df, OL9.df)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=8, fig.height=2.5}
+OL.df2 <- OL.df %>% gather(sample, z_score, Ctrl_1:AD_3)
+
+OL.df2$sample <- factor(OL.df2$sample, levels = c("Ctrl_1", "Ctrl_2", "Ctrl_3", "AD_1", "AD_2", "AD_3", "ADp40KO_1", "ADp40KO_2", "ADp40KO_3"))
+
+ggplot(data = OL.df2, mapping = aes(x = sample, y = "Ttr", fill = z_score)) +
+  geom_tile() +  theme_classic() + theme(axis.title = element_blank(), axis.text.x = element_text(angle = 90))
+
+```

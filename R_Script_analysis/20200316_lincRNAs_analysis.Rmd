@@ -1,0 +1,600 @@
+---
+title: "lincRNAs analysis"
+author: "Skim"
+date: '2020 3 16 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for checking Cdr1as and lncRNAs in our data.
+
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(corrplot)
+library("Hmisc")
+library(lattice)
+library(ggcorrplot)
+library(topGO)
+library(org.Mm.eg.db)
+library(clusterProfiler)
+library(gplots)
+library(RColorBrewer)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/Remove_duplicated_genes.R")
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Neuronal_Activity_Cledi/201911_m7_overexpression/R_Scripts/20191120_DE_Analysis.Rmd')"
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+#########################
+# separate by experiment
+#########################
+data9set_cleaned_Ctrl.SO <- subset(data9set_cleaned.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_AD.SO <- subset(data9set_cleaned.SO, subset = sample %in% "AD")
+data9set_cleaned_ADp40KO.SO <- subset(data9set_cleaned.SO, subset = sample %in% "ADp40KO")
+
+##################
+# extract biotype
+##################
+# seurat_mouse_genes <- getBM(attributes = c("mgi_symbol", "gene_biotype"),
+#                    filters = 'mgi_symbol',
+#                    values = data9set.SO@assays$RNA@data@Dimnames[[1]],
+#                    mart = mart)
+seurat_mouse_genes <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200312_Bulk_Correlation_mouse_genes_bio_type_biomaRt.txt")
+
+# extract only linRNAs
+seurat_mouse_genes_linc <- seurat_mouse_genes[seurat_mouse_genes$gene_biotype == "lncRNA", ]
+
+seurat_mouse_genes_stat.df <- as.data.frame(table(seurat_mouse_genes$gene_biotype))
+```
+
+### 1. biotype of DroNc-seq data
+
+[biotype](https://github.com/czbiohub/reflow-workflows/issues/20)
+
+[biotype 2nd](https://www.gencodegenes.org/pages/biotypes.html)
+
+[biotype 3rd](https://www.gencodegenes.org/pages/data_format.html)
+
+31790 genes were detected in DroNc-seq data and 31581 genes have information of their biotype. Out of 31581 genes, **7417** genes are **lncRNAs (23.5%)**. Protein coding genes are 18426 (58.3%). In here, lncRNA includes **3prime_overlapping_ncRNA, antisense, bidirectional_promoter_lncRNA, lincRNA, macro_lncRNA, non_coding, processed_transcript, sense_intronic and sense_overlapping**.
+
+1) unprocessed_pseudogene: Pseudogene that can contain introns since produced by gene duplication.  
+2) unitary_pseudogene: A species-specific unprocessed pseudogene without a parent gene, as it has an active orthologue in another species  
+3) transcribed pseudogenes: Pseudogene where protein homology or genomic structure indicates a pseudogene, but the presence of locus-specific transcripts indicates expression.  
+4) TR_ genes: T-cell receptor (TcR) genes / pseudogenes are inactivated gene  
+5) TEC: non-spliced EST clusters that have polyA features. The presence of protein coding genes that require experimental validation  
+6) snRNA, snoRNA, scaRNA, rRNA, ribozyme, Mt_rRNA, Mt_tRNA, misc_RNA, miRNA: Non-coding RNA
+7) pseudogene: homology to proteins but generally suffer from a disrupted coding sequence and an active homologous gene can be found at another locus  
+8) processed_pseudogene: Pseudogene that lack introns and is thought to arise from reverse transcription of mRNA  
+9) polymorphic_pseudogene: Pseudogene owing to a SNP/DIP  
+10) IG_ genes: Immunoglobulin (Ig) variable chain
+
+This plot shows the the number of detected genes by biotype
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=6}
+ggplot(seurat_mouse_genes_stat.df, aes(x = Var1, y = Freq)) +
+    geom_col(stat="identity", fill = "#003366") + theme_classic() + coord_flip() + scale_y_log10(expand = c(0,0)) + xlab("biotype") + ylab("Number (log scaled)") +
+  theme(axis.text = element_text(size = 12, color = "black"), axis.title = element_text(size = 15, color = "black"))
+
+```
+
+The below plot shows UMI counts that belong to biotype. Most of UMI counts belong to protein coding and next is lncRNA. The rest are 0.9%. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=5}
+data9set_cleaned_Ctrl_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_Ctrl.SO, slot = 'counts')))
+data9set_cleaned_AD_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_AD.SO, slot = 'counts')))
+data9set_cleaned_ADp40KO_sum.df <- as.data.frame(Matrix::rowSums(GetAssayData(object = data9set_cleaned_ADp40KO.SO, slot = 'counts')))
+
+data9set_cleaned_sum.df <- cbind(data9set_cleaned_Ctrl_sum.df, data9set_cleaned_AD_sum.df, data9set_cleaned_ADp40KO_sum.df)
+
+colnames(data9set_cleaned_sum.df) <- c("Ctrl_counts_sum", "AD_counts_sum", "ADp40KO_counts_sum")
+
+data9set_cleaned_sum.df$mgi_symbol <- rownames(data9set_cleaned_sum.df)
+
+data9set_cleaned_sum.df <- inner_join(data9set_cleaned_sum.df, seurat_mouse_genes, by = "mgi_symbol")
+data9set_cleaned_sum.df$sums <- rowSums(data9set_cleaned_sum.df[,c(1:3)])
+
+data9set_cleaned_sum.df_summary <- data9set_cleaned_sum.df %>% dplyr::select(gene_biotype, sums) %>% group_by(gene_biotype) %>%
+  summarise(total_sums = sum(sums))
+data9set_cleaned_sum.df_summary$percent <- data9set_cleaned_sum.df_summary$total_sums / sum(data9set_cleaned_sum.df_summary$total_sums)
+data9set_cleaned_sum.df_summary$cum_percent <- cumsum(data9set_cleaned_sum.df_summary$percent)
+
+
+ggplot(data9set_cleaned_sum.df_summary, aes(fill=gene_biotype, y=percent, x="gene_biotype")) + 
+    geom_bar(position="fill", stat="identity")  + theme_classic() + geom_text(aes(y=0.95, label="lncRNA: 13.4%"), vjust=1.6, 
+            color="white", size=4) + geom_text(aes(y=0.5, label="protein coding: 85.7%"), vjust=1.6, 
+            color="white", size=4) + scale_y_continuous(expand = c(0,0)) +
+  theme(axis.text = element_text(size = 15, color = "black"), axis.title.y = element_text(size = 15, color = "black"),
+        axis.title.x = element_blank(), 
+        legend.title = element_blank())
+
+```
+
+### 2. Heatmap of top 500 variable lncRNAs
+
+No specific clusterings shows from lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=15}
+#GetAssayData(object = data9set_cleaned_Ctrl.SO, slot = 'data')
+# Ctrl - 1
+data9set_cleaned_Ctrl_1_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = SubsetData(data9set_cleaned_Ctrl.SO, cells = rownames(data9set_cleaned_Ctrl.SO@meta.data[data9set_cleaned_Ctrl.SO@meta.data$gemgroup %in% "1", ])), slot = 'data')))
+
+# Ctrl
+for(i in c("4", "7")){
+  #print(i)
+  data9set_cleaned_Ctrl_temp_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = SubsetData(data9set_cleaned_Ctrl.SO, cells = rownames(data9set_cleaned_Ctrl.SO@meta.data[data9set_cleaned_Ctrl.SO@meta.data$gemgroup %in% i, ])), slot = 'data')))
+  data9set_cleaned_Ctrl_1_avg.df <- cbind(data9set_cleaned_Ctrl_1_avg.df, data9set_cleaned_Ctrl_temp_avg.df)
+}
+
+# AD
+for(i in c("3", "6", "9")){
+  #print(i)
+  data9set_cleaned_Ctrl_temp_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = SubsetData(data9set_cleaned_AD.SO, cells = rownames(data9set_cleaned_AD.SO@meta.data[data9set_cleaned_AD.SO@meta.data$gemgroup %in% i, ])), slot = 'data')))
+  data9set_cleaned_Ctrl_1_avg.df <- cbind(data9set_cleaned_Ctrl_1_avg.df, data9set_cleaned_Ctrl_temp_avg.df)
+}
+
+# ADp40KO
+for(i in c("2", "5", "8")){
+  #print(i)
+  data9set_cleaned_Ctrl_temp_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = SubsetData(data9set_cleaned_ADp40KO.SO, cells = rownames(data9set_cleaned_ADp40KO.SO@meta.data[data9set_cleaned_ADp40KO.SO@meta.data$gemgroup %in% i, ])), slot = 'data')))
+  data9set_cleaned_Ctrl_1_avg.df <- cbind(data9set_cleaned_Ctrl_1_avg.df, data9set_cleaned_Ctrl_temp_avg.df)
+}
+
+colnames(data9set_cleaned_Ctrl_1_avg.df) <- c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3")
+data9set_lncRNA_cleaned_avg.df <- data9set_cleaned_Ctrl_1_avg.df[rownames(data9set_cleaned_Ctrl_1_avg.df) %in% seurat_mouse_genes_linc$mgi_symbol, ]
+
+# remove genes if 0 is more than 3
+# remove genes where zero count is more than 2 out of 9 samples
+data9set_lncRNA_cleaned_avg.df <- data9set_lncRNA_cleaned_avg.df[apply(data9set_lncRNA_cleaned_avg.df == 0, 1, sum) < 7, ]
+
+# calculate z-score
+data9set_lncRNA_cleaned_avg_z_score.df <- as.data.frame(t(apply(data9set_lncRNA_cleaned_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+
+var_genes <- apply(data9set_lncRNA_cleaned_avg_z_score.df, 1, var)
+select_var <- names(sort(var_genes, decreasing=TRUE))[1:500]
+
+
+select_data9set_lncRNA_cleaned_avg_z_score.df <- data9set_lncRNA_cleaned_avg_z_score.df[rownames(data9set_lncRNA_cleaned_avg_z_score.df) %in% select_var, ]
+
+# data9set_cleaned_Ctrl_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_Ctrl.SO, slot = 'data')))
+# data9set_cleaned_AD_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_AD.SO, slot = 'data')))
+# data9set_cleaned_ADp40KO_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = data9set_cleaned_ADp40KO.SO, slot = 'data')))
+# data9set_cleaned_avg.df <- cbind(data9set_cleaned_Ctrl_avg.df, data9set_cleaned_AD_avg.df, data9set_cleaned_ADp40KO_avg.df)
+# colnames(data9set_cleaned_avg.df) <- c("Ctrl_normalized_avg", "AD_normalized_avg", "ADp40KO_normalized_avg")
+# data9set_lncRNA_cleaned_avg.df <- data9set_cleaned_avg.df[rownames(data9set_cleaned_avg.df) %in% seurat_mouse_genes_linc$mgi_symbol, ]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+
+heatmap.2(as.matrix(select_data9set_lncRNA_cleaned_avg_z_score.df), col=rev(morecols(50)),trace="none",scale="row", keysize = 1, dendrogram = "column", lhei=c(0.5,5.5), lwid=c(1,4), key.title = "z-score", key.ylab = NULL, offsetCol = 0.1,
+          cexCol = 0.8, cexRow = 0.5)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+data9set_cleaned_all_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Cluster_markers.csv", row.names = 1)
+#top5 <- data9set_cleaned_all_markers %>% group_by(cluster) %>% top_n(5, avg_logFC)
+top100 <- data9set_cleaned_all_markers %>% group_by(cluster) %>% top_n(100, avg_logFC)
+top100_lncRNA.df <- top100[top100$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+```
+
+### 3. Excitatory neurons specific lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=4}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "Excitatory Neurons" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 3-2. Excitatory Neuron lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_EX <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_EX$gene <- rownames(DE_EX)
+
+DE_EX_lin <- DE_EX[DE_EX$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_EX_lin <- DE_EX_lin[DE_EX_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_EX_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_EX_lin[DE_EX_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis IN AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.7, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_EX_lin[DE_EX_lin$gene %in% c("Gm26871", "Gm20754","6530403H02Rik","Rmst"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_EX2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_EX2$gene <- rownames(DE_EX2)
+
+DE_EX_lin2 <- DE_EX2[DE_EX2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_EX_lin2 <- DE_EX_lin2[DE_EX_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_EX_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_EX_lin2[DE_EX_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis IN AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 0.5)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_EX_lin2[DE_EX_lin2$gene %in% c("A230004M16Rik", "Gm15577","Gm15398","A330008L17Rik"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### 4. Inhibitory Interneurons specific lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=20}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "Inhibitory Interneurons" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 4-2. Inhibitory Neuron lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_IN <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_IN$gene <- rownames(DE_IN)
+
+DE_IN_lin <- DE_IN[DE_IN$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_IN_lin <- DE_IN_lin[DE_IN_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_IN_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_IN_lin[DE_IN_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis IN AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.7, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_IN_lin[DE_IN_lin$gene %in% c("Meg3", "Gm42418"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_IN2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_IN2$gene <- rownames(DE_IN2)
+
+DE_IN_lin2 <- DE_IN2[DE_IN2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_IN_lin2 <- DE_IN_lin2[DE_IN_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_IN_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_IN_lin2[DE_IN_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis IN AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 0.5)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_IN_lin2[DE_IN_lin2$gene %in% c("A230004M16Rik", "Gm26854"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 5. Astrocytes specific lncRNAs
+
+[9430041J12Rik ref](http://www.ellyhollab.eu/attachments/article/32/Supplementary%20Table%201.pdf)
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=12}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "Astrocytes" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 5-2. AS lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+Information about D030047H15Rik is not well described.
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_AS <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_AS$gene <- rownames(DE_AS)
+
+DE_AS_lin <- DE_AS[DE_AS$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_AS_lin <- DE_AS_lin[DE_AS_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_AS_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_AS_lin[DE_AS_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis AS AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.7, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_AS_lin[DE_AS_lin$gene %in% c("D030047H15Rik", "9630028H03Rik","Meg3", "Rmst", "Gm14964"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_AS2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_AS2$gene <- rownames(DE_AS2)
+
+DE_AS_lin2 <- DE_AS2[DE_AS2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_AS_lin2 <- DE_AS_lin2[DE_AS_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_AS_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_AS_lin2[DE_AS_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis AS AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 0.5)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_AS_lin2[DE_AS_lin2$gene %in% c("Gm11417", "Rmst","D030047H15Rik", "C730002L08Rik"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+
+### 6. Microglia specific lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=8}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "Microglia" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 6-2. MG lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_MG <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_MG$gene <- rownames(DE_MG)
+
+DE_MG_lin <- DE_MG[DE_MG$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_MG_lin <- DE_MG_lin[DE_MG_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_MG_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_MG_lin[DE_MG_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis MG AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.7, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_MG_lin[DE_MG_lin$gene %in% c("Gm15283", "Gm20663","Gm10790", "Gm26714", "Gm31243", "8030442B05Rik"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_MG2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_MG2$gene <- rownames(DE_MG2)
+
+DE_MG_lin2 <- DE_MG2[DE_MG2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_MG_lin2 <- DE_MG_lin2[DE_MG_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_MG_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_MG_lin2[DE_MG_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis MG AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 0.5)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_MG_lin2[DE_MG_lin2$gene %in% c("Gm35188", "Gm26520","9130019P16Rik", "Gm22146"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 7. Oligo specific lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=16}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "Oligodendrocytes" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 7-2. Oligo lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+1) Meg3 RNA was almost entirely within the nucleus. 2) absence of Meg3 in oligodendrocyte-precursor cells. 3) oligodendrocyte-myelinated axons(fibers) and the cytoplasm of oligodendrocytes themselves(yellow arrows), demonstrates Meg3 is absent from the nuclei of these cells [Meg3](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4996761/)
+
+Upregulation of the lncRNA MEG3 improves cognitive impairment, alleviates neuronal damage, and inhibits activation of astrocytes in hippocampus tissues in Alzheimer's disease through inactivating the PI3K/Akt signaling pathway. [Meg3 AD](https://onlinelibrary.wiley.com/doi/epdf/10.1002/jcb.29108)
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_Oligo <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_Oligo$gene <- rownames(DE_Oligo)
+
+DE_Oligo_lin <- DE_Oligo[DE_Oligo$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_Oligo_lin <- DE_Oligo_lin[DE_Oligo_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_Oligo_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_Oligo_lin[DE_Oligo_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis Oligo AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 0.7)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_Oligo_lin[DE_Oligo_lin$gene %in% c("9330111N05Rik", "A230001M10Rik","Gm42413", "A230057D06Rik", "Meg3", "Gm13052"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_Oligo2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_Oligo2$gene <- rownames(DE_Oligo2)
+
+DE_Oligo_lin2 <- DE_Oligo2[DE_Oligo2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_Oligo_lin2 <- DE_Oligo_lin2[DE_Oligo_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_Oligo_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_Oligo_lin2[DE_Oligo_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis Oligo AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_Oligo_lin2[DE_Oligo_lin2$gene %in% c("Gm29114", "Gm13052","Gm37459", "Dtnbos"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+However, Meg3 is not specific to Oligo but more express in Neurons
+
+[Meg3 AD](https://onlinelibrary.wiley.com/doi/epdf/10.1002/jcb.29108)
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+f1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Meg3", pt.size = 0.5, min.cutoff = 0, max.cutoff = 7)  + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 3) + ggtitle("Meg3 Ctrl")
+f2 <- FeaturePlot(data9set_cleaned_AD.SO, features = "Meg3",pt.size = 0.5, min.cutoff = 0, max.cutoff = 7) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 3) + ggtitle("Meg3 AD")
+f3 <- FeaturePlot(data9set_cleaned_ADp40KO.SO, features = "Meg3",pt.size = 0.5, min.cutoff = 0, max.cutoff = 7) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 3) + ggtitle("Meg3 ADp40KO")
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+VlnPlot(data9set_cleaned.SO, features = "Meg3", pt.size = 0)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+v1 <- VlnPlot(data9set_cleaned_Ctrl.SO, features = "Meg3", pt.size = 0, idents = "Astrocytes", y.max = 6, cols = viridis(3)[1]) + theme(legend.position = "none", axis.text.x = element_text(angle = 0, hjust = 0.5), axis.title.x = element_blank()) + ggtitle("Meg3 Ctrl")
+v2 <- VlnPlot(data9set_cleaned_AD.SO, features = "Meg3", pt.size = 0, idents = "Astrocytes", y.max = 6, cols = viridis(3)[2]) + theme(legend.position = "none", axis.text.x = element_text(angle = 0, hjust = 0.5), axis.title.x = element_blank()) + ggtitle("Meg3 AD")
+v3 <- VlnPlot(data9set_cleaned_ADp40KO.SO, features = "Meg3", pt.size = 0, idents = "Astrocytes", y.max = 6, cols = viridis(3)[3]) + theme(legend.position = "none", axis.text.x = element_text(angle = 0, hjust = 0.5), axis.title.x = element_blank()) +ggtitle("Meg3 ADp40KO")
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+#### 7-3. Gm13052 in Oligo
+
+Gm13052 [Gm13052 in hypothalamic neuron nuclei](https://www.biorxiv.org/content/biorxiv/early/2019/04/07/601070.full.pdf)
+
+only less express in ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+f1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Gm13052", order = TRUE, pt.size = 0.5, min.cutoff = 0, max.cutoff = 4) + xlim(c(10,25)) + ylim(c(-20, 10)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("Gm13052 Ctrl")
+f2 <- FeaturePlot(data9set_cleaned_AD.SO, features = "Gm13052",  order = TRUE,pt.size = 0.5, min.cutoff = 0, max.cutoff = 4) + xlim(c(10,25)) + ylim(c(-20, 10))+ scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("Gm13052 AD")
+f3 <- FeaturePlot(data9set_cleaned_ADp40KO.SO, features = "Gm13052",  order = TRUE,pt.size = 0.5, min.cutoff = 0, max.cutoff = 4) + xlim(c(10,25)) + ylim(c(-20, 10))+ scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("Gm13052 ADp40KO")
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+### 8. OPC specific lncRNAs
+
+We also identified the **8long non-coding RNA 9630013A20Rik** (also referred as LncOL1 (He, 2016)) to follow this pattern and to be specific for the COP and NFOL populations [9630013A20Rik ref](https://www.biorxiv.org/content/biorxiv/early/2017/09/17/186445.full.pdf)
+
+```{r warning=FALSE, message=FALSE, fig.width= 9, fig.height=16}
+FeaturePlot(data9set_cleaned.SO, features = as.vector(top100_lncRNA.df[which(top100_lncRNA.df$cluster %in% "OPC" & top100_lncRNA.df$pct.2 < 0.1), ]$gene), ncol = 2)
+```
+
+#### 8-2. OPC lncRNAs DE
+
+Volcano plot showing all differentially expressed lncRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 10, fig.height=4.5}
+# AD vs Ctrl
+DE_OPC <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv", row.names = 1, sep = ",", header = TRUE)
+DE_OPC$gene <- rownames(DE_OPC)
+
+DE_OPC_lin <- DE_OPC[DE_OPC$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_OPC_lin <- DE_OPC_lin[DE_OPC_lin$gene != "Malat1", ]
+
+g1 <- ggplot(DE_OPC_lin) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_OPC_lin[DE_OPC_lin$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis OPC AD vs Ctrl") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_OPC_lin[DE_OPC_lin$gene %in% c("9630013A20Rik", "Gm38505","6030407O03Rik", "9530059O14Rik", "Gm13052"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .25, force = 30)
+
+# AD vs ADp40KO
+DE_OPC2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_ADp40KO.csv", row.names = 1, sep = ",", header = TRUE)
+DE_OPC2$gene <- rownames(DE_OPC2)
+
+DE_OPC_lin2 <- DE_OPC2[DE_OPC2$gene %in% seurat_mouse_genes_linc$mgi_symbol, ]
+# remove Malat1
+DE_OPC_lin2 <- DE_OPC_lin2[DE_OPC_lin2$gene != "Malat1", ]
+
+g2 <- ggplot(DE_OPC_lin2) + geom_point(aes(x = avg_logFC, y = -log10(p_val))) + 
+  geom_point(data = DE_OPC_lin2[DE_OPC_lin2$p_val_adj < 0.01, ], aes(x = avg_logFC, y = -log10(p_val)), color = "red") +
+  ggtitle("lncRNA DE analysis OPC AD vs ADp40KO") + 
+   xlab("log2 fold change") + xlim(c(-0.5, 1)) + 
+  ylab("-log10(p-value)") + theme_classic() + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(data = DE_OPC_lin2[DE_OPC_lin2$gene %in% c("9630013A20Rik", "Gm13052","C430049B03Rik", "Gm12296"), ], aes(x = avg_logFC, y = -log10(p_val), label = gene), nudge_x = .3, force = 30)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 8-3. 9630013A20Rik in OPC
+
+9630013A20Rik is in GO:0048709 (oligodendrocyte differentiation) [GO ref](http://www.informatics.jax.org/go/term/GO:0022008)
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+f1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "9630013A20Rik", pt.size = 0.5, min.cutoff = 0, max.cutoff = 6) + xlim(c(10,25)) + ylim(c(-20, 10)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2.5) + ggtitle("9630013A20Rik Ctrl")
+f2 <- FeaturePlot(data9set_cleaned_AD.SO, features = "9630013A20Rik", pt.size = 0.5, min.cutoff = 0, max.cutoff = 6) + xlim(c(10,25)) + ylim(c(-20, 10))+ scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2.5) + ggtitle("9630013A20Rik AD")
+f3 <- FeaturePlot(data9set_cleaned_ADp40KO.SO, features = "9630013A20Rik", pt.size = 0.5, min.cutoff = 0, max.cutoff = 6) + xlim(c(10,25)) + ylim(c(-20, 10))+ scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2.5) + ggtitle("9630013A20Rik ADp40KO")
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+### 9. Cdr1as precursors
+
+left figure is showing cells over expressing Cdr1as by option order = TRUE that high expression cells are top of others while right figure is normal figure by option = FALSE. We can see that Cdr1as is highly expressed in neurons compare to glia cells. However, it seems glial cells also express Cdr1as. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=5}
+f1 <- FeaturePlot(data9set_cleaned.SO, features = "Cdr1os", pt.size = 0.1, order = TRUE, min.cutoff = 0, max.cutoff = 5) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)
+f2 <- FeaturePlot(data9set_cleaned.SO, features = "Cdr1os", pt.size = 0.1, min.cutoff = 0, max.cutoff = 5) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)
+grid.arrange(f1, f2, ncol = 2)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+f1 <- FeaturePlot(data9set_cleaned_Ctrl.SO, features = "Cdr1os", pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f1 <- f1 + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("Ctrl") + labs(y = "Cdr1os") + 
+  theme(legend.position = "none", 
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title.x = element_blank())
+
+
+f2 <- FeaturePlot(data9set_cleaned_AD.SO, features = "Cdr1os", pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f2 <- f2 + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("AD") + 
+  theme(axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank())
+
+f3 <- FeaturePlot(data9set_cleaned_ADp40KO.SO, features = "Cdr1os", pt.size = 0.5, min.cutoff = 0, max.cutoff = 5)
+f3 <- f3 + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 1.5) + ggtitle("ADp40KO") + theme(legend.position = "none",axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank())
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+
+```{r}
+sessionInfo()
+```
+

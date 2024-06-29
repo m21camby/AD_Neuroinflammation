@@ -1,0 +1,308 @@
+---
+title: "exon_intron_cell_type"
+author: "Skim"
+date: "2/19/2020"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(tidyverse)
+library("ggpubr")
+library(viridis)
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+# SP064_022_premrna <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_022_premrna/outs/filtered_feature_bc_matrix/")
+# SP064_022_exon <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_022_exon_multilanes/outs/raw_feature_bc_matrix/")
+# 
+# SP064_022_exon_subset <- SP064_022_exon[,colnames(SP064_022_premrna)]
+# 
+# test <- as.matrix(SP064_022_premrna) - as.matrix(SP064_022_exon_subset)
+# head(SP064_022_premrna@x, 10)
+# head(SP064_022_exon_subset@x, 10)
+# head(test@x, 10)
+# 
+# 
+# test_premrna <- as.matrix(SP064_022_premrna)
+# test_exon <- as.matrix(SP064_022_exon_subset)
+# 
+# test_exon[c(1:10),c(1:10)]
+# test_premrna[c(1:10),c(1:10)]
+# test[c(1:10),c(1:10)]
+
+
+```
+
+```{r warning=FALSE, message=FALSE}
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+data9set_cleaned.SO  <- subset(data9set.SO, subset = seurat_clusters %in% c(seq(0,24), seq(26,30), 32, seq(35,40)))
+
+data9set_cleaned.SO <- RenameIdents(data9set_cleaned.SO, '0' = "Dentate Gyrus", '1' = "Oligo", '2' = "CA1 Neurons", '3' = "Microglia", 
+                            '4' = "Astrocytes", '5' = "Oligo", '6' = "Oligo", '7' = "Inhibitory Interneurons", '8' = "Microglia", 
+                            '9' = "CA2/CA3 Neuron", '10' = "Dentate Gyrus", '11' = "Subiculum", '12' = "OPC", 
+                            '13' = "CA1 Neurons", '14' = "Subiculum", '15' = "Subiculum", 
+                            '16' = "Inhibitory Interneurons", '17' = "Subiculum", '18' = "CA1 Neurons",
+                            '19' = "Subiculum", '20' = "Subiculum", '21' = "CA2/CA3 Neuron", '22' = "Inhibitory Interneurons",
+                            '23' = "Fibroblast", '24' = "Neurons", '26' = "Choroid Plexus", 
+                            '27' = "CA2/CA3 Neuron", '28' = "Cajal Retzius", '29' = "Neurons", '30' = "Inhibitory Interneurons",
+                            '32' = "Neurons", 
+                            '35' = "Pericytes", '36' = "Vascular Endothelial",'37' = "Microglia", '38' = "OPC",
+                            '39' = "VLMC", '40' = "Neurons")
+
+data9set_cleaned.SO@active.ident <- factor(data9set_cleaned.SO@active.ident, 
+                                           levels = c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neuron", "Subiculum",
+                                                      "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Astrocytes",
+                                                      "Microglia", "Oligo", "OPC", "Fibroblast", 
+                                                      "Vascular Endothelial", "VLMC", "Pericytes", "Choroid Plexus"))
+#FeaturePlot(data9set_cleaned.SO, features = c("Il12b"), split.by = "gemgroup")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+# ref: http://oshlacklab.com/combes-organoid-paper/07_Combined_Clustering.html#conserved_markers
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+data9set_cleaned.SO@meta.data$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(gemgroup, cell_type, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total) 
+
+#%>%group_by(sample) %>%
+#    mutate(dataset_total = sum(count)) %>%
+#    ungroup() %>%
+#    mutate(dataset_prop = count / dataset_total)
+#sum(plot.data$dataset_prop)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "3", "6", "9", "2", "5", "8"))
+
+ggplot(plot.data, aes(x = gemgroup, y = cell_prop, fill = cell_type)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d() + ylab("percentage")
+```
+
+```{r}
+# one way Anova 
+# http://www.sthda.com/english/wiki/one-way-anova-test-in-r
+# Kruskal-Wallis test
+# http://www.sthda.com/english/wiki/kruskal-wallis-test-in-r
+
+
+plot.data_MG <- plot.data[plot.data$cell_type == "Microglia", ]
+plot.data_MG$cell_perc <- plot.data_MG$cell_prop * 100
+
+plot.data_MG2 <- group_by(plot.data_MG, sample) %>%
+  summarise(
+    count = n(),
+    mean = mean(cell_prop, na.rm = TRUE),
+    sd = sd(cell_prop, na.rm = TRUE),
+    median = median(cell_prop, na.rm = TRUE),
+    IQR = IQR(cell_prop, na.rm = TRUE)
+  )
+
+ggboxplot(plot.data_MG, x = "sample", y = "cell_prop", 
+          color = "sample", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+          order = c("Ctrl", "AD", "ADp40KO"),
+          ylab = "cell_prop", xlab = "exp", add = "dotplot") + ylim(0, 0.2)
+
+
+
+kruskal.test(cell_prop ~ sample, data = plot.data_MG)
+
+pairwise.wilcox.test(plot.data_MG$cell_prop, plot.data_MG$sample, p.adjust.method = "BH")
+
+?wilcox.test
+```
+
+
+```{r}
+ks.test(plot.data_MG[plot.data_MG$sample == "AD", ]$cell_prop, "pnorm")
+
+# Compute the analysis of variance
+res.aov <- aov(cell_prop ~ sample, data = plot.data_MG)
+# Summary of the analysis
+summary(res.aov)
+
+TukeyHSD(res.aov)
+
+?TukeyHSD
+
+
+```
+
+
+In Samantha's paper, differences in cluster proportions were analyzed using **mixed-effects linear models** (lme4 package) using a **binomial model with sex**, **stage** and **genotype** (if applicable) as **fixed effects** and **sample identity** as random effect.
+
+```{r}
+# ref: https://www.r-bloggers.com/linear-mixed-models-in-r/
+library(MASS)
+data(oats)
+names(oats) = c('block', 'variety', 'nitrogen', 'yield')
+oats$mainplot = oats$variety
+oats$subplot = oats$nitrogen
+ 
+summary(oats)
+```
+
+```{r}
+library(lme4)
+m1.lme4 = lmer(yield ~ variety*nitrogen + (1|block/mainplot),
+                       data = oats)
+ 
+summary(m1.lme4)
+```
+
+```{r}
+library(lmtest)
+data("USDistLag")
+usdl <- na.contiguous(cbind(USDistLag, log(USDistLag, k = -1)))
+colnames(usdl) <- c("con", "gnp", "con1", "gnp1")
+
+
+md <- data9set_cleaned.SO@meta.data
+
+mod <- glmer(md$seurat_clusters== c(3,8) ~ 
+                 md$sample + 
+                 (1 | md$gemgroup), 
+               family=binomial)
+coef <- summary(mod)$coefficients
+
+
+
+plot.data_MG_test <- plot.data_MG[c(1,4,7),]
+plot.data_MG_test$sample <- factor(plot.data_MG_test$sample, levels = ("Ctrl"))
+
+plot.data_MG$sample <- factor(plot.data_MG$sample, c("Ctrl", "AD", "ADp40KO"))
+
+summary(plot.data_MG_test)
+
+m1 <- lmer(cell_prop ~ sample + (1|gemgroup), data = plot.data_MG)
+
+glmer(cell_prop ~ sample + (1|gemgroup), data = plot.data_MG)
+
+l1 <- lm(formula = cell_prop ~ sample, data = plot.data_MG_test)
+l2 <- lm(formula = cell_prop ~ sample, data = plot.data_MG)
+
+
+lrtest(l1, l2)
+
+summary(l1)
+```
+
+https://rdrr.io/cran/lmtest/man/lrtest.html
+https://www.r-bloggers.com/linear-mixed-models-in-r/
+https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf
+https://stats.stackexchange.com/questions/49872/likelihood-ratio-tests-on-linear-mixed-effect-models
+https://stats.stackexchange.com/questions/261875/how-to-interpret-anova-output-for-mixed-model-likelihood-ratio-test?noredirect=1&lq=1
+http://www.nxn.se/
+https://www.rensvandeschoot.com/tutorials/lme4/
+https://github.com/vals/Blog/blob/master/190213-multilevel-model-de/scripts/run_lme.R
+https://blog.naver.com/rudgus519/221770728419
+https://biosci.tistory.com/29
+
+
+```{r}
+library(lme4)
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup, cell_type = cell_type) %>%
+    mutate(cell_type = cell_type) %>%
+    group_by(gemgroup, cell_type, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>%
+    mutate(gemgroup_total = sum(count)) %>%
+    mutate(cell_prop = count / gemgroup_total)
+
+mod <- glmer(cell_prop ~ cell_type + sample + cell_type:sample + (1 | gemgroup), data = plot.data[plot.data$cell_type %in% "Microglia", ], family=poisson(link=log))
+
+mod <- glmer(cell_prop ~ sample + (1 | gemgroup), data = plot.data[plot.data$cell_type %in% "Microglia", ], family=binomial)
+
+ mod <- glmer(md$macro.subtype==ct ~ 
+                 md$genotype + 
+                 md$sex + 
+                 md$stage + 
+                 (1 | md$orig.ident), 
+               family=binomial)
+
+summary(mod)
+```
+
+### Samantha's code
+
+```{r}
+library(lme4)
+md <- FetchData(data9set_cleaned.SO, c('gemgroup','sample','cell_type')) 
+
+md$sample <- relevel(md$sample, 'Ctrl')
+effects <- list()
+pvals <- list()
+for (ct in unique(md$cell_type)) {
+  print(ct)
+  #mod <- glmer(md$cell_type==ct ~ 
+  #               md$sample + 
+  #               md$gemgroup +  
+  #               (1 | md$gemgroup), 
+  #             family=binomial)
+  
+  mod <- glmer(md$cell_type==ct ~ 
+                 md$sample + 
+                 md$gemgroup +  
+                 (1 | md$gemgroup), 
+               family=poisson(link=log))
+  
+  
+  coef <- summary(mod)$coefficients
+  pvals[[ct]] <- coef[2:4,4]
+  effects[[ct]] <- coef[2:4,1]
+}
+
+effects <- data.frame(effects,stringsAsFactors=FALSE)
+pvals <- data.frame(pvals,stringsAsFactors=FALSE)
+
+```
+
+
+```{r}
+library('readr')
+library('dplyr')
+library('ggplot2')
+theme_set(theme_bw())
+library('mgcv')
+
+
+uri <- 'https://gist.githubusercontent.com/gavinsimpson/eb4ff24fa9924a588e6ee60dfae8746f/raw/geochimica-metals.csv'
+metals <- read_csv(uri, skip = 1, col_types = c('ciccd'))
+metals <- mutate(metals, SiteCode = factor(SiteCode))
+
+
+ggplot(metals, aes(x = Date, y = Hg, colour = SiteCode)) +
+    geom_point() +
+    geom_smooth(method = 'loess', se = FALSE) +
+    scale_colour_brewer(type = 'qual', palette = 'Dark2') +
+    theme(legend.position = 'top')
+
+m <- gam(Hg ~ SiteCode + s(Date, by = SiteCode), data = metals)
+summary(m)
+```
+

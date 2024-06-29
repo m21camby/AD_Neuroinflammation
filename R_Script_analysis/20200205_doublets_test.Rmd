@@ -1,0 +1,586 @@
+---
+title: "Doublets_test"
+author: "Skim"
+date: "2/5/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+In this report, I tested two methods to identify doublets in our data set. First method is from single-cell atlas of entorhinal cortex of AD paper which calculated the difference between the **first and second highest cell type scores** and called doublets if it is within 20%. [ref](https://www.nature.com/articles/s41593-019-0539-4.pdf?origin=ppub) The second method, I used **Scrublet** (ver 0.2.1) tool which was used in organoids reproducibility paper and single-cell and single-nucleus RNA-seq toolbox for fresh and frozen human tumors paper from Regev lab. 
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+library(VennDiagram)
+library(limma)
+```
+
+I checked 45 clusters wheather how many doublets per each cluster
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+# old resolution 0.6
+#load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+# new resolutio 0.8 by Shirin
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+DimPlot(data9set.SO, reduction = "umap", label = TRUE, label.size = 4)
+
+```
+
+
+## 1. Identify doublets by module score
+
+I used markers from **dropviz.org** of **17 clusters** from hippocampus. I used **addmodulescore** function to calculate gene expression for marker genes and calculate **(x1 - x2)/x1 < 0.2**. In the beginning, it identified **7800** doublets. I changed back to singlet if doublets from both Neuron or subiculum. Finally the method identified **3975** doublets out of 84002 cells (4.73%)
+
+```{r warning=FALSE, message=FALSE, fig.width = 10, fig.height=30}
+markers <- list.files("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DropViz_cluster_Markers/")
+
+markers_test <- read_csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DropViz_cluster_Markers/", "cluster-markers_Interneuron_Gad2.csv"))
+
+
+for(i in 1:17){
+  genes <- read_csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DropViz_cluster_Markers/", markers[i]))
+  genes_list <- genes$gene  
+  sample <- str_remove(markers[i], "cluster-markers_")
+  sample <- str_remove(sample, ".csv")
+  data9set.SO <- AddModuleScore(data9set.SO, features =  list(genes_list), name = sample)
+}
+
+f1 <- FeaturePlot(object = data9set.SO, features = 'Astrocytes_Gja11', cols = c("lightgrey", "darkred"))
+f2 <- FeaturePlot(object = data9set.SO, features = 'Choroid_Plexus_Ttr1', cols = c("lightgrey", "darkred"))
+f3 <- FeaturePlot(object = data9set.SO, features = 'Endothelial_Flt11', cols = c("lightgrey", "darkred"))
+f4 <- FeaturePlot(object = data9set.SO, features = 'Ependyma1', cols = c("lightgrey", "darkred"))
+f5 <- FeaturePlot(object = data9set.SO, features = 'Fibroblast_Dcn1', cols = c("lightgrey", "darkred"))
+f6 <- FeaturePlot(object = data9set.SO, features = 'Interneuron_Gad21', cols = c("lightgrey", "darkred"))
+f7 <- FeaturePlot(object = data9set.SO, features = 'Microglia_Macrophage_C1qb1', cols = c("lightgrey", "darkred"))
+f8 <- FeaturePlot(object = data9set.SO, features = 'Mural_Rgs5Acta21', cols = c("lightgrey", "darkred"))
+f9 <- FeaturePlot(object = data9set.SO, features = 'Neurogenesis_Sox41', cols = c("lightgrey", "darkred"))
+f10 <- FeaturePlot(object = data9set.SO, features = 'Neuron_CA1_Subiculum_Postsubiculum_Entorhinal1', cols = c("lightgrey", "darkred"))
+f11 <- FeaturePlot(object = data9set.SO, features = 'Neuron_CA2CA3_Pvrl31', cols = c("lightgrey", "darkred"))
+f12 <- FeaturePlot(object = data9set.SO, features = 'Neuron_CajalRetzius_Lhx11', cols = c("lightgrey", "darkred"))
+f13 <- FeaturePlot(object = data9set.SO, features = 'Neuron_Dentate_C1ql21', cols = c("lightgrey", "darkred"))
+f14 <- FeaturePlot(object = data9set.SO, features = 'Oligodendrocyte_Tfr1', cols = c("lightgrey", "darkred"))
+f15 <- FeaturePlot(object = data9set.SO, features = 'Polydendrocyte_Tnr1', cols = c("lightgrey", "darkred"))
+f16 <- FeaturePlot(object = data9set.SO, features = 'Subiculum_Entorhinal_Nxph31', cols = c("lightgrey", "darkred"))
+f17 <- FeaturePlot(object = data9set.SO, features = 'Subiculum_Slc17a61', cols = c("lightgrey", "darkred"))
+
+grid.arrange(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=7}
+############################
+# calculate addmodulescore
+############################
+#data9set_meta.df <- as.data.frame(data9set.SO@meta.data)
+#data9set_meta.df <- data9set_meta.df[,c(9:25)]
+
+#apply(data9set_meta.df[1, 1:17], 1, max)
+
+#test.df <- data.frame(V1 = as.numeric(), cell_type = as.character(), cell_ID = as.character(), diff = as.numeric(), doublets = as.character(), stringsAsFactors = FALSE)
+
+#for(i in 1:nrow(data9set_meta.df)){
+#  test <- as.data.frame(do.call(mapply, c(function(...) sort(c(...), dec=TRUE)[1:2], data9set_meta.df[i, 1:17])))
+#  test$cell_type <- rownames(test)
+#  test$cell_ID <- rownames(data9set_meta.df[i, ])
+#  rownames(test) <- NULL
+#  test$diff <- (test[1,1] - test[2,1])/test[1,1]
+#  test$doublets <- ifelse(test$diff < .2, "doublets", "singlet")
+#  test.df <- rbind(test.df, test)
+#}
+
+ #table(test.df$doublets) # 9.28%
+
+# extract singlet only
+#test_singlet.df <- test.df[test.df$doublets == "singlet", ]
+
+# extract doublets only
+#test_doublets.df <- test.df[test.df$doublets == "doublets", ]
+#test_doublets.df$V6 <- NULL
+
+# 7800
+
+#for(i in seq(1, by = 2, len = 7800)){
+#  if(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+  #   print("first")
+  #   print(i)
+  #   test_doublets.df[i,6] <- ifelse(isTRUE(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "singlet","doublets")
+  # }
+  # if(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+  #   print("second")
+  #   print(i)
+  #   test_doublets.df[i,6] <- ifelse(isTRUE(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+  # }
+  #  if(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+  #   print("thrid")
+  #   print(i)
+  #   test_doublets.df[i,6] <- ifelse(isTRUE(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+  # }
+  # if(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+  #   print("fourth")
+  #   print(i)
+  #   test_doublets.df[i,6] <- ifelse(isTRUE(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+  #   
+  # }
+  # 
+  
+#   test_doublets.df[i+1,6] <- test_doublets.df[i,6]
+# }
+
+
+#table(test_doublets.df$V6)
+# doublets  singlet 
+#    7950     7650
+#write.table(test_doublets.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_only_doublets_data.frame.txt", sep = "\t")
+#write.table(test_singlet.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_only_singlet_data.frame.txt", sep = "\t")
+
+#colnames(test_doublets.df[,c(1:5)])
+
+#test_singlet_ID.df <- test_singlet.df[,c(3,5)]
+#test_doublets_ID.df <- test_doublets.df[,c(3,6)]
+#colnames(test_doublets_ID.df) <- c("cell_ID", "doublets")
+
+#doublets_final.df <- rbind(test_singlet_ID.df %>% distinct(), test_doublets_ID.df %>% distinct())
+
+#write.table(doublets_final.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_doublets_data.frame.txt", sep = "\t")
+
+doublets_final.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_doublets_data.frame.txt", sep = "\t")
+
+#table(doublets_final.df$doublets)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=7}
+#######################################
+# calculate addmodulescore and z-score
+#######################################
+data9set_meta.df <- as.data.frame(data9set.SO@meta.data)
+data9set_meta.df <- data9set_meta.df[,c(9:25)]
+
+(data9set_meta.df[1,1] - rowMeans(data9set_meta.df[1,]))/sd(data9set_meta.df[1,])
+
+resultMatrix.df <- apply(data9set_meta.df, 1, function(x) (x - mean(x)) / sd(x))
+resultMatrix.df <- as.data.frame(t(resultMatrix.df))
+
+test.df <- data.frame(V1 = as.numeric(), cell_type = as.character(), cell_ID = as.character(), diff = as.numeric(), doublets = as.character(), stringsAsFactors = FALSE)
+
+for(i in 1:nrow(resultMatrix.df)){
+ test <- as.data.frame(do.call(mapply, c(function(...) sort(c(...), dec=TRUE)[1:2], data9set_meta.df[i, 1:17])))
+ test$cell_type <- rownames(test)
+ test$cell_ID <- rownames(resultMatrix.df[i, ])
+ rownames(test) <- NULL
+ test$diff <- (test[1,1] - test[2,1])/test[1,1]
+ test$doublets <- ifelse(test$diff < .2, "doublets", "singlet")
+ test.df <- rbind(test.df, test)
+}
+
+#table(test.df$doublets) # 9.28%
+
+# extract singlet only
+test_singlet.df <- test.df[test.df$doublets == "singlet", ]
+
+# extract doublets only
+test_doublets.df <- test.df[test.df$doublets == "doublets", ]
+test_doublets.df$V6 <- NULL
+
+# 7800
+
+for(i in seq(1, by = 2, len = 7800)){
+  if(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+     print("first")
+     print(i)
+     test_doublets.df[i,6] <- ifelse(isTRUE(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "singlet","doublets")
+   }
+   if(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+     print("second")
+     print(i)
+     test_doublets.df[i,6] <- ifelse(isTRUE(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+   }
+    if(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+     print("thrid")
+     print(i)
+     test_doublets.df[i,6] <- ifelse(isTRUE(!grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+   }
+   if(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) & !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)){
+     print("fourth")
+     print(i)
+     test_doublets.df[i,6] <- ifelse(isTRUE(grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i,]$cell_type, ignore.case = TRUE) == !grepl(paste(c("neuron","subiculum"), collapse="|"), test_doublets.df[i+1,]$cell_type, ignore.case = TRUE)) == TRUE, "doublets","singlet")
+  
+   }
+  
+
+   test_doublets.df[i+1,6] <- test_doublets.df[i,6]
+ }
+
+
+table(test_doublets.df$V6)
+# doublets  singlet 
+#    7950     7650
+write.table(test_doublets.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_doublets_data.frame.txt", sep = "\t")
+write.table(test_singlet.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_singlet_data.frame.txt", sep = "\t")
+
+colnames(test_doublets.df[,c(1:5)])
+
+test_singlet_ID.df <- test_singlet.df[,c(3,5)]
+test_doublets_ID.df <- test_doublets.df[,c(3,6)]
+colnames(test_doublets_ID.df) <- c("cell_ID", "doublets")
+
+doublets_final.df <- rbind(test_singlet_ID.df %>% distinct(), test_doublets_ID.df %>% distinct())
+
+write.table(doublets_final.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_doublets_data.frame.txt", sep = "\t")
+
+doublets_final.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_doublets_data.frame.txt", sep = "\t")
+
+table(doublets_final.df$doublets)
+
+```
+
+## 2. doublets by Scrublet
+
+expected_doublet_rate=0.06  
+Automatically set threshold at doublet score = 0.21  
+Detected doublet rate = 5.2%   
+
+Briefly, Scrublet identified **5.2%** of doublets
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=7}
+# Estimated detectable doublet fraction = 59.5%
+# Overall doublet rate:
+# Expected = 6.0%
+# Estimated = 8.7%
+#######################################################
+# Combine cell barcodes with scrublet results and save
+#######################################################
+#data9set <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All_025_3p/outs/filtered_feature_bc_matrix/")
+#length(data9set@Dimnames[[2]])
+
+#scrublet_predicted <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_scrublet_predicted_doublets.txt", header = FALSE)
+#table(scrublet_predicted$V1)
+
+#scrublet_predicted.df <- data.frame(cell_ID = data9set@Dimnames[[2]], scrublet_predicted = scrublet_predicted)
+#colnames(scrublet_predicted.df) <- c("cell_ID", "scrublet_predicted")
+#write.table(scrublet_predicted.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_scrublet_predicted_doublets_data.frame.txt", sep = "\t")
+scrublet_predicted.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_scrublet_predicted_doublets_data.frame.txt", sep = "\t")
+```
+
+## 3. comparison doublets by addmodulescore vs Scrublet
+
+left figure is from addmodule score doublets(in the figure & table: doublet) and right figure is from Scrublet
+
+```{r warning=FALSE, message=FALSE, fig.width= 14, fig.height=6}
+
+data9set.df <- as.data.frame(data9set.SO@meta.data)
+data9set.df$cell_ID <- rownames(data9set.df)
+data9set_scrublet.df <- merge(data9set.df, scrublet_predicted.df, by = "cell_ID")
+data9set_scrublet.df$scrublet_prediction <- ifelse(data9set_scrublet.df$scrublet_predicted == 1, "doublets", "singlet")
+data9set_module_scrublet.df <- merge(data9set_scrublet.df, doublets_final.df, by = "cell_ID")
+ 
+
+data9set_umap <- as.data.frame(data9set.SO@reductions$umap@cell.embeddings)
+data9set_umap$cell_ID <- rownames(data9set_umap)
+
+data9set_umap <- merge(data9set_umap, data9set_module_scrublet.df, by = "cell_ID")
+
+# subset TTCCTCTTCACAAGAA-1 
+# as low module score MG_genes1 = -0.17299977
+#table(data9set_umap$scrublet_prediction) # 5.19% is doublet
+
+g1 <- ggplot(data9set_umap) + geom_point(aes(x = UMAP_1, y = UMAP_2, color = doublets), size = 0.05) + theme_classic() + 
+  theme(legend.text = element_text(size = 10))
+
+
+g2 <- ggplot(data9set_umap) + geom_point(aes(x = UMAP_1, y = UMAP_2, color = scrublet_prediction), size = 0.05) + theme_classic() + 
+  theme(legend.text = element_text(size = 10))
+
+
+#+ geom_point(data = data9set_umap[which(data9set_umap$cell_ID == "ACCTGAAAGCGAGTAC-1"), ], aes(x = UMAP_1, y = UMAP_2), color = "black")  
+
+grid.arrange(g1, g2, ncol = 2)
+g2
+```
+
+Below is the table of doublets percent
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+cluster_addmodule.df <- data.frame(cluster = data9set_umap$seurat_clusters, doublets = data9set_umap$doublets)
+cluster_addmodule.df <- cluster_addmodule.df %>% group_by(cluster) %>% count(doublets)
+
+###################################
+# addmodule data frame
+###################################
+
+summary_cluster_addmodule.df <- data.frame(cluster = as.character(), doublets_percent = as.numeric(), stringsAsFactors = FALSE)
+# cluster 22 and 30 is all singlet
+j = 0
+for(i in seq(1, by = 2, len = 22)){
+  #print(i)
+  #print(j)
+  summary_cluster_addmodule.df[j+1,1] <- as.character(j)
+  summary_cluster_addmodule.df[j+1,2] <- cluster_addmodule.df[i,3]/(cluster_addmodule.df[i,3]+ cluster_addmodule.df[i+1,3])
+  j = j +1 
+}
+# cluster 22
+summary_cluster_addmodule.df <- rbind(summary_cluster_addmodule.df, data.frame(cluster = "22", doublets_percent = 0))
+
+# 23 ~ 29
+j = 23
+for(i in seq(46, by = 2, len = 7)){
+  #print(i)
+  #print(j)
+  summary_cluster_addmodule.df[j+1,1] <- as.character(j)
+  summary_cluster_addmodule.df[j+1,2] <- cluster_addmodule.df[i,3]/(cluster_addmodule.df[i,3]+ cluster_addmodule.df[i+1,3])
+  j = j +1 
+}
+# cluster 30
+summary_cluster_addmodule.df <- rbind(summary_cluster_addmodule.df, data.frame(cluster = "30", doublets_percent = 0))
+
+# 30 ~ 44
+j = 31
+for(i in seq(61, by = 2, len = 14)){
+  #print(i)
+  #print(j)
+  summary_cluster_addmodule.df[j+1,1] <- as.character(j)
+  summary_cluster_addmodule.df[j+1,2] <- cluster_addmodule.df[i,3]/(cluster_addmodule.df[i,3]+ cluster_addmodule.df[i+1,3])
+  j = j +1 
+}
+
+####################################
+# scrublet doublets data frame
+#####################################
+
+# cluster 41 is all doublets
+cluster_scrublet.df <- data.frame(cluster = data9set_umap$seurat_clusters, doublets = data9set_umap$scrublet_prediction)
+cluster_scrublet.df <- cluster_scrublet.df %>% group_by(cluster) %>% count(doublets)
+
+summary_cluster_scrublet.df <- data.frame(cluster = as.character(), scrublet_doublets_percent = as.numeric(), stringsAsFactors = FALSE)
+
+j = 0
+for(i in seq(1, by = 2, len = 41)){
+  #print(i)
+  #print(j)
+  summary_cluster_scrublet.df[j+1,1] <- as.character(j)
+  summary_cluster_scrublet.df[j+1,2] <- cluster_scrublet.df[i,3]/(cluster_scrublet.df[i,3]+ cluster_scrublet.df[i+1,3])
+  j = j +1 
+}
+
+# cluster 41
+summary_cluster_scrublet.df <- rbind(summary_cluster_scrublet.df, data.frame(cluster = "41", scrublet_doublets_percent = 1))
+
+# 42 ~ 44
+j = 42
+for(i in seq(84, by = 2, len = 3)){
+  #print(i)
+  #print(j)
+  summary_cluster_scrublet.df[j+1,1] <- as.character(j)
+  summary_cluster_scrublet.df[j+1,2] <- cluster_scrublet.df[i,3]/(cluster_scrublet.df[i,3]+ cluster_scrublet.df[i+1,3])
+  j = j +1 
+}
+
+summary_cluster.df <- merge(summary_cluster_addmodule.df, summary_cluster_scrublet.df, by = "cluster")
+summary_cluster.df$cluster <- factor(summary_cluster.df$cluster, levels = as.character(seq(0,44)))
+
+datatable(summary_cluster.df, options = list(pageLength = 5))
+```
+
+Showing percent of doublets for each cluster. Cluster 25, 31, 33, 34, 41, 42, 43, 44 seems doublets cluster by Scrublet
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+
+summary_cluster_gg.df <- summary_cluster.df %>% gather("method", "percent", doublets_percent: scrublet_doublets_percent)
+
+ggplot(data=summary_cluster_gg.df, aes(x=cluster, y=percent, fill=method)) +
+geom_bar(stat="identity", color="black", position=position_dodge())+
+  theme_minimal()
+
+```
+
+I checked how two methods show overlapped results and there were few overlaps between them. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 5, fig.height=3}
+summary_cluster_overlap.df <- data9set_umap[,c(1,30,31)]
+
+summary_cluster_overlap.df$overlap <- ifelse(summary_cluster_overlap.df$scrublet_prediction == "doublets" & summary_cluster_overlap.df$doublets == "doublets", "doublets", 
+       ifelse(summary_cluster_overlap.df$scrublet_prediction == "doublets" & summary_cluster_overlap.df$doublets == "singlet", "scrublet_doublets", 
+               ifelse(summary_cluster_overlap.df$scrublet_prediction == "singlet" & summary_cluster_overlap.df$doublets == "doublets", "addmodule_doublets", "singlet")))
+
+summary_cluster_overlap.df2 <- summary_cluster_overlap.df[grepl("doublets", summary_cluster_overlap.df$overlap), ]
+
+#table(summary_cluster_overlap.df2$overlap)
+
+#summary_cluster_overlap.df3 = data.frame(addmodule_doublets = c(1,0,1), scrublet_doublets = c(0,1,1), Counts = c(3555, 3946, 420))
+#summary_cluster_overlap <- vennCounts(summary_cluster_overlap.df3)
+
+
+draw.pairwise.venn(area1 = 3555, area2 = 3946, cross.area = 420, 
+                   category = c("addmodule_doublets", "scrublet_doublets"),
+                   cat.pos = c(0, 0), cat.dist = rep(0.05, 2),
+                   fill = c("light blue", "pink"))
+```
+
+## 4. composition of 1st & 2nd high score cell type per cluster 
+
+In here, I checked clusters (25, 31, 33, 34, 41, 42, 43, 44) that have high number of doublets by Scrublet and estimated what cell type composition. Also I checked cluster 0, 1, 19, 39 that have low number of doublets. 
+
+#### 4-1. cluster 25
+
+Known as Dentate gyrus in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+test_doublets.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_doublets_data.frame.txt", sep = "\t")
+test_singlet.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_singlet_data.frame.txt", sep = "\t")
+
+##############
+# cluster 25
+##############
+
+doublets_barplot <- function(test_doublets.df, cluster_number = 25){
+  test_doublets_25.df <- test_doublets.df[which(test_doublets.df$cell_ID %in% c(data9set_umap[data9set_umap$seurat_clusters == cluster_number, ]$cell_ID)), ] 
+  test_singlet_25.df <- test_singlet.df[which(test_singlet.df$cell_ID %in% c(data9set_umap[data9set_umap$seurat_clusters == cluster_number, ]$cell_ID)), ] 
+
+  test_doublets_25.df2 <- as.data.frame(table(test_doublets_25.df[test_doublets_25.df$V6 == "doublets", ]$cell_type))
+
+  test_singlet_25.df2 <- as.data.frame(table(test_singlet_25.df$cell_type))
+  test_singlet_25.df3 <- as.data.frame(table(test_doublets_25.df[test_doublets_25.df$V6 == "singlet", ]$cell_type))
+  test_singlet_25.df2$Freq <- test_singlet_25.df2$Freq + test_singlet_25.df3$Freq
+
+  g1 <- ggplot(data=test_doublets_25.df2, aes(x=Var1, y=Freq)) +
+  geom_bar(stat="identity", fill="#663300", position=position_dodge())+
+  theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 90)) + ggtitle(paste0("cluster ", cluster_number, " doublets cell types"))
+
+  g2 <- ggplot(data=test_singlet_25.df2, aes(x=Var1, y=Freq)) +
+  geom_bar(stat="identity", fill="#003333", position=position_dodge())+
+  theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 90)) + ggtitle(paste0("cluster ", cluster_number, " singlet cell types"))
+
+  grid.arrange(g1, g2, ncol = 2)
+
+}
+
+doublets_barplot(test_doublets.df, cluster_number = 25)
+```
+
+#### 4-2. cluster 31
+
+Known as Dentate gyrus in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 31)
+```
+
+#### 4-3. cluster 33
+
+Known as Astrocytes in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 33)
+```
+
+#### 4-4. cluster 34
+
+Known as Microglia in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 34)
+```
+
+#### 4-5. cluster 41
+
+known as OPC in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 41)
+```
+
+#### 4-6. cluster 42
+
+known as OPC in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 42)
+```
+
+#### 4-7. cluster 43
+
+known as Astrocytes in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 43)
+```
+
+#### 4-8. cluster 44
+
+known as OPC in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 44)
+```
+
+#### 4-9. cluster 0
+
+known as Dentate Gyrus in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 0)
+```
+
+#### 4-10. cluster 1
+
+known as Oligo in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 1)
+```
+
+#### 4-11. cluster 19
+
+known as Neuron in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 19)
+```
+
+#### 4-12. cluster 39
+
+known as Neuron in the beginning
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+doublets_barplot(test_doublets.df, cluster_number = 39)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 12, fig.height=7}
+# Shirin's dot plot
+#data9set.SO_Ctrl <- subset(data9set.SO, subset = sample == "Ctrl")
+#data9set.SO_AD <- subset(data9set.SO, subset = sample == "AD")
+#data9set.SO_ADp40KO <- subset(data9set.SO, subset = sample == "ADp40KO")
+
+#d1 <- DotPlot(data9set.SO_Ctrl, features = c("Il12b"), group.by = "seurat_clusters")
+#d1 <- d1 + theme(legend.position = "none")  +  scale_size(range = c(0, 0.1))
+
+#d2 <- DotPlot(data9set.SO_ADp40KO, features = c("Il12b"), group.by = "seurat_clusters")
+#d2 <- d2 + theme(axis.title.y = element_blank(), legend.position = "none")  +  scale_size(range = c(0, 0.1))
+
+#d3 <- DotPlot(data9set.SO_AD, features = c("Il12b"), group.by = "seurat_clusters")
+#d3 <- d3 + theme(axis.title.y = element_blank())
+
+#grid.arrange(d1, d2, d3, ncol = 3, widths=c(1.05,1,1.5))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=7}
+sessionInfo()
+```

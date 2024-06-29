@@ -1,0 +1,150 @@
+---
+title: "nitchenetR test"
+author: "Skim"
+date: '2021 3 9 '
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(viridis)
+library(tidyr)
+library(grid)
+library(cowplot)
+library(ggrepel)
+library(viridis)
+library(nichenetr)
+library(Seurat, lib.loc = "/data/rajewsky/home/skim/R")
+```
+
+```{r warning=FALSE, message=FALSE}
+# # ligand-target prior model
+# download https://zenodo.org/record/3260758/files/ligand_target_matrix.rds
+ligand_target_matrix = readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/ligand_target_matrix.rds")
+
+# ligand-receptor network
+# download https://zenodo.org/record/3260758/files/lr_network.rds
+lr_network = readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/lr_network.rds")
+
+# weighted integrated networks
+# download https://zenodo.org/record/3260758/files/weighted_networks.rds
+weighted_networks = readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/weighted_networks.rds")
+
+weighted_networks_lr = weighted_networks$lr_sig %>% inner_join(lr_network %>% distinct(from,to), by = c("from","to"))
+
+NicheNet_run <- function(Seurat_object = data9set_CP.SO, receiver = "receiver", condition_oi = "condition_oi", condition_reference = "condition_reference", sender = "sender"){
+  nichenet_output = nichenet_seuratobj_aggregate(seurat_obj = Seurat_object, 
+                                               receiver = receiver, 
+                                               condition_colname = "sample_nichenet", 
+                                               condition_oi = condition_oi, 
+                                               condition_reference = condition_reference, 
+                                               sender = sender, 
+                                               ligand_target_matrix = ligand_target_matrix, 
+                                               lr_network = lr_network, 
+                                               weighted_networks = weighted_networks, 
+                                               organism = "mouse", 
+                                               verbose = FALSE)
+  return(nichenet_output)
+}
+```
+
+
+```{r warning=FALSE, message=FALSE}
+data9set_cleaned.SO@active.ident <- data9set_cleaned.SO$cell_type
+data9set_cleaned.SO$conditions <- data9set_cleaned.SO$sample
+
+# sample for nichenet
+data9set_cleaned.SO$sample_nichenet <- as.character(data9set_cleaned.SO$sample)
+```
+
+
+### AD vs ADp40KO (receiver = MOL, sender = subiculum)
+
+```{r warning=FALSE, message=FALSE}
+nichenet_output = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "MOL", condition_oi = "ADp40KO",  condition_reference = "AD", sender = "subiculum")
+
+nichenet_output$ligand_receptor_heatmap
+```
+
+### AD vs ADp40KO (receiver = subiculum, sender = MOL)
+
+```{r warning=FALSE, message=FALSE}
+nichenet_output2 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "subiculum", condition_oi = "AD",  condition_reference = "ADp40KO", sender = "MOL")
+
+nichenet_output2$ligand_receptor_heatmap
+```
+
+```{r warning=FALSE, message=FALSE}
+Robo4_MOL <- Vlnplot_gene_subset(Cell_type = c("MOL"), gene = "Robo4")
+
+ggplot(Robo4_MOL, aes_string(x="celltype", y="gene", color = "celltype", fill="celltype")) + 
+  geom_violin(trim=TRUE, adjust = 3) + theme_cowplot() + ylab("Erbb3 gene expression (MFOL)") + 
+  theme(legend.position = "None", axis.title.x = element_blank())
+```
+
+
+### WT vs AD (receiver = MOL, sender = subiculum)
+
+No output
+
+```{r warning=FALSE, message=FALSE}
+nichenet_outpu4 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "MOL", condition_oi = "AD",  condition_reference = "Ctrl", sender = "subiculum")
+
+nichenet_outpu4$ligand_receptor_heatmap
+```
+
+### ADp40KO vs AD (receiver = MOL, sender = subiculum)
+
+No output
+
+```{r warning=FALSE, message=FALSE}
+nichenet_outpu4 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "MFOL", condition_oi = "AD",  condition_reference = "ADp40KO", sender = "subiculum")
+
+nichenet_outpu4$ligand_receptor_heatmap
+```
+
+### WT vs ADp40KO (receiver = MOL, sender = Dentate_Gyrus)
+
+```{r warning=FALSE, message=FALSE}
+nichenet_outpu5 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "MOL", condition_oi = "ADp40KO",  condition_reference = "Ctrl", sender = "Dentate_Gyrus")
+
+nichenet_outpu5$ligand_receptor_heatmap
+```
+
+### AD vs ADp40KO (receiver = MFOL, sender = Dentate_Gyrus)
+
+no highly likely active targets found for top ligands
+
+### AD vs ADp40KO (receiver = NFOL, sender = Dentate_Gyrus)
+
+no highly likely active targets found for top ligands"
+
+
+
+```{r warning=FALSE, message=FALSE}
+nichenet_outpu7 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "NFOL", condition_oi = "ADp40KO",  condition_reference = "AD", sender = "Dentate_Gyrus")
+
+nichenet_outpu7$ligand_receptor_heatmap
+```
+
+
+### WT vs AD (receiver = MOL, sender = Microglia)
+
+```{r warning=FALSE, message=FALSE}
+nichenet_outpu6 = NicheNet_run(Seurat_object = data9set_cleaned.SO, receiver = "MFOL", condition_oi = "AD",  condition_reference = "Ctrl", sender = "Microglia")
+
+nichenet_outpu6$ligand_receptor_heatmap
+```
+
+```{r warning=FALSE, message=FALSE}
+FeaturePlot(data9set_cleaned.SO, features = "Erbb4")
+VlnPlot(data9set_cleaned.SO, features = "Erbb4", pt.size = 0) + theme(legend.position = "None") 
+VlnPlot(data9set_cleaned.SO, features = "Erbb3", pt.size = 0) + theme(legend.position = "None") 
+
+VlnPlot(data9set_cleaned.SO, features = "Nrg1", pt.size = 0) + theme(legend.position = "None") 
+VlnPlot(data9set_cleaned.SO, features = "Nrg2", pt.size = 0) + theme(legend.position = "None") 
+VlnPlot(data9set_cleaned.SO, features = "Nrg4", pt.size = 0) + theme(legend.position = "None") 
+
+```

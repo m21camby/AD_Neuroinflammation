@@ -1,0 +1,205 @@
+---
+title: "Cluster 29 check"
+author: "Skim"
+date: '2020 7 3 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for Shirin to also check **Lamp1 and Bace1** to check perhaps upregulated in Cluster 29. Also, check cluster 24 which is another unknown neuronal cluster. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+#rownames(data9set_cleaned.SO@assays$RNA@counts)[grepl("^Mir",rownames(data9set_cleaned.SO@assays$RNA@counts))]
+```
+
+#### 1. Cluster 29 AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE}
+c29_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_29AD_Ctrl_corrected.csv")
+
+datatable(c29_DE_AD_Ctrl[c29_DE_AD_Ctrl$X %in% c("Oip5", "Oip5os1", "Cdr1", "Cdr1os", "Lamp1", "Bace1", "Apoe", "Cst3", "Kcnq5", "Kcnd2"), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+#### 2. Cluster 29 AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+c29_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_29ADp40KO_AD_corrected.csv")
+
+c29_DE_AD_ADp40KO$avg_logFC <- c29_DE_AD_ADp40KO$avg_logFC * -1
+
+datatable(c29_DE_AD_ADp40KO[c29_DE_AD_ADp40KO$X %in% c("Oip5", "Oip5os1", "Cdr1", "Cdr1os","Lamp1", "Bace1", "Apoe", "Cst3", "Kcnq5", "Kcnd2"), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+#### 3. Cluster 29 violin plot expression
+
+```{r warning=FALSE, message=FALSE}
+data9set_29.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(29))
+
+table(data9set_29.SO@meta.data$sample)
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_29.SO, features = c("Il12b", "Cdr1os"), group.by = "sample")
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_29.SO, features = c("Apoe", "Cst3"), group.by = "sample")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_29.SO, features = c("Lamp1", "Bace1"), group.by = "sample")
+```
+
+
+Kcnq5dn/dn mice **lacking functional KCNQ5 channels** display **increased excitability** of different classes of interneurons, enhanced phasic and tonic inhibition, and decreased electrical shunting of inhibitory postsynaptic currents. [ref](https://www.nature.com/articles/ncomms7254)
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_29.SO, features = c("Kcnq5", "Kcnd2"), group.by = "sample")
+```
+
+#### 4. Cluster 29 scatter plot expression
+
+```{r warning=FALSE, message=FALSE}
+data9set_29_ctrl.SO <- subset(data9set_29.SO, subset = sample %in% "Ctrl")
+data9set_29_AD.SO <- subset(data9set_29.SO, subset = sample %in% "AD")
+data9set_29_ADp40KO.SO <- subset(data9set_29.SO, subset = sample %in% "ADp40KO")
+
+
+# 1. for ctrl
+data9set_cleaned_29_ctrl.df <- as.data.frame(data9set_29_ctrl.SO@assays$RNA@counts)
+cpm <- apply(data9set_cleaned_29_ctrl.df, 2, function(x) (x/sum(x))*1000000)
+cpm.df <- rowMeans(cpm) %>% as.data.frame
+
+# add pseudocount 1
+cpm.df <- cpm.df + 1
+
+# log2
+cpm_log2.df <- as.data.frame(lapply(cpm.df, log2), row.names = rownames(cpm.df))
+
+# 2. for AD
+data9set_cleaned_29_AD.df <- as.data.frame(data9set_29_AD.SO@assays$RNA@counts)
+cpm2 <- apply(data9set_cleaned_29_AD.df, 2, function(x) (x/sum(x))*1000000)
+cpm2.df <- rowMeans(cpm2) %>% as.data.frame
+
+# add pseudocount 1
+cpm2.df <- cpm2.df + 1
+
+# log2
+cpm2_log2.df <- as.data.frame(lapply(cpm2.df, log2), row.names = rownames(cpm2.df))
+
+# 3. for ADp40KO
+data9set_cleaned_29_ADp40KO.df <- as.data.frame(data9set_29_ADp40KO.SO@assays$RNA@counts)
+cpm3 <- apply(data9set_cleaned_29_ADp40KO.df, 2, function(x) (x/sum(x))*1000000)
+cpm3.df <- rowMeans(cpm3) %>% as.data.frame
+
+# add pseudocount 1
+cpm3.df <- cpm3.df + 1
+
+# log2
+cpm3_log2.df <- as.data.frame(lapply(cpm3.df, log2), row.names = rownames(cpm3.df))
+
+cpm_final <- cbind(cpm_log2.df, cpm2_log2.df, cpm3_log2.df)
+
+colnames(cpm_final) <- c("WT", "AD", "ADp40KO")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=12, fig.height=5}
+cpm_final_sub <- cpm_final[rownames(cpm_final) %in% c("Apoe", "Cst3", "Cdr1os", "Oip5os1", "Il12b", "Lamp1", "Bace1", "Kcnq5", "Kcnd2", "Kcnq3"), ]
+
+
+g1 <- ggplot(cpm_final, aes(x = WT, y = AD)) + geom_point(size = 1, color = "#666666", alpha = 0.2 ) +
+  geom_point(data = cpm_final_sub, aes(x = WT, y = AD), color = "red") + 
+  theme_classic() + scale_x_continuous(expand = c(0,0), limits = c(0, 17)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,17)) + 
+  xlab("log2 average CPM + 1 cluster 29 WT samples") +
+  ylab("log2 average CPM + 1 cluster 29 AD samples") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.5) +
+  geom_text_repel(data = cpm_final_sub, aes(x = WT, y = AD), label = rownames(cpm_final_sub))
+
+g2 <- ggplot(cpm_final, aes(x = ADp40KO, y = AD)) + geom_point(size = 1, color = "#666666", alpha = 0.2 ) +
+  geom_point(data = cpm_final_sub, aes(x = ADp40KO, y = AD), color = "red") + 
+  theme_classic() + scale_x_continuous(expand = c(0,0), limits = c(0, 17)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,17)) + 
+  xlab("log2 average CPM + 1 cluster 29 ADp40KO samples") +
+  ylab("log2 average CPM + 1 cluster 29 AD samples") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.5) +
+  geom_text_repel(data = cpm_final_sub, aes(x = ADp40KO, y = AD), label = rownames(cpm_final_sub))
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 5. Cluster 24 AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE}
+c24_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_24AD_Ctrl_corrected.csv")
+
+datatable(c24_DE_AD_Ctrl[c24_DE_AD_Ctrl$X %in% c("Oip5", "Oip5os1", "Cdr1", "Cdr1os", "Lamp1", "Bace1", "Apoe", "Cst3", "Kcnq5", "Kcnd2"), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+#### 6. Cluster 24 AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE}
+c24_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_24ADp40KO_AD_corrected.csv")
+
+c29_DE_AD_ADp40KO$avg_logFC <- c29_DE_AD_ADp40KO$avg_logFC * -1
+
+datatable(c24_DE_AD_ADp40KO[c24_DE_AD_ADp40KO$X %in% c("Oip5", "Oip5os1", "Cdr1", "Cdr1os","Lamp1", "Bace1", "Apoe", "Cst3", "Kcnq5", "Kcnd2"), ], options = list(pageLength = 5, dom = 'tip'))
+```
+
+#### 7. Cluster 24 violin plot expression
+
+```{r warning=FALSE, message=FALSE}
+data9set_24.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(24))
+
+table(data9set_24.SO@meta.data$sample)
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_24.SO, features = c("Il12b", "Cdr1os"), group.by = "sample")
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_24.SO, features = c("Apoe", "Cst3"), group.by = "sample")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_24.SO, features = c("Lamp1", "Bace1"), group.by = "sample")
+```
+
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set_24.SO, features = c("Kcnq5", "Kcnd2"), group.by = "sample")
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```
+

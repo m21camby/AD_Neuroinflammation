@@ -1,0 +1,424 @@
+---
+title: "OL trade-seq"
+author: "Skim"
+date: '2020 9 16 '
+output: html_document
+---
+
+[figGAM ref](https://bioconductor.org/packages/release/bioc/vignettes/tradeSeq/inst/doc/fitGAM.html)
+[tradeseq ref](https://bioconductor.org/packages/devel/bioc/vignettes/tradeSeq/inst/doc/tradeSeq.html)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(tradeSeq)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(slingshot)
+library(monocle)
+library(mclust, quietly = TRUE)
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+require(mgcv, quietly = TRUE)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# For reproducibility
+RNGversion("3.5.0")
+palette(brewer.pal(8, "Dark2"))
+data(countMatrix, package = "tradeSeq")
+counts <- as.matrix(countMatrix)
+rm(countMatrix)
+data(crv, package = "tradeSeq")
+data(celltype, package = "tradeSeq")
+
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo", "OPC"))
+
+data9set_sub.meta <- data9set_sub.SO@meta.data %>% as.data.frame
+
+data9set_sub.meta$cell_barcode <- rownames(data9set_sub.meta)
+
+data9set_sub.meta <- data9set_sub.meta %>% mutate(cell_type_precise = case_when(seurat_clusters %in% 6 ~ "MOL",
+                                                                                            seurat_clusters %in% c(1,5) ~ "MFOL",
+                                                                                            seurat_clusters %in% 12 ~ "OPC",
+                                                                                            seurat_clusters %in% 38 ~ "NFOL"))
+
+data9set_sub.meta <- data9set_sub.meta %>% mutate(color = case_when(seurat_clusters %in% 6 ~ "red",
+                                                                                            seurat_clusters %in% c(1,5) ~ "orange",
+                                                                                            seurat_clusters %in% 12 ~ "green",
+                                                                                            seurat_clusters %in% 38 ~ "blue"))
+
+rownames(data9set_sub.meta) <- data9set_sub.meta$cell_barcode
+
+
+
+counts = GetAssayData(object = data9set_sub.SO, slot = "counts")
+
+meta_sub.df <- data9set_sub.SO@meta.data
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+sim <- SingleCellExperiment(assays = list(counts = GetAssayData(object = data9set_sub.SO, slot = "counts")))
+
+geneFilter <- apply(assays(sim)$counts,1,function(x){
+    sum(x >= 3) >= 10
+})
+sim <- sim[geneFilter, ]
+
+counts <- counts[geneFilter, ] 
+counts <- counts %>% as.matrix() %>% t()
+
+FQnorm <- function(counts){
+    rk <- apply(counts,2,rank,ties.method='min')
+    counts.sort <- apply(counts,2,sort)
+    refdist <- apply(counts.sort,1,median)
+    norm <- apply(rk,2,function(r){ refdist[r] })
+    rownames(norm) <- rownames(counts)
+    return(norm)
+}
+
+assays(sim)$norm <- FQnorm(assays(sim)$counts)
+
+pca <- prcomp(t(log1p(assays(sim)$norm)), scale. = FALSE)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+rd <- pca$x[,1:3]
+
+reducedDims(sim) <- SimpleList(PCA = rd)
+cl <- Mclust(rd, G = 4)$classification
+colData(sim)$GMM <- cl
+
+simu_slingshot <- slingshot(sim, clusterLabels = 'GMM', reducedDim = 'PCA')
+
+colors <- colorRampPalette(brewer.pal(11,'Spectral')[-6])(100)
+plotcol <- colors[cut(sim$GMM, breaks=100)]
+
+plotcol.df <- plotcol %>% as.data.frame
+simu.meta <- simu_slingshot@int_colData@listData$reducedDims@listData$PCA %>% as.data.frame
+modifiend_color <- data9set_sub.meta$color %>% as.vector
+
+
+plot(reducedDims(simu_slingshot)$PCA, pch=16, asp = 1, col = modifiend_color)
+savelines <- lines(SlingshotDataSet(simu_slingshot), lwd=2, col='black')
+
+
+exp <- SlingshotDataSet(simu_slingshot)
+
+test_curve <- exp@curves$curve1$lambda %>% as.data.frame
+
+test_curve2 <- exp@curves$curve1$ord %>% as.data.frame
+
+
+t <- simu_slingshot$slingPseudotime_2
+
+t.df <- t %>% as.data.frame
+
+lin <- getLineages(sim, clusterLabels = colData(simu_slingshot)$GMM)
+
+crv <- getCurves(lin) %>% SlingshotDataSet()
+
+
+test.df <- crv@curves$curve1$ord %>% as.data.frame
+
+
+#norms <- assays(simu_slingshot) %>% as.matrix()
+
+BPPARAM <- BiocParallel::bpparam()
+
+sce <- fitGAM(counts = counts, pseudotime = slingPseudotime(crv, na = FALSE),
+                  sds = crv, nknots = 3, sce = FALSE, verbose = TRUE, BPPARAM = BPPARAM, parallel = TRUE)
+
+
+pseudotime <- slingPseudotime(crv, na = FALSE)
+cellWeights <- slingCurveWeights(crv)
+
+sce <- fitGAM(counts = counts, pseudotime = pseudotime, cellWeights = cellWeights,
+                 nknots = 6, verbose = TRUE, BPPARAM = BPPARAM, parallel = TRUE)
+
+assoRes <- associationTest(sce)
+head(assoRes)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+rd1 <- pca$x[,1:2]
+plot(rd1, col = rgb(0,0,0,.5), pch=16, asp = 1)
+
+library(destiny, quietly = TRUE)
+dm <- DiffusionMap(t(log1p(assays(sim)$norm)))
+rd2 <- cbind(DC1 = dm$DC1, DC2 = dm$DC2)
+plot(rd2, col = rgb(0,0,0,.5), pch=16, asp = 1)
+
+reducedDims(sim) <- SimpleList(PCA = rd1, DiffMap = rd2)
+
+library(mclust, quietly = TRUE)
+
+cl1 <- Mclust(rd1)$classification
+colData(sim)$GMM <- cl1
+
+
+
+library(RColorBrewer)
+plot(rd1, col = brewer.pal(9,"Set1")[cl1], pch=16, asp = 1)
+
+cl2 <- kmeans(rd1, centers = 4)$cluster
+colData(sim)$kmeans <- cl2
+
+plot(rd1, col = brewer.pal(9,"Set1")[cl2], pch=16, asp = 1)
+
+
+
+sim <- slingshot(sim, clusterLabels = 'GMM', reducedDim = 'PCA')
+
+summary(sim$slingPseudotime_1)
+
+colors <- colorRampPalette(brewer.pal(11,'Spectral')[-6])(100)
+plotcol <- colors[cut(sim$slingPseudotime_1, breaks=100)]
+
+plot(reducedDims(sim)$PCA, col = plotcol, pch=16, asp = 1)
+lines(SlingshotDataSet(sim), lwd=2, col='black')
+
+plot(reducedDims(sim)$PCA, col = brewer.pal(9,'Set1')[sim$GMM], pch=16, asp = 1)
+lines(SlingshotDataSet(sim), lwd=2, type = 'lineages', col = 'black')
+
+sim5 <- slingshot(sim, clusterLabels = 'GMM', reducedDim = 'PCA',
+                   approx_points = 5)
+
+colors <- colorRampPalette(brewer.pal(11,'Spectral')[-6])(100)
+plotcol <- colors[cut(sim5$slingPseudotime_1, breaks=100)]
+
+plot(reducedDims(sim5)$PCA, col = plotcol, pch=16, asp = 1)
+lines(SlingshotDataSet(sim5), lwd=2, col='black')
+
+space <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200710_OL_OPC_final/20200710_OL_OPC_final_scorpius_space.rda")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+set.seed(5)
+icMat <- evaluateK(counts = counts, sds = crv, k = 3:10, 
+                   nGenes = 200, verbose = T)
+
+set.seed(7)
+pseudotime <- slingPseudotime(crv, na = FALSE)
+cellWeights <- slingCurveWeights(crv)
+sce <- fitGAM(counts = counts, pseudotime = pseudotime, cellWeights = cellWeights,
+                 nknots = 6, verbose = FALSE)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+palette(brewer.pal(8, "Dark2"))
+data(countMatrix, package = "tradeSeq")
+counts <- as.matrix(countMatrix)
+rm(countMatrix)
+data(celltype, package = "tradeSeq")
+
+counts = GetAssayData(object = data9set_sub.SO, slot = "counts")
+
+set.seed(200)
+pd <- data.frame(cells = rownames(data9set_sub.SO@meta.data), cellType = data9set_sub.SO$cell_type)
+rownames(pd) <- pd$cells
+fd <- data.frame(gene_short_name = rownames(counts))
+rownames(fd) <- fd$gene_short_name
+cds <- newCellDataSet(counts, phenoData = new("AnnotatedDataFrame", data = pd),
+                      featureData = new("AnnotatedDataFrame", data = fd))
+cds <- estimateSizeFactors(cds)
+cds <- reduceDimension(cds, max_components = 2)
+```
+
+### monocle
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+counts <- as.matrix(GetAssayData(data9set_sub.SO, slot = "counts"))
+
+meta.data <- data9set_sub.SO@meta.data
+
+pd <- data.frame(cells = rownames(meta.data), cellType = meta.data$cell_type)
+rownames(pd) <- pd$cells
+fd <- data.frame(gene_short_name = rownames(counts))
+rownames(fd) <- fd$gene_short_name
+
+
+cds <- newCellDataSet(counts, phenoData = new("AnnotatedDataFrame", data = pd),
+                      featureData = new("AnnotatedDataFrame", data = fd))
+cds <- estimateSizeFactors(cds)
+cds <- reduceDimension(cds, max_components = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+
+
+```
+
+### bioconductor tutorial
+
+[ref](http://bioconductor.org/packages/devel/bioc/vignettes/slingshot/inst/doc/vignette.html)
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+sim <- SingleCellExperiment(assays = list(counts = GetAssayData(object = data9set_sub.SO, slot = "counts")))
+
+geneFilter <- apply(assays(sim)$counts,1,function(x){
+    sum(x >= 3) >= 10
+})
+sim <- sim[geneFilter, ]
+
+FQnorm <- function(counts){
+    rk <- apply(counts,2,rank,ties.method='min')
+    counts.sort <- apply(counts,2,sort)
+    refdist <- apply(counts.sort,1,median)
+    norm <- apply(rk,2,function(r){ refdist[r] })
+    rownames(norm) <- rownames(counts)
+    return(norm)
+}
+assays(sim)$norm <- FQnorm(assays(sim)$counts)
+
+pca <- prcomp(t(log1p(assays(sim)$norm)), scale. = FALSE)
+rd1 <- pca$x[,1:2]
+
+#plot(rd1, col = rgb(0,0,0,.5), pch=16, asp = 1)
+reducedDims(sim) <- SimpleList(PCA = rd1)
+
+cl1 <- Mclust(rd1)$classification
+colData(sim)$GMM <- cl1
+#table(cl1)
+cl <- cl1
+
+sds <- slingshot(rd1, cl1)
+
+sim <- slingshot(sim, clusterLabels = 'GMM', reducedDim = 'PCA')
+
+summary(sim$slingPseudotime_1)
+
+colors <- colorRampPalette(brewer.pal(11,'Spectral')[-6])(100)
+plotcol <- colors[cut(sim$slingPseudotime_1, breaks=100)]
+
+plot(reducedDims(sim)$PCA, col = plotcol, pch=16, asp = 1)
+lines(SlingshotDataSet(sim), lwd=2, col='black')
+
+test <- reducedDims(sim)$PCA %>% as.data.frame
+
+test$cell_barcode_precise <- data9set_sub.meta$cell_type_precise
+
+#ggplot(test, aes(x= PC1, y = PC2, color = cell_barcode_precise)) + geom_point()
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+pseudotime <- slingPseudotime(sim, na = FALSE)
+cellWeights <- slingCurveWeights(sim)
+
+
+sce <- fitGAM(counts = counts, sds=crv, nknots = 4, sce = TRUE, BPPARAM = BPPARAM, parallel = TRUE)
+
+
+
+sce <- fitGAM(counts = counts, pseudotime = pseudotime, cellWeights = cellWeights,
+                 nknots = 6, verbose = FALSE, BPPARAM = BPPARAM, parallel = TRUE)
+
+
+test <- sce@colData@listData$tradeSeq$dm
+
+
+assoRes <- associationTest(sce, global = FALSE, lineages = TRUE)
+head(assoRes)
+
+startRes <- startVsEndTest(sce)
+
+oStart <- order(startRes$waldStat, decreasing = TRUE)
+sigGeneStart <- names(sce)[oStart[3]]
+
+
+plotSmoothers(sce, counts, gene = sigGeneStart)
+
+
+plotGeneCount(crv, counts, gene = sigGeneStart)
+
+plotSmoothers(sce, counts, gene = "Pdgfra")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+
+lin <- getLineages(sim, clusterLabels = colData(sim)$kMeans, reducedDim = 'PCA')
+
+crv <- SlingshotDataSet(getCurves(lin))
+
+counts <- counts -1
+
+counts.df <- counts %>% as.data.frame
+
+counts.df[c(1:10),c(1:10)]
+
+
+sce4 <- fitGAM(counts = counts, pseudotime = slingPseudotime(crv, na = FALSE), cellWeights = cellWeights,
+              sds = crv, nknots = 4, sce = TRUE, BPPARAM = BPPARAM, parallel = TRUE)
+
+```
+
+```{r}
+#cw <- slingCurveWeights(sds)
+
+lin <- getLineages(sim, clusterLabels = colData(simu_slingshot)$GMM)
+
+crv <- getCurves(lin) %>% SlingshotDataSet()
+
+pseudotime <- slingPseudotime(crv, na = FALSE)
+
+assignment <- apply(cellWeights, 1, which.max)
+
+table(assignment)
+
+
+test1.df <- data.frame(time = c(1:10), response = c(1,1,2,3,4,6,7,7,7,7), condition = rep("A",10))
+test2.df <- data.frame(time = c(1:10), response = c(1,1,1,1.5,1.5,1,1.5,2,2,2), condition = rep("B",10))
+test3.df <- rbind(test1.df, test2.df)
+
+m <- gam(condition ~ s(time, by=response) + s(time, by=response), data = test3.df,
+         family = quasibinomial(link = "logit"))
+summary(m)
+
+t1 <- pseudotime[,1]
+t2 <- pseudotime[,2]
+l1 <- as.numeric(assignment == 1)
+l2 <- as.numeric(assignment == 2)
+
+condition <- factor(rep(c('A','B'), length.out = nrow(rd1)))
+condition[110:240] <- 'A'
+
+m <- gam(condition ~ s(t1, by=l1, id=1) + s(t2, by=l2, id=1),
+         family = quasibinomial(link = "logit"))
+
+s(t1, by=l1, id=1)
+s(t2, by=l2, id=1)
+
+summary(m)
+
+
+hist(t2)
+```
+
+
+```{r}
+library(itsadug)
+library(mgcv)
+data(simdat)
+
+select <- 1:18
+select <- select[select %% 3 ==0]
+simdat <- droplevels(simdat[simdat$Subject %in% c(sprintf("a%02d",select), sprintf("c%02d", select)),])
+
+
+
+```

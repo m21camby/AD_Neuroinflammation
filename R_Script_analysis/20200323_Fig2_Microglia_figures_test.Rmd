@@ -1,0 +1,557 @@
+---
+title: "test"
+author: "Skim"
+date: '2020 3 23 '
+output: html_document
+---
+```{r fig.height= 10, fig.width=10}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned_MG.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(3, 8))
+
+# combine meta data and UMAP
+data9set_cleaned.meta.data <- data9set_cleaned.SO@meta.data
+data9set_cleaned_MG_umap <- as.data.frame(data9set_cleaned.SO@reductions$umap@cell.embeddings)
+data9set_cleaned_MG_umap.df <- cbind(data9set_cleaned.meta.data, data9set_cleaned_MG_umap)
+
+# Mark Microglia cluster
+data9set_cleaned_MG_umap.df$MG <- ifelse(data9set_cleaned_MG_umap.df$seurat_clusters %in% c(3, 8), "MG", "others")
+
+# subset Microglia cluster
+data9set_cleaned_sub_MG_umap.df <- data9set_cleaned_MG_umap.df[data9set_cleaned_MG_umap.df$MG %in% "MG", ]
+```
+
+```{r fig.height= 10, fig.width=10}
+ggplot(data9set_cleaned_MG_umap.df, aes(x = UMAP_1, y = UMAP_2)) + geom_point(color = "gray", size = 0.1) + 
+  geom_point(data = data9set_cleaned_MG_umap.df[data9set_cleaned_MG_umap.df$MG %in% "MG", ], aes(x = UMAP_1, y = UMAP_2), color = "#99CC00", size = 0.1) + theme_classic() + theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12))
+
+```
+
+```{r fig.height= 7, fig.width=7}
+ggplot(data9set_cleaned_sub_MG_umap.df, aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1)+ scale_color_manual(values=c("#E69F00", "#56B4E9"), label = paste0("cluster ", c(3, 8)))+ theme_classic() + theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.8, 0.2)) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28))  + guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15)))
+
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 10, fig.width=12}
+data9set.SO_MG.marker8vs3 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200215_MG_2nd_analysis_Cluster8_vs_3_marker.csv", row.names = 1)
+data9set.SO_MG.marker8vs3$gene <- rownames(data9set.SO_MG.marker8vs3)
+
+# eaual = Hexb, Tyrobp, Arhgap5 or Ctsd
+# more in cluster 3 C1qa, Cx3cr1, P2ry12
+# more in cluster 8 Cd9, Clec7a Cst7 or Trem2
+
+t1 <- textGrob("Microglia markers", gp=gpar(fontsize=18, col="black", font = "Helvetica"), hjust = 0.35)
+t2 <- textGrob("homeostatic markers", gp=gpar(fontsize=18, col="black", font = "Helvetica"), hjust = 0.35)
+t3 <- textGrob("DAM markers", gp=gpar(fontsize=18, col="black", font = "Helvetica"), hjust = 0.25)
+
+f1 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Hexb"), pt.size = 0.5) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f2 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Tyrobp"), pt.size = 0.5, order = TRUE) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f3 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Arhgap5"), pt.size = 0.5) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+
+f4 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("C1qa"), pt.size = 0.5, order = TRUE) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f5 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Cx3cr1"), pt.size = 0.5) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f6 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("P2ry12"), pt.size = 0.5) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+
+f7 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Cd9"), pt.size = 0.5) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f8 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Cst7"), pt.size = 0.5, order = TRUE) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank()) 
+
+f9 <- FeaturePlot(data9set_cleaned_MG.SO, features = c("Clec7a"), pt.size = 0.5, order = TRUE) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + scale_color_gradient2(low="#003366", high='#FFCC00', mid="#66FFFF", midpoint = 2)+ theme(legend.direction = "horizontal", legend.position = c(0.35, 0.1), plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+
+grid.arrange(t1, f1,f2,f3,t2, f4,f5,f6, t3, f7,f8,f9, ncol = 4, widths = c(0.2, 0.3, 0.3,0.3))
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 4, fig.width=12}
+d2 <- DimPlot(object = data9set_cleaned_MG.SO, group.by = "sample", pt.size = 0.05, split.by = "sample") 
+d2 <- d2 + scale_colour_viridis_d() + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28)) + theme(legend.position = "none", plot.title = element_text(hjust = 0.6), panel.border = element_blank(), axis.line = element_blank(), axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+d2
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=8}
+
+plot.data <- data9set_cleaned_MG.SO@meta.data %>%
+    dplyr::select(sample, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cluster, sample) %>%
+    summarise(count = n()) %>%
+    mutate(clust_total = sum(count)) %>%
+    mutate(clust_prop = count / clust_total) %>%
+    group_by(sample) %>%
+    mutate(dataset_total = sum(count)) %>%
+    ungroup() %>%
+    mutate(dataset_prop = count / dataset_total)
+
+plot.data$sample <- factor(plot.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+g1 <- ggplot(plot.data, aes(x = cluster, y = count, fill = sample)) +
+    geom_col() + 
+  theme_classic() + 
+  scale_y_continuous(limits = c(0, 4000), expand = c(0,0)) + 
+  scale_fill_viridis_d() + 
+  geom_text(aes(label = count), color = "darkgray", size = 5,  position = position_stack(0.4)) + theme(axis.text.x = element_text(size =14, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) + guides(fill = guide_legend(override.aes = list(size = 8), label.theme = element_text(size = 15)))
+
+g2 <- ggplot(plot.data, aes(x = cluster, y = clust_prop, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d() + 
+  ylab("percentage") + 
+  geom_text(aes(label = round(clust_prop, 3)), color = "darkgray", size = 5,  position = position_stack(0.4)) + theme(axis.text.x = element_text(size =14, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.position = "none")
+
+grid.arrange(g1, g2, ncol = 2, widths = c(0.6, 0.4))
+```
+
+```{r}
+
+MG_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+MG_DE_AD_Ctrl.df <- MG_DE_AD_Ctrl.df[which(abs(MG_DE_AD_Ctrl.df$avg_logFC) > 0.2 & MG_DE_AD_Ctrl.df$p_val_adj < 0.01), ]
+MG_DE_AD_Ctrl.df$gene <- rownames(MG_DE_AD_Ctrl.df)
+
+# log2FC > 1 or padj > 50
+MG_DE_AD_Ctrl_plus.df <- MG_DE_AD_Ctrl.df[which(MG_DE_AD_Ctrl.df$avg_logFC > 1 | MG_DE_AD_Ctrl.df$avg_logFC > 0 & -log10(MG_DE_AD_Ctrl.df$p_val_adj) > 50),]
+MG_DE_AD_Ctrl_minus.df <- MG_DE_AD_Ctrl.df[which(MG_DE_AD_Ctrl.df$avg_logFC < 0 & -log10(MG_DE_AD_Ctrl.df$p_val_adj) > 25),]
+MG_DE_AD_Ctrl_Il12b.df <-  MG_DE_AD_Ctrl.df[MG_DE_AD_Ctrl.df$gene == "Il12b", ]
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=5.5}
+g1 <- ggplot(MG_DE_AD_Ctrl.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = MG_DE_AD_Ctrl_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  geom_point(data = MG_DE_AD_Ctrl_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "blue") +
+  ggtitle("AD versus Ctrl in Microglia") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,100)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = MG_DE_AD_Ctrl_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_Ctrl_plus.df$gene, force = 10) + 
+  geom_text_repel(data = MG_DE_AD_Ctrl_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_Ctrl_minus.df$gene, force = 10) + 
+  geom_text_repel(data = MG_DE_AD_Ctrl_Il12b.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_Ctrl_Il12b.df$gene, nudge_y = 8)
+```
+
+```{r}
+
+MG_DE_AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv", row.names = 1)
+MG_DE_AD_ADp40KO.df <- MG_DE_AD_ADp40KO.df[which(abs(MG_DE_AD_ADp40KO.df$avg_logFC) > 0.1 & MG_DE_AD_ADp40KO.df$p_val_adj < 0.01), ]
+MG_DE_AD_ADp40KO.df$gene <- rownames(MG_DE_AD_ADp40KO.df)
+
+# log2FC > 1 or padj > 50
+MG_DE_AD_ADp40KO_plus.df <- MG_DE_AD_ADp40KO.df[which(MG_DE_AD_ADp40KO.df$avg_logFC > 0.3 | MG_DE_AD_ADp40KO.df$avg_logFC > 0 & -log10(MG_DE_AD_ADp40KO.df$p_val_adj) > 50),]
+MG_DE_AD_ADp40KO_minus.df <- MG_DE_AD_ADp40KO.df[which(MG_DE_AD_ADp40KO.df$avg_logFC < 0 & -log10(MG_DE_AD_ADp40KO.df$p_val_adj) > 10),]
+MG_DE_AD_ADp40KO_Il12b.df <-  MG_DE_AD_ADp40KO.df[MG_DE_AD_ADp40KO.df$gene == "Il12b", ]
+```
+
+```{r fig.height= 5, fig.width=5.5}
+g2 <- ggplot(MG_DE_AD_ADp40KO.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = MG_DE_AD_ADp40KO_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  geom_point(data = MG_DE_AD_ADp40KO_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "blue") +
+  ggtitle("AD versus ADp40KO in Microglia") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+    scale_y_log10(expand = c(0,0), breaks = c(5,10,15,20, 50, 130), limits = c(1,130)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = MG_DE_AD_ADp40KO_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_ADp40KO_plus.df$gene, force = 20, nudge_y = -0.1) + 
+  geom_text_repel(data = MG_DE_AD_ADp40KO_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_ADp40KO_minus.df$gene, force = 10) + 
+  geom_text_repel(data = MG_DE_AD_ADp40KO_Il12b.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = MG_DE_AD_ADp40KO_Il12b.df$gene, nudge_y = 0.1)
+
+
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=11}
+grid.arrange(g1, g2, ncol = 2)
+```
+
+```{r}
+data9set_cleaned_MG_Ctrl.SO <- subset(data9set_cleaned_MG.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_MG_AD.SO <- subset(data9set_cleaned_MG.SO, subset = sample %in% "AD")
+data9set_cleaned_MG_ADp40KO.SO <- subset(data9set_cleaned_MG.SO, subset = sample %in% "ADp40KO")
+
+MG_Ctrl_count.df <- as.data.frame(rowMeans(GetAssayData(data9set_cleaned_MG_Ctrl.SO, slot = "counts")))
+MG_AD_count.df <- as.data.frame(rowMeans(GetAssayData(data9set_cleaned_MG_AD.SO, slot = "counts")))
+MG_ADp40KO_count.df <- as.data.frame(rowMeans(GetAssayData(data9set_cleaned_MG_ADp40KO.SO, slot = "counts")))
+
+# MG_Ctrl_normal_count.df2 <- as.data.frame(log(apply(GetAssayData(data9set_cleaned_MG_Ctrl.SO, slot = "counts"),1,mean,na.rm=TRUE)+ 1))
+# MG_Ctrl_normal_count.df2$gene <- rownames(MG_Ctrl_normal_count.df2)
+
+
+MG_count.df <- cbind(MG_Ctrl_count.df, MG_AD_count.df, MG_ADp40KO_count.df)
+
+
+# remove genes where all zero count
+MG_count.df <- MG_count.df[apply(MG_count.df == 0, 1, sum) != 3, ]
+colnames(MG_count.df) <- c("Ctrl", "AD", "ADp40KO")
+MG_count.df <- log(MG_count.df + 0.001)
+
+MG_count.df$gene <- rownames(MG_count.df)
+MG_count.df <- as.data.frame(MG_count.df)
+
+MG_count_plus.df <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_Ctrl_plus.df$gene, ]
+MG_count_minus.df <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_Ctrl_minus.df$gene, ]
+MG_count_Il12b.df <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_Ctrl_Il12b.df$gene, ]
+
+
+g4 <- ggplot(MG_count.df, aes(x = Ctrl, y = AD)) + geom_point(size = 0.5) + 
+  geom_point(data = MG_count_plus.df,  aes(x = Ctrl, y = AD), color = "red", size = 0.8) +
+  geom_point(data = MG_count_minus.df,  aes(x = Ctrl, y = AD), color = "blue", size = 0.8) +
+  ggtitle("AD versus Ctrl in Microglia") + 
+  theme_classic() + 
+  xlab("log (average UMI counts) Ctrl") + 
+  ylab("log (average UMI counts) AD") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.5) + 
+  geom_text_repel(data = MG_count_plus.df, aes(x = Ctrl, y = AD), label = MG_count_plus.df$gene, force = 30, nudge_y = .8) + 
+  geom_text_repel(data = MG_count_minus.df, aes(x = Ctrl, y = AD), label = MG_count_minus.df$gene, force = 40, nudge_y = -.6) + 
+  geom_text_repel(data = MG_count_Il12b.df, aes(x = Ctrl, y = AD), label = MG_count_Il12b.df$gene, nudge_y = 3, nudge_x = -0.1)
+
+MG_count_plus.df2 <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_ADp40KO_plus.df$gene, ]
+MG_count_minus.df2 <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_ADp40KO_minus.df$gene, ]
+MG_count_Il12b.df2 <- MG_count.df[MG_count.df$gene %in% MG_DE_AD_ADp40KO_Il12b.df$gene, ]
+
+
+g5 <- ggplot(MG_count.df, aes(x = ADp40KO, y = AD)) + geom_point(size = 0.5) + 
+  geom_point(data = MG_count_plus.df2,  aes(x = ADp40KO, y = AD), color = "red", size = 0.8) +
+  geom_point(data = MG_count_minus.df2,  aes(x = ADp40KO, y = AD), color = "blue", size = 0.8) +
+  ggtitle("AD versus ADp40KO in Microglia") + 
+  theme_classic() + 
+  xlab("log (average UMI counts) ADp40KO") + 
+  ylab("log (average UMI counts) AD") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.5) + 
+  geom_text_repel(data = MG_count_plus.df2, aes(x = ADp40KO, y = AD), label = MG_count_plus.df2$gene, force = 50, nudge_y = 1.5, nudge_x = -1.2, max.iter = 3000) + 
+  geom_text_repel(data = MG_count_minus.df2, aes(x = ADp40KO, y = AD), label = MG_count_minus.df2$gene, force = 40, nudge_y = -.8) + 
+  geom_text_repel(data = MG_count_Il12b.df2, aes(x = ADp40KO, y = AD), label = MG_count_Il12b.df2$gene, nudge_y = 1, nudge_x = -0.1)
+
+```
+
+
+
+```{r warning = FALSE, message = FALSE, fig.height= 5, fig.width=11}
+grid.arrange(g4, g5, ncol = 2)
+```
+
+## GO for cluster characterization
+
+```{r}
+# load cluster marker genes
+markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker.csv", row.names = 1)
+
+# extract Oligo marker genes
+MG_markers <- markers[markers$cluster %in% c("3", "8"), ]
+
+```
+
+```{r GO function}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+return(topGOResults.df)
+}
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df, title = "title"){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") + 
+  ggtitle(title) + 
+  theme_minimal() + theme(axis.text.x = element_text(size = 10, color = "black"), axis.text.y = element_text(size = 10, color = "black"), axis.title = element_text(size = 12, color = "black"), title = element_text(hjust = 0.5)) + guides(
+    size = guide_legend(order = 1),
+    fill = guide_legend(order = 0)
+  )
+
+}
+```
+
+## Cluster 3
+```{r fig.width= 15, fig.height= 5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(MG_markers[which(MG_markers$cluster %in% "3" &MG_markers$p_val_adj < 0.01 & MG_markers$avg_logFC > 1), ]$gene) 
+
+# background genes
+data9set_MG_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+
+
+
+geneUniverse <- rownames(data9set_MG_DE_AD_Ctrl_markers[data9set_MG_DE_AD_Ctrl_markers$pct.1 > 0.01 | data9set_MG_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df1 <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:10), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df1, title = "Cluster 3 Molecular function")
+
+
+topGOResults_BP.df1 <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:10), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df1, title = "Cluster 3 Biological process")
+
+
+grid.arrange(g1, g2, ncol = 2)
+
+```
+
+## Cluster 8
+```{r fig.width= 15, fig.height= 6}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(MG_markers[which(MG_markers$cluster %in% "8" &MG_markers$p_val_adj < 0.01 & MG_markers$avg_logFC > 0.5), ]$gene) 
+
+geneUniverse <- rownames(data9set_MG_DE_AD_Ctrl_markers[data9set_MG_DE_AD_Ctrl_markers$pct.1 > 0.01 | data9set_MG_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df2 <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df2)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df2 <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:5), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df2)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+```{r}
+xx <- as.list(GOBPANCESTOR)
+xx1 <- as.list(GOBPCHILDREN)
+xx$`GO:0000001`
+xx1$`GO:0000001`
+```
+
+```{r}
+data9set.SO_MG.marker8vs3 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200215_MG_2nd_analysis_Cluster8_vs_3_marker.csv", row.names = 1)
+data9set.SO_MG.marker8vs3_padj <- data9set.SO_MG.marker8vs3[which(data9set.SO_MG.marker8vs3$p_val_adj < 0.01), ]
+data9set.SO_MG.marker8vs3_padj$gene <- rownames(data9set.SO_MG.marker8vs3_padj)
+
+data9set.SO_MG.marker8vs3_padj$p_val_adj <- ifelse(data9set.SO_MG.marker8vs3_padj$p_val_adj == 0, 1e-320, data9set.SO_MG.marker8vs3_padj$p_val_adj)
+
+DAM_plus <- c("Cst7", "Lpl", "Apoe", "Clec7a", "Ank", "Axl", "Spp1", "Itgax", "Igf1", "Csf1", "Cybb", "Fam20c", "Gpnmb", "Gm11428")
+
+DAM_minus <- c("P2ry12", "Tmem119", "Cx3cr1", "Serinc3")
+  
+data9set.SO_MG.marker8vs3_padj_plus.df <- data9set.SO_MG.marker8vs3_padj[data9set.SO_MG.marker8vs3_padj$gene %in% DAM_plus,]
+# padj > 10
+data9set.SO_MG.marker8vs3_padj_minus.df <- data9set.SO_MG.marker8vs3_padj[data9set.SO_MG.marker8vs3_padj$gene %in% DAM_minus,]
+
+```
+
+```{r fig.width= 5.5, fig.height= 5}
+ggplot(data9set.SO_MG.marker8vs3_padj) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj)), size = 0.5) + 
+  geom_point(data = data9set.SO_MG.marker8vs3_padj_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  geom_point(data = data9set.SO_MG.marker8vs3_padj_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "blue") +
+  ggtitle("cluster8 versus cluster3 in Microglia") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,350)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_text_repel(data = data9set.SO_MG.marker8vs3_padj_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = data9set.SO_MG.marker8vs3_padj_plus.df$gene, force = 30, nudge_y = -0.2, size = 4) + 
+  geom_text_repel(data = data9set.SO_MG.marker8vs3_padj_minus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), label = data9set.SO_MG.marker8vs3_padj_minus.df$gene, force = 10, size = 4)
+
+```
+
+
+```{r}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+# split by sample
+data9set_cleaned_MG_c3.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% 3)
+data9set_cleaned_MG_c8.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% 8)
+
+# extract UMI counts and calculate average per each gene
+MG_c3_count.df <- data.frame(Matrix::rowMeans(GetAssayData(data9set_cleaned_MG_c3.SO, slot = "counts")))
+MG_c8_count.df <- data.frame(Matrix::rowMeans(GetAssayData(data9set_cleaned_MG_c8.SO, slot = "counts")))
+
+
+MG_count.df <- cbind(MG_c3_count.df, MG_c8_count.df)
+
+
+
+# remove genes where all zero in samples
+MG_count.df <- MG_count.df[apply(MG_count.df == 0, 1, sum) != 3, ]
+colnames(MG_count.df) <- c("cluster3", "cluster8")
+# add pseudocount 0.001 and logarithm 
+MG_count.df <- log(MG_count.df + 0.001)
+
+MG_count.df$gene <- rownames(MG_count.df)
+MG_count.df <- as.data.frame(MG_count.df)
+
+# extract genes from volcano plots
+MG_count_plus.df <- MG_count.df[MG_count.df$gene %in% DAM_plus, ]
+MG_count_minus.df <- MG_count.df[MG_count.df$gene %in% DAM_minus, ]
+```
+
+```{r}
+# scatter plot for AD vs Ctrl
+ggplot(MG_count.df, aes(x = cluster3, y = cluster8)) + geom_point(size = 0.5) + 
+  geom_point(data = MG_count_plus.df,  aes(x = cluster3, y = cluster8), color = "red", size = 1) +
+  geom_point(data = MG_count_minus.df,  aes(x = cluster3, y = cluster8), color = "blue", size = 1) +
+  ggtitle("cluster8 versus cluster3 in Microglia") + 
+  theme_classic() + 
+  xlab("log (average UMI counts) cluster3") + 
+  ylab("log (average UMI counts) cluster8") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.5) + 
+  geom_text_repel(data = MG_count_plus.df, aes(x = cluster3, y = cluster8), label = MG_count_plus.df$gene, force = 20, nudge_y = .8) + 
+  geom_text_repel(data = MG_count_minus.df, aes(x = cluster3, y = cluster8), label = MG_count_minus.df$gene, force = 10, nudge_y = -1, nudge_x = 0.5)
+
+```
+
+```{r fig.width=15}
+grid.arrange(g4, g5, ncol = 2)
+
+```
+
+## GSEA
+
+```{r}
+library(biomaRt)
+library(fgsea)
+GSEA_AD_Ctrl_Hall <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv_GSEA_logFC_hall.csv", row.names = 1)
+MG_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+MG_DE_AD_Ctrl.df$gene <- rownames(MG_DE_AD_Ctrl.df)
+
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/GSEA_scRNA.R")
+
+# ref: https://www.genomics-online.com/resources/16/5049/housekeeping-genes/
+housekeeping_genes <- c("ACTB","GAPDH","PGK1","PPIA","RPL13A", "B2M", "YWHAZ","SDHA","TFRC","GUSB", "HMBS", "HPRT1", "TBP")
+
+pathways.hallmark <- gmtPathways("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/ReactomePathways.gmt")
+
+GSEA_MG_AD_Ctrl_Reactome <- scRNA_GSEA(MG_DE_AD_Ctrl.df)
+
+
+
+plotEnrichment(pathways.hallmark[["Plasma lipoprotein assembly, remodeling, and clearance"]], ranks)
+
+
+
+```
+
+```{r}
+pathway = pathways.hallmark[["Plasma lipoprotein assembly, remodeling, and clearance"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+pathway
+# including housekeeping genes
+pathway2 <- c(pathway, housekeeping_genes)
+duplicated(pathway2)
+```
+
+```{r}
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+pathway
+
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r}
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_bw() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank())
+
+
+```

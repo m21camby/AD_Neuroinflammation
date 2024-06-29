@@ -1,0 +1,230 @@
+---
+title: "Untitled"
+author: "Skim"
+date: '2021 3 10 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(gplots)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+##############
+# GO
+##############
+GO_myelination <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination_sub.txt", sep = "\t")
+
+# remove overlap genes 
+myelination_genes <- as.vector(as.character(unique(GO_myelination$Symbol)))
+
+# remove myelination genes not in the list
+myelination_genes <- myelination_genes[myelination_genes %in% data9set_cleaned_OL.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_myelination_excel <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.xlsx", 1, header=TRUE)
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OL_1.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "1")
+data9set_cleaned_OL_2.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "2")
+data9set_cleaned_OL_3.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "3")
+data9set_cleaned_OL_4.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "4")
+data9set_cleaned_OL_5.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "5")
+data9set_cleaned_OL_6.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "6")
+data9set_cleaned_OL_7.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "7")
+data9set_cleaned_OL_8.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "8")
+data9set_cleaned_OL_9.SO <- subset(data9set_sub.SO, subset = gemgroup %in% "9")
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+OL1.df <- z_score_from_gene_list(data9set_cleaned_OL_1.SO, myelination_genes)
+colnames(OL1.df) <- c("Ctrl_1", "gene")
+OL2.df <- z_score_from_gene_list(data9set_cleaned_OL_2.SO, myelination_genes)
+colnames(OL2.df) <- c("ADp40KO_1", "gene")
+OL3.df <- z_score_from_gene_list(data9set_cleaned_OL_3.SO, myelination_genes)
+colnames(OL3.df) <- c("AD_1", "gene")
+OL4.df <- z_score_from_gene_list(data9set_cleaned_OL_4.SO, myelination_genes)
+colnames(OL4.df) <- c("Ctrl_2", "gene")
+OL5.df <- z_score_from_gene_list(data9set_cleaned_OL_5.SO, myelination_genes)
+colnames(OL5.df) <- c("ADp40KO_2", "gene")
+OL6.df <- z_score_from_gene_list(data9set_cleaned_OL_6.SO, myelination_genes)
+colnames(OL6.df) <- c("AD_2", "gene")
+OL7.df <- z_score_from_gene_list(data9set_cleaned_OL_7.SO, myelination_genes)
+colnames(OL7.df) <- c("Ctrl_3", "gene")
+OL8.df <- z_score_from_gene_list(data9set_cleaned_OL_8.SO, myelination_genes)
+colnames(OL8.df) <- c("ADp40KO_3", "gene")
+OL9.df <- z_score_from_gene_list(data9set_cleaned_OL_9.SO, myelination_genes)
+colnames(OL9.df) <- c("AD_3", "gene")
+
+# merge all data frame
+OL.df <- merge(OL1.df, c(OL2.df, OL3.df, OL4.df, OL5.df, OL6.df, OL7.df, OL8.df, OL9.df), by = "gene")
+OL.df <- OL.df[,c(1,2,3,4, 6,8, 10, 12,14,16)]
+rownames(OL.df) <- OL.df$gene
+OL.df$gene <- NULL
+
+# remove if all counts is zero
+OL.df <- OL.df[Matrix::rowSums(OL.df) != 0, ]
+
+# calculate z-score
+OL_zs.df <- apply(OL.df, 1, function(x) (x - mean(x)) / sd(x))
+OL_zs_final.df <- data.frame(t(OL_zs.df))
+```
+
+
+```{r pressure, echo=FALSE}
+GO_myelination_excel_sub <- GO_myelination_excel[GO_myelination_excel$Symbol %in% myelination_genes, ]
+
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="negative regulation of myelination",
+          scale="row", lhei=c(3, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+```{r pressure, echo=FALSE}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(2.5, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+
+```
+
+```{r pressure, echo=FALSE}
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OL_WT.SO <- subset(data9set_sub.SO, subset = gemgroup %in% c("1", "4", "7"))
+data9set_cleaned_OL_AD.SO <- subset(data9set_sub.SO, subset = gemgroup %in% c("3", "6", "9"))
+data9set_cleaned_OL_ADp40KO.SO <- subset(data9set_sub.SO, subset = gemgroup %in% c("2", "5", "8"))
+
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+OLWT.df <- z_score_from_gene_list(data9set_cleaned_OL_WT.SO, myelination_genes)
+colnames(OLWT.df) <- c("WT", "gene")
+OLAD.df <- z_score_from_gene_list(data9set_cleaned_OL_AD.SO, myelination_genes)
+colnames(OLAD.df) <- c("AD", "gene")
+OLADp40KO.df <- z_score_from_gene_list(data9set_cleaned_OL_ADp40KO.SO, myelination_genes)
+colnames(OLADp40KO.df) <- c("ADp40KO", "gene")
+
+
+# merge all data frame
+OLAll.df <- merge(OLWT.df, c(OLAD.df, OLADp40KO.df), by = "gene")
+
+OLAll.df <- OLAll.df[,c(1,2,3,4)]
+rownames(OLAll.df) <- OLAll.df$gene
+OLAll.df$gene <- NULL
+
+# remove if all counts is zero
+OLAll.df <- OLAll.df[Matrix::rowSums(OLAll.df) != 0, ]
+
+# calculate z-score
+OLAll_zs.df <- apply(OLAll.df, 1, function(x) (x - mean(x)) / sd(x))
+OLAll_final.df <- data.frame(t(OLAll_zs.df))
+```
+
+```{r pressure, echo=FALSE}
+
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OLAll_final.df[rownames(OLAll_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="negative regulation of myelination",
+          scale="row", lhei=c(3, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+```{r}
+data9set_sub2.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "MFOL")
+
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_MFOL1.SO <- subset(data9set_sub2.SO, subset = seurat_clusters %in% c("1"))
+data9set_cleaned_MFOL5.SO <- subset(data9set_sub2.SO, subset = seurat_clusters %in% c("5"))
+
+
+OL1.df <- z_score_from_gene_list(data9set_cleaned_MFOL1.SO, myelination_genes)
+colnames(OL1.df) <- c("C1", "gene")
+OL5.df <- z_score_from_gene_list(data9set_cleaned_MFOL5.SO, myelination_genes)
+colnames(OL5.df) <- c("C5", "gene")
+
+
+# merge all data frame
+OL15.df <- merge(OL1.df, OL5.df, by = "gene")
+
+
+rownames(OL15.df) <- OL15.df$gene
+OL15.df$gene <- NULL
+
+# remove if all counts is zero
+OL15.df <- OL15.df[Matrix::rowSums(OL15.df) != 0, ]
+
+# calculate z-score
+OL15_zs.df <- apply(OL15.df, 1, function(x) (x - mean(x)) / sd(x))
+OL15_final.df <- data.frame(t(OL15_zs.df))
+```
+
+```{r pressure, echo=FALSE}
+
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "negative regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL15_final.df[rownames(OL15_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="negative regulation of myelination",
+          scale="row", lhei=c(3, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+```
+
+```{r pressure, echo=FALSE}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL15_final.df[rownames(OL15_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(2.5, 8), lwid = c(2,10), cexCol=0.8, cexRow = 0.8, cex.main = 0.2)
+
+```
+
+```{r}
+FeaturePlot(data9set_sub2.SO, features = "Zbtb16")
+
+```

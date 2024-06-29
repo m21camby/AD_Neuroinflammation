@@ -1,0 +1,658 @@
+---
+title: "lncRNA permutation test"
+author: "Skim"
+date: '2020 10 11 '
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+avg.df <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200430_lncRNAs_2nd_analysis_avg.txt", sep = "\t")
+
+avg_lncRNA.df <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200913_lncRNA_3rd_analysis/avg_lncRNA.csv", row.names = 1)
+
+
+#####################
+# calculate z-score
+#####################
+
+# calculate z-score (high)
+avg_lncRNA_z_score.df <- as.data.frame(t(apply(avg_lncRNA.df, 1, function(x) (x - mean(x)) / sd(x))))
+
+
+avg_lncRNA_z_score.df$gene <- rownames(avg_lncRNA_z_score.df)
+avg_lncRNA_z_score.df$gene <- NULL
+
+for(i in c(1:2358)){
+  avg_lncRNA_z_score.df[i,"specificity"] <- ifelse(ncol(avg_lncRNA_z_score.df[i,c(1:6)] %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:6) ] %>% select_if(~any(. < 0))) > 3, "specific", "not_specific")
+  
+avg_lncRNA_z_score.df[i,"cell_type_specific"] <- ifelse(ncol(avg_lncRNA_z_score.df[i,c(1)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(2:6) ] %>% select_if(~any(. < 0))) > 3, "Excitatory", ifelse(ncol(avg_lncRNA_z_score.df[i,c(2)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1,3:6) ] %>% select_if(~any(. < 0))) > 3, "Inhibitory", ifelse(ncol(avg_lncRNA_z_score.df[i,c(3)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:2,4:6) ] %>% select_if(~any(. < 0))) > 3, "Oligo", ifelse(ncol(avg_lncRNA_z_score.df[i,c(4)] %>% as.data.frame %>%select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:3,5:6) ] %>% select_if(~any(. < 0))) > 3, "OPC",
+                                                          ifelse(ncol(avg_lncRNA_z_score.df[i,c(5)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:4,6) ] %>% select_if(~any(. < 0))) > 3, "Microglia",ifelse(ncol(avg_lncRNA_z_score.df[i,c(6)] %>% as.data.frame %>% select_if(~any(. > 1))) == 1 && ncol(avg_lncRNA_z_score.df[i,c(1:5) ] %>% select_if(~any(. < 0))) > 3, "Astrocytes", "not_specific"))))))
+  }
+
+avg_lncRNA_z_score.df$gene <- rownames(avg_lncRNA_z_score.df)
+
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+
+AD_lnc <- c("Neat1", "Meg3", "Rmst", "Sox2ot", "Miat", "Snhg1", "Gm4419", "Pvt1")
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Microglia", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Microglia", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Microglia_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Microglia", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+genes <- factor(genes, levels = genes)
+```
+
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+permutation_test_without_zero <- function(compare = "AD_WT", test_gene = "Meg3"){
+  perm_df1_sub <- perm_df1[rownames(perm_df1) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df1_sub$exp <- "WT"
+  colnames(perm_df1_sub) <- c("gene", "exp")
+  perm_df1_sub <- perm_df1_sub[perm_df1_sub$gene > 0, ]
+  
+  perm_df2_sub <- perm_df2[rownames(perm_df2) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df2_sub$exp <- "APPPS1"
+  colnames(perm_df2_sub) <- c("gene", "exp")
+  perm_df2_sub <- perm_df2_sub[perm_df2_sub$gene > 0, ]
+  
+  perm_df3_sub <- perm_df3[rownames(perm_df3) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df3_sub$exp <- "APPPS1.il12b-/-"
+  colnames(perm_df3_sub) <- c("gene", "exp")
+  perm_df3_sub <- perm_df3_sub[perm_df3_sub$gene > 0, ]
+  
+  perm_df_sub <- rbind(perm_df1_sub, perm_df2_sub) 
+  
+## for reproducibility
+  set.seed(101) 
+  nsim <- 10000
+  res <- numeric(nsim) ## set aside space for results
+  for (i in 1:nsim) {
+    ## standard approach: scramble response value
+      perm <- sample(nrow(perm_df_sub))
+      bdat <- transform(perm_df_sub, gene = gene[perm])
+    ## compute & store difference in means; store the value
+      res[i] <- mean(bdat[bdat$exp =="WT",]$gene)-
+          mean(bdat[bdat$exp =="APPPS1",]$gene)
+}
+  
+  res.df <- as.data.frame(res) 
+  res.df$test <- "permutation"
+  obs <- mean(perm_df_sub[perm_df_sub$exp == "APPPS1",]$gene)- mean(perm_df_sub[perm_df_sub$exp == "WT",]$gene)
+  obs.df <- as.data.frame(obs)
+  colnames(obs.df) <- "res"
+  obs.df$test <- "observation"
+  
+  res.df <- rbind(res.df, obs.df)
+  
+  return(res.df)
+  
+}
+
+permutation_test_without_zero2 <- function(compare = "AD_ADp40KO", test_gene = "Meg3"){
+  perm_df1_sub <- perm_df1[rownames(perm_df1) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df1_sub$exp <- "WT"
+  colnames(perm_df1_sub) <- c("gene", "exp")
+  perm_df1_sub <- perm_df1_sub[perm_df1_sub$gene > 0, ]
+  
+  perm_df2_sub <- perm_df2[rownames(perm_df2) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df2_sub$exp <- "APPPS1"
+  colnames(perm_df2_sub) <- c("gene", "exp")
+  perm_df2_sub <- perm_df2_sub[perm_df2_sub$gene > 0, ]
+  
+  perm_df3_sub <- perm_df3[rownames(perm_df3) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df3_sub$exp <- "APPPS1.il12b-/-"
+  colnames(perm_df3_sub) <- c("gene", "exp")
+  perm_df3_sub <- perm_df3_sub[perm_df3_sub$gene > 0, ]
+  
+  perm_df_sub <- rbind(perm_df2_sub, perm_df3_sub)
+  
+## for reproducibility
+  set.seed(101) 
+  nsim <- 10000
+  res <- numeric(nsim) ## set aside space for results
+  for (i in 1:nsim) {
+    ## standard approach: scramble response value
+      perm <- sample(nrow(perm_df_sub))
+      bdat <- transform(perm_df_sub, gene = gene[perm])
+    ## compute & store difference in means; store the value
+      res[i] <- mean(bdat[bdat$exp =="APPPS1",]$gene)-
+          mean(bdat[bdat$exp =="APPPS1.il12b-/-",]$gene)
+}
+  
+  res.df <- as.data.frame(res) 
+  res.df$test <- "permutation"
+  obs <- mean(perm_df_sub[perm_df_sub$exp == "APPPS1",]$gene)- mean(perm_df_sub[perm_df_sub$exp == "APPPS1.il12b-/-",]$gene)
+  obs.df <- as.data.frame(obs)
+  colnames(obs.df) <- "res"
+  obs.df$test <- "observation"
+  
+  res.df <- rbind(res.df, obs.df)
+  
+  return(res.df)
+  
+}
+
+permutation_test_without_zero3 <- function(compare = "ADp40KO_WT", test_gene = "Meg3"){
+  perm_df1_sub <- perm_df1[rownames(perm_df1) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df1_sub$exp <- "WT"
+  colnames(perm_df1_sub) <- c("gene", "exp")
+  perm_df1_sub <- perm_df1_sub[perm_df1_sub$gene > 0, ]
+  
+  perm_df2_sub <- perm_df2[rownames(perm_df2) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df2_sub$exp <- "APPPS1"
+  colnames(perm_df2_sub) <- c("gene", "exp")
+  perm_df2_sub <- perm_df2_sub[perm_df2_sub$gene > 0, ]
+  
+  perm_df3_sub <- perm_df3[rownames(perm_df3) %in% test_gene, ] %>%  t %>% as.data.frame
+  perm_df3_sub$exp <- "APPPS1.il12b-/-"
+  colnames(perm_df3_sub) <- c("gene", "exp")
+  perm_df3_sub <- perm_df3_sub[perm_df3_sub$gene > 0, ]
+  
+  perm_df_sub <- rbind(perm_df1_sub, perm_df3_sub)
+  
+## for reproducibility
+  set.seed(101) 
+  nsim <- 10000
+  res <- numeric(nsim) ## set aside space for results
+  for (i in 1:nsim) {
+    ## standard approach: scramble response value
+      perm <- sample(nrow(perm_df_sub))
+      bdat <- transform(perm_df_sub, gene = gene[perm])
+    ## compute & store difference in means; store the value
+      res[i] <- mean(bdat[bdat$exp =="APPPS1.il12b-/-",]$gene)-
+          mean(bdat[bdat$exp =="WT",]$gene)
+}
+  
+  res.df <- as.data.frame(res) 
+  res.df$test <- "permutation"
+  obs <- mean(perm_df_sub[perm_df_sub$exp == "APPPS1.il12b-/-",]$gene)- mean(perm_df_sub[perm_df_sub$exp == "WT",]$gene)
+  obs.df <- as.data.frame(obs)
+  colnames(obs.df) <- "res"
+  obs.df$test <- "observation"
+  
+  res.df <- rbind(res.df, obs.df)
+  
+  return(res.df)
+  
+}
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Microglia"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+MG.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+pvalue_per_Gene <- function(gene = "Gm26520"){
+  perm_results.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+  lncRNA_per <- permutation_test_without_zero(compare = "AD_WT", test_gene = gene)
+  lncRNA_per2 <- permutation_test_without_zero2(compare = "AD_ADp40KO", test_gene = gene)
+  lncRNA_per3 <- permutation_test_without_zero3(compare = "ADp40KO_WT", test_gene = gene)
+
+  
+  # AD vs WT ranking calculation
+  lncRNA_per[rev(order(lncRNA_per$res)), ]
+
+  order.scores <- order(lncRNA_per$res)
+  lncRNA_per <- lncRNA_per[order.scores,]
+  lncRNA_per$rank <- rank(lncRNA_per$res)
+
+
+  perm_results.df[1, 3] <- ifelse(lncRNA_per[lncRNA_per$test %in% "observation", ]$rank > 5000, (10000 - lncRNA_per[lncRNA_per$test %in% "observation", ]$rank)/10000, lncRNA_per[lncRNA_per$test %in% "observation", ]$rank/10000)
+  
+  perm_results.df[1, "gene"] <- gene
+  perm_results.df[1, "exp"] <- "AD_WT"
+  
+  # AD vs ADp40KO ranking calculation
+  lncRNA_per2[rev(order(lncRNA_per2$res)), ]
+
+  order.scores <- order(lncRNA_per2$res)
+  lncRNA_per2 <- lncRNA_per2[order.scores,]
+  lncRNA_per2$rank <- rank(lncRNA_per2$res)
+
+
+  perm_results.df[2, 3] <- ifelse(lncRNA_per2[lncRNA_per2$test %in% "observation", ]$rank > 5000, (10000 - lncRNA_per2[lncRNA_per2$test %in% "observation", ]$rank)/10000, lncRNA_per2[lncRNA_per2$test %in% "observation", ]$rank/10000)
+  
+  perm_results.df[2, "gene"] <- gene
+  perm_results.df[2, "exp"] <- "AD_ADp04KO"
+  
+  # ADp40KO vs WT ranking calculation
+  lncRNA_per3[rev(order(lncRNA_per3$res)), ]
+
+  order.scores <- order(lncRNA_per3$res)
+  lncRNA_per3 <- lncRNA_per3[order.scores,]
+  lncRNA_per3$rank <- rank(lncRNA_per3$res)
+
+
+  perm_results.df[3, 3] <- ifelse(lncRNA_per3[lncRNA_per3$test %in% "observation", ]$rank > 5000, (10000 - lncRNA_per3[lncRNA_per3$test %in% "observation", ]$rank)/10000, lncRNA_per3[lncRNA_per3$test %in% "observation", ]$rank/10000)
+  
+  perm_results.df[3, "gene"] <- gene
+  perm_results.df[3, "exp"] <- "ADp04KO_WT"
+  
+  return(perm_results.df)
+  
+}
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  MG.df <- rbind(MG.df, tmp.df)
+}
+
+write.csv(MG.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_MG.csv")
+
+MG.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_MG.csv", row.names = 1)
+
+```
+
+### 2. Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Astrocytes", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Astrocytes", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Astrocytes_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Astrocytes", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+genes <- factor(genes, levels = genes)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+AS.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  AS.df <- rbind(AS.df, tmp.df)
+}
+
+write.csv(AS.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_AS.csv")
+
+AS.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_AS.csv", row.names = 1)
+
+```
+
+### 3. Oligo
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Oligo", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Oligo", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Oligo", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+#table(data9set_cleaned.SO$cell_type)
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+OL.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  OL.df <- rbind(OL.df, tmp.df)
+}
+
+write.csv(OL.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_OL.csv")
+
+OL.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_OL.csv", row.names = 1)
+
+
+```
+
+### 4. IN
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Inhibitory_Neurons_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Inhibitory", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Inhibitory_Neurons_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Inhibitory", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Inhibitory_Neurons_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Inhibitory", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+#table(data9set_cleaned.SO$cell_type)
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Inhibitory Interneurons"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+IN.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  IN.df <- rbind(IN.df, tmp.df)
+}
+
+write.csv(IN.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_IN.csv")
+
+IN.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_IN.csv", row.names = 1)
+```
+
+### 5. EX
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Large_cell_type_EX_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Large_cell_type_EX_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Large_cell_type_EX_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+#table(data9set_cleaned.SO$cell_type)
+
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neuron", "Subiculum", "Neurons"))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+EX.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  EX.df <- rbind(EX.df, tmp.df)
+}
+
+write.csv(EX.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_EX.csv")
+
+EX.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_EX.csv", row.names = 1)
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_Ctrl.df2 <- AD_Ctrl.df[AD_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_Ctrl.df <- AD_Ctrl.df[AD_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+AD_Ctrl.df <- AD_Ctrl.df[which(abs(AD_Ctrl.df$logFC) > 0.25 & AD_Ctrl.df$FDR < 0.05),]
+
+
+AD_ADp40KO.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+AD_ADp40KO.df2 <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% AD_lnc, ]
+# select lncRNAs
+AD_ADp40KO.df <- AD_ADp40KO.df[AD_ADp40KO.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+AD_ADp40KO.df <- AD_ADp40KO.df[which(abs(AD_ADp40KO.df$logFC) > 0.25 & AD_ADp40KO.df$FDR < 0.05),]
+
+
+ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_ADp40KO_Ctrl.csv", row.names = 1, stringsAsFactors = FALSE)
+# AD genes
+ADp40KO_Ctrl.df2 <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% AD_lnc, ]
+# select lncRNAs
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$gene %in% rownames(avg_lncRNA_z_score.df[avg_lncRNA_z_score.df$cell_type_specific %in% "Excitatory", ]), ]
+# statistical significant
+ADp40KO_Ctrl.df <- ADp40KO_Ctrl.df[which(abs(ADp40KO_Ctrl.df$logFC) > 0.25 & ADp40KO_Ctrl.df$FDR < 0.05),]
+ 
+genes <- c(AD_Ctrl.df[AD_Ctrl.df$logFC > 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC > 0, ]$gene, AD_ADp40KO.df[AD_ADp40KO.df$logFC > 0, ]$gene,
+           AD_ADp40KO.df[AD_ADp40KO.df$logFC < 0, ]$gene, 
+           ADp40KO_Ctrl.df[ADp40KO_Ctrl.df$logFC < 0, ]$gene, AD_Ctrl.df[AD_Ctrl.df$logFC < 0, ]$gene) %>% unique
+
+genes <- c(genes, c("Rmst"))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+data9set_sub.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(11, 14, 15, 17, 19, 20))
+
+##########################
+# z-score for each sample
+##########################
+data9set_sub_1.SO <- subset(data9set_sub.SO, subset = sample %in% "Ctrl")
+data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+data9set_sub_3.SO <- subset(data9set_sub.SO, subset = sample %in% "ADp40KO")
+
+perm_df1 <- as.data.frame(GetAssayData(data9set_sub_1.SO, slot = "data"))
+perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+perm_df3 <- as.data.frame(GetAssayData(data9set_sub_3.SO, slot = "data"))
+
+subi.df <- data.frame(gene = as.character(), exp = as.character(), p_value = as.numeric(), stringsAsFactors = FALSE)
+
+for(i in genes){
+  print(i)
+  tmp.df <- pvalue_per_Gene(gene = i)
+  subi.df <- rbind(subi.df, tmp.df)
+}
+
+write.csv(subi.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_subi.csv")
+
+subi.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20201011_lncRNAs_permutation_test/per_subi.csv", row.names = 1)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+
+
+```
+  
+
+

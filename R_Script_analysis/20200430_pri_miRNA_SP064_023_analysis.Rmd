@@ -1,0 +1,47 @@
+---
+title: "pri_miRNA_SP064_023"
+author: "Skim"
+date: '2020 4 30 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+As Nikolaus suggests count all transcripts overlapping a pre-miR and pri-miR and simply merge them for quantification. This might overcount miRs, but as long as do the same quantification across conditions, this bias shouldn't matter too much. 
+
+First, I checked whether all pre-miRNAs is within pri-miRNAs coordinates. All pre-miRNAs are within in their putative pri-miRNAs. (All pre-miRNAs within in their corresponding 2314 putative pri-miRNAs) After remove duplicated pri-miRNAs transcriptomics, 1148 remained. (998 protein-coding miRNA and 150 intergenic miRNAs)
+
+Overall, identified 378 miRNAs and 272 were protein coding regions while 106 were intergenic regions. 
+
+```{r}
+SP064_023_pri_miRNA <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_023_whole_pri_miRNA/outs/filtered_feature_bc_matrix/")
+
+SP064_023_pri_miRNA_whole_list <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/miRNA_gtf_whole_pri_miRNA_pre_miRNA/gene_id_unique_list.csv", row.names = 1, stringsAsFactors = FALSE)
+
+SP064_023_pri_miRNA_protein_coding <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/miRNA_gtf_whole_pri_miRNA_pre_miRNA/gene_id_protein_coding_unique_list.csv", row.names = 1, stringsAsFactors = FALSE)
+```
+
+```{r}
+SP064_023_pri_miRNA_intergenic <- setdiff(SP064_023_pri_miRNA_whole_list$X0, SP064_023_pri_miRNA_protein_coding$X0)
+```
+
+
+
+```{r}
+SP064_023_pri_miRNA.SO <- CreateSeuratObject(counts =  SP064_023_pri_miRNA,  min.cells = 1, project = "miRNA")
+```
+
+
+```{r pressure, echo=FALSE}
+SP064_023_pri_miRNA.df <- as.data.frame(rowSums(as.matrix(SP064_023_pri_miRNA.SO@assays$RNA@counts)))
+SP064_023_pri_miRNA.df$gene <- rownames(SP064_023_pri_miRNA.df)
+```
+
+```{r pressure, echo=FALSE}
+VlnPlot(SP064_023_pri_miRNA.SO, features = "nCount_RNA")
+```
+

@@ -1,0 +1,133 @@
+---
+title: "Excitatory Neurons"
+author: "Skim"
+date: '2020 3 20 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is about Excitatory Neurons analysis. As we found only 17 clusters (0, 2, 9, 10, 11, 13, 14, 15, 17, 18, 19, 20,21, 24, 27, 29, 32) in from previous analysis.  
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(fgsea)
+library(MAST)
+library(ggrepel)
+library(biomaRt)
+library(topGO)
+library(viridis)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+# remove all objects from previous analysis
+#rm(list=setdiff(ls(), "data9set_cleaned.SO"))
+#rm(list = "data9set_cleaned.SO")
+#ls()
+```
+
+### 1. Ex Neurons cluster analysis
+
+This analysis is done by Ex Neurons cluster (from res 0.8) and I investigate more in here.
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=5}
+data9set_cleaned_Ex.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(0, 2, 9, 10, 11, 13, 14, 15, 17, 18, 19, 20,21, 24, 27, 29, 32))
+
+data9set_cleaned_Ex_Ctrl.SO <- subset(data9set_cleaned_Ex.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_Ex_AD.SO <- subset(data9set_cleaned_Ex.SO, subset = sample %in% "AD")
+data9set_cleaned_Ex_ADp40KO.SO <- subset(data9set_cleaned_Ex.SO, subset = sample %in% "ADp40KO")
+
+
+DimPlot(object = data9set_cleaned_Ex.SO, reduction = "umap", group.by = "seurat_clusters", cols = c("#4E84C4", "#FF9999", "#999999", "#C3D7A4", "#52854C", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", viridis(5))) + scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16))  
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+d1 <- DimPlot(object = data9set_cleaned_Ex.SO, 
+        cells = as.vector(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "Ctrl",])), reduction = "umap", cols = viridis(3)[1]) + ggtitle("Excitatory Neurons Ctrl") + scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = -6, y = -16), label = paste0(length(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "Ctrl",])), " cells"), size = 5)
+
+d2 <- DimPlot(object = data9set_cleaned_Ex.SO, 
+        cells = as.vector(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "AD",])), reduction = "umap", cols = viridis(3)[2]) + ggtitle("Excitatory Neurons AD") + scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = -6, y = -16), label = paste0(length(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "AD",])), " cells"), size = 5)
+
+d3 <- DimPlot(object = data9set_cleaned_Ex.SO, 
+        cells = as.vector(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "ADp40KO",])), reduction = "umap", cols = viridis(3)[3]) + ggtitle("Excitatory Neurons ADp40KO") + scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = -6, y = -16), label = paste0(length(rownames(data9set_cleaned_Ex.SO@meta.data[data9set_cleaned_Ex.SO@meta.data$sample %in% "ADp40KO",])), " cells"), size = 5)
+
+grid.arrange(d1, d2, d3, ncol = 3)
+```
+
+### 2. cell type proportion
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=7.5}
+plot.data <- data9set_cleaned_Ex.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 17), rep("ADp40KO-1", 17), rep("AD-1", 17),
+                              rep("Ctrl-2", 17), rep("ADp40KO-2", 16), rep("AD-2", 17),
+                              rep("Ctrl-3", 17), rep("ADp40KO-3", 17), rep("AD-3", 17)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cluster)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  scale_fill_manual(values = c("#4E84C4", "#FF9999", "#999999", "#C3D7A4", "#52854C", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", viridis(5)))
+  #scale_fill_manual(values=c("#CC0000",  "#33CC33"))
+
+```
+
+### 3. feature markers
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+data9set.markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker.csv", row.names = 1)
+
+data9set_Ex_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_Ctrl.csv", row.names = 1)
+
+data9set_Ex_DE_AD_ADp40KO_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_Excitatory NeuronsAD_ADp40KO.csv", row.names = 1)
+```
+
+
+First I checked known Excitatory Neurons markers from literatures Slc17a6(Vglut2), Npy, Snap25 [marker ref](https://www.nature.com/articles/s41598-017-14207-0)
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_Ex.SO, features = c("Slc17a6"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16))
+f2 <- FeaturePlot(data9set_cleaned_Ex.SO, features = c("Npy"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16))
+f3 <- FeaturePlot(data9set_cleaned_Ex.SO, features = c("Snap25"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(-22,10)) + scale_y_continuous(limits = c(-16, 16))
+
+rownames(data9set_cleaned_Ex.SO@assays$RNA@data)[grepl("^Slc17",rownames(data9set_cleaned_Ex.SO@assays$RNA@data))]
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+
+
+
+```
+
+

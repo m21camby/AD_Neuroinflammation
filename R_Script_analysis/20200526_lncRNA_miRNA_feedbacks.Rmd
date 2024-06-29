@@ -1,0 +1,114 @@
+---
+title: "lncRNA_feedback"
+author: "Skim"
+date: '2020 5 26 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+#.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+data9set_cleaned_MG.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% "Microglia")
+```
+
+```{r warning=FALSE, message=FALSE}
+z_score_DE_genes <- function(Seurat_object, list_genes){
+  for(i in c(1:9)){
+  if(i == 1){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+#print("1st")
+cell_avg.df$gene <- rownames(cell_avg.df)
+#print("2nd")
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% list_genes, ]
+#print("3rd")
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+} 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 5, fig.height=2}
+list_genes <- c("Meg3")
+MG_z_score <- z_score_DE_genes(data9set_cleaned_MG.SO, list_genes)
+
+colnames(MG_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+MG_z_score$gene <- rownames(MG_z_score)
+
+MG_z_score2 <- gather(MG_z_score, sample, z_score, WT_1:AD_3)
+
+MG_z_score2$sample <- factor(MG_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = MG_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("Meg3 in Microglia") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-2, 2))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# load biotype
+seurat_mouse_genes <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200312_Bulk_Correlation_mouse_genes_bio_type_biomaRt.txt")
+
+# narrow down biotype
+seurat_mouse_genes$gene_biotype_global <- ifelse(seurat_mouse_genes$gene_biotype %in% c("IG_V_gene", "IG_C_gene"), "IG_gene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("pseudogene",
+                                                                                               "unprocessed_pseudogene",
+                                                                                               "processed_pseudogene",
+                                                                                               "transcribed_unprocessed_pseudogene",
+                                                                                               "transcribed_processed_pseudogene",
+                                                                                               "unitary_pseudogene", 
+                                                                                               "transcribed_unitary_pseudogene",
+                                                                                               "polymorphic_pseudogene", 
+                                                                                               "TR_V_pseudogene"), "pseudogene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("TR_V_gene", "TR_C_gene"), "TR_gene",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("protein_coding"), "protein_coding",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("TEC"), "TEC",
+                                                 ifelse(seurat_mouse_genes$gene_biotype %in% c("lncRNA"), "lncRNA", "ncRNA"))))))
+
+merged.df <- read.table(file = "/data/rajewsky/home/skim/Microglia_Heppner/Bulk_transcriptome/R_Scripts/20200312_Bulk_Correlation_bulk_tpm_scRNA_data_cpm.txt")
+
+merged.df$gene <- rownames(merged.df)
+
+lnc_merged.df <- merged.df[rownames(merged.df) %in% seurat_mouse_genes[seurat_mouse_genes$gene_biotype %in% "lncRNA", ]$mgi_symbol, ]
+
+"Meg3" %in% rownames(merged.df)
+```

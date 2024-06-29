@@ -1,0 +1,68 @@
+---
+title: "figures for lab meeting"
+author: "Skim"
+date: "2/17/2020"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+library(xlsx)
+library(viridis)
+library(ggrepel)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+# old resolution 0.6
+#load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+# new resolutio 0.8 by Shirin
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+data9set_IN.SO <- subset(data9set.SO, subset = seurat_clusters %in% c(7, 16, 22, 30))
+
+v1 <- VlnPlot(data9set_IN.SO, features = c("Kcnc2"), group.by = "sample", pt.size = 0) + scale_fill_viridis_d()
+v2 <- VlnPlot(data9set_IN.SO, features = c("Kcnip4"), group.by = "sample", pt.size = 0) + scale_fill_viridis_d()
+
+grid.arrange(v1, v2, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=15}
+v1 <- FeaturePlot(data9set.SO, features = c("Il23r"), pt.size = 1, split.by = "sample") + scale_fill_viridis_d()
+v2 <- FeaturePlot(data9set.SO, features = c("Il12rb1"), pt.size = 2, split.by = "sample") + scale_fill_viridis_d()
+v3 <- FeaturePlot(data9set.SO, features = c("Il12rb2"), pt.size = 2, split.by = "sample") + scale_fill_viridis_d()
+
+#v4 <- FeaturePlot(data9set.SO, features = c("Tgfb1"), pt.size = 1, split.by = "sample") + scale_fill_viridis_d()
+#v5 <- FeaturePlot(data9set.SO, features = c("Il4"), pt.size = 1, split.by = "sample") + scale_fill_viridis_d()
+#v6 <- FeaturePlot(data9set.SO, features = c("Il10"), pt.size = 1, split.by = "sample") + scale_fill_viridis_d()
+grid.arrange(v1, v2, v3, ncol = 1)
+v1
+
+VlnPlot(data9set.SO, features = c("Il12rb2"))
+#data9set.SO@assays$RNA@counts@Dimnames[[1]][grep("^Il12", data9set.SO@assays$RNA@counts@Dimnames[[1]])]
+
+```
+
+
+
+
+
+
+
+
+

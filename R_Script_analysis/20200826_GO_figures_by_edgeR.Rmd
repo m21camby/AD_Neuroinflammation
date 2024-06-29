@@ -1,0 +1,230 @@
+---
+title: "GO_by_edgeR"
+author: "Skim"
+date: '2020 8 26 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is GO analysis after edgeR DE analysis. 
+
+About condition: 
+
+input genes of GO selected by (logFC > +- 0.25, padj < 0.01)
+
+GO term selecteced by (Fisher.elim < 0.01, Term genes more than 30 & less than 500, BP & MF only)
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+#load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+#data9set_cleaned_AS.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(4))
+```
+
+```{r warning=FALSE, message=FALSE}
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+topGOResults.df$group <- factor(topGOResults.df$group, levels = c("AD_specific", "ADp40KO_specific", "Ctrl_specific", "AD_ADp40KO_common", "ADp40KO_Ctrl_common"))
+  
+ggplot(topGOResults.df, aes(x=group,
+               y=Term,
+               colour=Fisher.elim,
+               size=gene_ratio)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="group", y="GO term", colour="-log10(p-value)", size="gene_ratio") +
+  theme_minimal() + 
+  theme(axis.text.x =  element_text(size = 10, angle = 45, vjust = 0.5),
+        axis.title.x =  element_blank()) +scale_color_gradient(low="blue", high="red")
+}
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+GO_specific <- function(cell_type = "Astrocytes"){
+  
+#### 1-1. Astrocytes AD vs Ctrl up-regulated genes
+
+topGOResults.df <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df <- topGOResults.df[topGOResults.df$Fisher.elim < .01 , ]
+
+
+#### 1-2. Astrocytes AD vs Ctrl down-regulated genes
+
+topGOResults.df2 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type,"_AD_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df2 <- topGOResults.df2[topGOResults.df2$Fisher.elim < .01 , ]
+
+#### 1-3. Astrocytes ADp40KO vs Ctrl up-regulated genes
+
+topGOResults.df3 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df3 <- topGOResults.df3[topGOResults.df3$Fisher.elim < .01 , ]
+
+#### 1-4. Astrocytes ADp40KO vs Ctrl down-regulated genes
+
+topGOResults.df4 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type ,"_ADp40KO_Ctrl.csv_GO.csv"), row.names = 1)
+
+topGOResults.df4 <- topGOResults.df4[topGOResults.df4$Fisher.elim < .01 , ]
+
+#### 1-5. Astrocytes AD vs ADp40KO up-regulated genes
+
+topGOResults.df5 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_up_0.25/", cell_type, "_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df5 <- topGOResults.df5[topGOResults.df5$Fisher.elim < .01 , ]
+
+#### 1-6. Astrocytes AD vs ADp40KO down-regulated genes
+
+topGOResults.df6 <- read.csv(file = paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_csv_files/edgeR_GO/cell_type_down_0.25/", cell_type ,"_AD_ADp40KO.csv_GO.csv"), row.names = 1)
+
+topGOResults.df6 <- topGOResults.df6[topGOResults.df6$Fisher.elim < .05 , ]
+
+
+# AD specific 
+
+AD_specific <- intersect(topGOResults.df$GO.ID, topGOResults.df5$GO.ID)
+
+# ADp40KO specific
+
+ADp40KO_specific <- intersect(topGOResults.df3$GO.ID, topGOResults.df6$GO.ID)
+
+# Ctrl specific
+Ctrl_specific <- intersect(topGOResults.df2$GO.ID, topGOResults.df4$GO.ID)
+
+# AD ADp40KO common 
+AD_ADp40KO <- intersect(topGOResults.df$GO.ID, topGOResults.df3$GO.ID)
+
+# ADp40KO Ctrl common 
+ADp40KO_ctrl <- intersect(topGOResults.df2$GO.ID, topGOResults.df6$GO.ID)
+
+# Ctrl_specific 2
+Ctrl_specific <- setdiff(Ctrl_specific, ADp40KO_ctrl)
+
+#Ctrl_specific <- setdiff(Ctrl_specific, AD_ADp40KO)
+
+# AD_specific 2
+AD_specific <- setdiff(AD_specific, AD_ADp40KO)
+
+# ADp40KO_specific 2
+ADp40KO_specific <- setdiff(ADp40KO_specific, AD_ADp40KO)
+ADp40KO_specific <- setdiff(ADp40KO_specific, ADp40KO_ctrl)
+
+# AD ADp40KO common 2
+AD_ADp40KO <- setdiff(AD_ADp40KO, ADp40KO_ctrl)
+
+AD_ADp40KO <- setdiff(AD_ADp40KO, Ctrl_specific)
+
+
+# ADp40KO Ctrl common  2
+ADp40KO_ctrl <- setdiff(ADp40KO_ctrl, AD_ADp40KO)
+
+################# 
+# final GO
+#################
+GO.df1 <- topGOResults.df[which(topGOResults.df$GO.ID %in% AD_specific & !topGOResults.df$category %in% "CC" & topGOResults.df$Annotated > 30  &topGOResults.df$Annotated < 500), ]
+if(nrow(GO.df1) > 0){
+  GO.df1$group <- "AD_specific"
+}
+
+GO.df2 <- topGOResults.df3[which(topGOResults.df3$GO.ID %in% ADp40KO_specific & !topGOResults.df3$category %in% "CC"& topGOResults.df3$Annotated > 30  &topGOResults.df3$Annotated < 500), ]
+if(nrow(GO.df2) > 0){
+  GO.df2$group <- "ADp40KO_specific"
+}
+GO.df3 <- topGOResults.df2[which(topGOResults.df2$GO.ID %in% Ctrl_specific & !topGOResults.df2$category %in% "CC" & topGOResults.df2$Annotated > 30  &topGOResults.df2$Annotated < 500), ]
+if(nrow(GO.df3) > 0){
+  GO.df3$group <- "Ctrl_specific"
+}
+GO.df4 <- topGOResults.df[which(topGOResults.df$GO.ID %in% AD_ADp40KO & !topGOResults.df$category %in% "CC" & topGOResults.df$Annotated > 30  &topGOResults.df$Annotated < 500), ]
+if(nrow(GO.df4) > 0){
+  GO.df4$group <- "AD_ADp40KO_common"
+}
+GO.df5 <- topGOResults.df6[which(topGOResults.df6$GO.ID %in% ADp40KO_ctrl & !topGOResults.df6$category %in% "CC" & topGOResults.df6$Annotated > 30  &topGOResults.df6$Annotated < 500), ]
+if(nrow(GO.df5) > 0){
+  GO.df5$group <- "ADp40KO_Ctrl_common"
+}
+GO.df <- rbind(GO.df1, GO.df2, GO.df3, GO.df4, GO.df5)
+
+return(GO.df)
+}
+```
+
+## 1. Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+AS.df <- GO_specific(cell_type = "Astrocytes")
+scRNA_TopGO_plot2(AS.df) + ggtitle("Astrocytes GO by edgeR")
+```
+
+## 2. MFOL
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+MFOL.df <- GO_specific(cell_type = "MFOL")
+scRNA_TopGO_plot2(MFOL.df) + ggtitle("MFOL GO by edgeR")
+```
+
+## 3. MOL
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=3}
+MOL.df <- GO_specific(cell_type = "MOL")
+scRNA_TopGO_plot2(MOL.df) + ggtitle("MOL GO by edgeR")
+```
+
+## 4. Microglia
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=10}
+MG.df <- GO_specific(cell_type = "Microglia")
+scRNA_TopGO_plot2(MG.df) + ggtitle("Microglia GO by edgeR")
+```
+
+## 5. CA1
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+CA1.df <- GO_specific(cell_type = "CA1")
+scRNA_TopGO_plot2(CA1.df) + ggtitle("CA1 GO by edgeR")
+```
+
+## 6. CA2/3
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+CA2_3.df <- GO_specific(cell_type = "CA2_3")
+scRNA_TopGO_plot2(CA2_3.df) + ggtitle("CA2/3 GO by edgeR")
+```
+
+## 7. Dentate Gyrus
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=4}
+DG.df <- GO_specific(cell_type = "Dentate_Gyrus")
+scRNA_TopGO_plot2(DG.df) + ggtitle("Dentate Gyrus GO by edgeR")
+```
+
+## 8. Subiculum
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=10}
+sb.df <- GO_specific(cell_type = "subiculum")
+scRNA_TopGO_plot2(sb.df) + ggtitle("subiculum GO by edgeR")
+```
+
+## 9. Inhibitory Neurons
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=5}
+IN.df <- GO_specific(cell_type = "Inhibitory_Neurons")
+scRNA_TopGO_plot2(IN.df) + ggtitle("Inhibitory Neurons GO by edgeR")
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```

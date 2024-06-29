@@ -1,0 +1,136 @@
+---
+title: "relative entropy"
+author: "Skim"
+date: '2020 5 25 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is analysis of relative entropy of AD snRNA-seq data. The method is from tumor scRNA-seq paper of Samantha & Benedikt in 2019. The advice and method were kindly provided by Benedikt. The summary of relative entropy method, the score measures how evenly it's neighbors are distributed among samples or groups of samples. The lower the score, the more well-mixed it is. We have 9 data sets (WT: 3, AD: 3, ADp40KO: 3) and analyzed in a same way as the paper. 
+
+```{r warning=FALSE, message=FALSE}
+#.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#.libPaths(c(.libPaths()))
+library(Seurat, lib.loc="/data/rajewsky/shared_libs/R/")
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+data9set.meta <- data9set_cleaned.SO@meta.data %>% as.data.frame
+```
+
+
+```{r warning=FALSE, message=FALSE}
+get_entropy <- function(sobj,
+                        groups,
+                        k.param=30,
+                        reduction.type='pca',
+                        dims.use=1:30, sobj_meta.data = data9set.meta) {
+
+  require(RANN)
+
+  data.use <- Embeddings(sobj,
+                                reduction.type=reduction.type, 
+                                dims.use=dims.use)
+  message('constructing knn network')
+  my.knn <- nn2(data=data.use,
+                k=k.param,
+                searchtype='standard',
+                eps=0)
+  
+  get_ent <- function(neighbors, md, group, qref) {
+    q <- table(md[neighbors, group])/length(neighbors)
+    sum(q*log(q/qref),na.rm=TRUE)
+  }
+  
+  message('calculcating entropies')
+  
+  entropies <- list()
+  for (group in groups) {
+    qref <- table(sobj_meta.data[,group])/dim(sobj_meta.data)[1]
+    entropies[[paste0(group,'_entropy')]] <- apply(my.knn$nn.idx, 1,
+                                                   get_ent, sobj_meta.data, group, qref)
+  }
+  data.frame(entropies, row.names= rownames(sobj_meta.data))
+  #data.frame(entropies)
+}
+
+```
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(1)
+
+data9set.suffle_meta <- data9set.meta
+data9set.suffle_meta$gemgroup = sample(data9set.suffle_meta$gemgroup, replace=FALSE)
+data9set.suffle_meta$sample = sample(data9set.suffle_meta$sample, replace=FALSE)
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+entropy.dt <- get_entropy(data9set_cleaned.SO, groups = c('sample','gemgroup'), sobj_meta.data = data9set.meta)
+
+# Shuffled data
+entropy_suffled.dt <- get_entropy(data9set_cleaned.SO, groups = c('sample','gemgroup'), sobj_meta.data = data9set.suffle_meta)
+
+
+```
+
+### 1. Entropy-based quantification of batch effects.
+
+Distribution of relative entropy values for cells grouped by sample (orig.ident), genotype, compared to randomizing these labels across cells. Randomizing the labels makes cells appear more well-mixed, and the relative entropy or KL distance decreases
+
+```{r warning=FALSE, message=FALSE, fig.width= 6.5, fig.height=4}
+whole.dt <- rbind(data.frame(entropy = entropy.dt[,1], test = "genotype", orig = "original"),
+                  data.frame(entropy = entropy.dt[,2], test = "orig.ident", orig = "original"),
+                  data.frame(entropy = entropy_suffled.dt[,1], test = "genotype", orig = "randomized"),
+                  data.frame(entropy = entropy_suffled.dt[,2], test = "orig.ident", orig = "randomized"))
+
+ggplot(whole.dt, aes(x = test, y = entropy, fill = orig)) + geom_boxplot(coef = 6) + 
+  theme_classic() +
+  ylab("relative entropy") + ylim(c(0,2)) + 
+  theme(axis.text.x = element_text(size =15, angle = 45, color = "black", vjust = 1, hjust = 1, family = "Helvetica"),
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size =15, color = "black", family = "Helvetica"),
+        axis.title.y = element_text(size =15, family = "Helvetica"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 15, family = "Helvetica"),
+        legend.key.size = unit(1, "cm")) 
+
+```
+
+### 2. Relative entropy per cell type
+
+highest in cell types that exhibit the strongest differences related to a specific biological factor. In here, Microglia and Oligodendrocytes are not well-mixed compare to other cell types if we split samples by genotype and orig.ident. 
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height=8}
+entropy2.dt <- cbind(data9set.meta, entropy.dt)
+
+whole2.dt <- rbind(data.frame(entropy = entropy2.dt[,10], test = "genotype", cell_type = entropy2.dt[,9]),
+                  data.frame(entropy = entropy2.dt[,11], test = "orig.ident", cell_type = entropy2.dt[,9]))
+
+ggplot(whole2.dt, aes(x = cell_type, y = entropy, fill = cell_type)) + geom_boxplot(coef = 6) + theme_classic() +
+  ylab("relative entropy") + ylim(c(0,1.5)) + 
+  theme(axis.text.x = element_text(size =12, angle = 50, color = "black", vjust = 1, hjust = 1, family = "Helvetica"),
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(size =15, color = "black", family = "Helvetica"),
+        axis.title.y = element_text(size =15, family = "Helvetica"),
+        legend.position = "none") + facet_wrap(~test, dir = "v")
+
+
+
+```
+

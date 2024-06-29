@@ -1,0 +1,547 @@
+---
+title: "OPC analysis"
+author: "Skim"
+date: '2020 3 20 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is about OPC analysis. From 
+
+From previous literatures, PDGFRa is not required for generation and differentiation of dorsally derived cortical OPCs. [ref](https://www.jneurosci.org/content/jneuro/38/44/9505.full.pdf)
+
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#Sys.setenv(PYTHONPATH="/data/local/rajewsky/shared_libs/python")
+#library(reticulate)
+#use_python("/usr/bin/python3", required = TRUE)
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+library(fgsea)
+library(MAST)
+library(ggrepel)
+library(biomaRt)
+library(topGO)
+library(viridis)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+#Rscript -e "library(rmarkdown); rmarkdown::render('/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20191229_pre_analysis_9sets.Rmd')"
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+```
+
+### 1. OPC cluster analysis
+
+This analysis is done by OPC cluster (from res 0.8 and cluster 12 and 38) and I investigate more in here.
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=5}
+data9set_cleaned_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(12, 38))
+
+data9set_cleaned_OPC_Ctrl.SO <- subset(data9set_cleaned_OPC.SO, subset = sample %in% "Ctrl")
+data9set_cleaned_OPC_AD.SO <- subset(data9set_cleaned_OPC.SO, subset = sample %in% "AD")
+data9set_cleaned_OPC_ADp40KO.SO <- subset(data9set_cleaned_OPC.SO, subset = sample %in% "ADp40KO")
+
+
+DimPlot(object = data9set_cleaned_OPC.SO, reduction = "umap", group.by = "seurat_clusters")+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+```
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+d1 <- DimPlot(object = data9set_cleaned_OPC.SO, 
+        cells = as.vector(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "Ctrl",])), reduction = "umap", cols = viridis(3)[1]) + ggtitle("OPC Ctrl") + scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 24, y = -2), label = paste0(length(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "Ctrl",])), " cells"), size = 5)
+
+d2 <- DimPlot(object = data9set_cleaned_OPC.SO, 
+        cells = as.vector(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "AD",])), reduction = "umap", cols = viridis(3)[2]) + ggtitle("OPC AD") + scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 24, y = -2), label = paste0(length(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "AD",])), " cells"), size = 5)
+
+d3 <- DimPlot(object = data9set_cleaned_OPC.SO, 
+        cells = as.vector(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "ADp40KO",])), reduction = "umap", cols = viridis(3)[3]) + ggtitle("OPC ADp40KO") + scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0)) + theme(legend.position = "none", axis.text = element_blank(), axis.ticks = element_blank(), plot.title = element_text(hjust = 0.5)) + geom_text(aes(x = 24, y = -2), label = paste0(length(rownames(data9set_cleaned_OPC.SO@meta.data[data9set_cleaned_OPC.SO@meta.data$sample %in% "ADp40KO",])), " cells"), size = 5)
+
+grid.arrange(d1, d2, d3, ncol = 3)
+```
+
+### 2. cell type proportion
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=4.5}
+plot.data <- data9set_cleaned_OPC.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 2), rep("ADp40KO-1", 2), rep("AD-1", 2),
+                              rep("Ctrl-2", 2), rep("ADp40KO-2", 2), rep("AD-2", 2),
+                              rep("Ctrl-3", 2), rep("ADp40KO-3", 2), rep("AD-3", 2)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cluster)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  scale_fill_manual(values=c("#CC0000",  "#33CC33"))
+
+```
+
+### 3. feature markers
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=5}
+data9set.markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker.csv", row.names = 1)
+data9set_OPC.markers <- data9set.markers[data9set.markers$cluster %in% c(12, 38), ]
+
+
+data9set_OPC_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv", row.names = 1)
+
+data9set_OPC_DE_AD_ADp40KO_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_ADp40KO.csv", row.names = 1)
+```
+
+First I checked known OPC markers from literatures Olig1, Cspg4, Pdgfra [marker ref](https://www.nature.com/articles/s41598-017-14207-0)
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Olig1"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f2 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Cspg4"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f3 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Pdgfra"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+```
+
+#### 3-1. Cluster 12 markers
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Lhfpl3"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f2 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Sox6"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f3 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Nxph1"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+```
+
+#### 3-2. Cluster 38 markers
+
+I previously reported in lncRNAs that 9630013A20Rik is in GO:0048709 (oligodendrocyte differentiation) [ref](http://www.informatics.jax.org/go/term/GO:0022008)
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Bcas1"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f2 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("9630013A20Rik"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f3 <- FeaturePlot(data9set_cleaned_OPC.SO, features = c("Fyn"), cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+
+grid.arrange(f1, f2, f3,  ncol = 3)
+```
+
+#### 3-3. 9630013A20Rik
+
+9630013A20Rik is gene that up-regulated in AD vs Ctrl & ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_OPC_Ctrl.SO, features = c("9630013A20Rik"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f2 <- FeaturePlot(data9set_cleaned_OPC_AD.SO, features = c("9630013A20Rik"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f3 <- FeaturePlot(data9set_cleaned_OPC_ADp40KO.SO, features = c("9630013A20Rik"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+#### 3-3. Ttr
+
+Ttr is up-regulated in AD compare to ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width = 12, fig.height=4.5}
+f1 <- FeaturePlot(data9set_cleaned_OPC_Ctrl.SO, features = c("Ttr"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f2 <- FeaturePlot(data9set_cleaned_OPC_AD.SO, features = c("Ttr"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+f3 <- FeaturePlot(data9set_cleaned_OPC_ADp40KO.SO, features = c("Ttr"),order = FALSE, cols = c("#FFCC00",'#003366'))+ scale_x_continuous(limits = c(15,25)) + scale_y_continuous(limits = c(-20, 0))
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+### 4. GO analysis
+
+To identify the function of OPC two clusters, I used GO for each cluster. 
+
+In here, genes of interest are padj < 0.01 & logFC > 0.5 from marker genes. Backgrond genes are derived from DE analysis genes with pct > 0.01. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+cluster_GO <- function(genesOfInterest, geneUniverse){
+
+geneList <- factor(as.integer(geneUniverse %in% genesOfInterest))
+names(geneList) <- geneUniverse
+
+onts = c( "MF", "BP", "CC" )
+tab <- as.list(onts)
+names(tab) <- onts
+
+for(i in 1:3){
+
+GOdata <- new("topGOdata",
+                description = "GOanalysis",
+                ontology = onts[i],
+                allGenes = geneList,
+                annot = annFUN.org,
+                mapping = "org.Mm.eg.db",
+                ID = "SYMBOL",
+                nodeSize = 20)
+
+
+res.result1 <- runTest(GOdata, statistic = "fisher", algorithm = "elim")
+res.result2 <- runTest(GOdata, statistic = "fisher", algorithm = "classic")
+
+
+tab[[i]] <- cbind(data.frame(category = onts[i]), GenTable(GOdata, Fisher.elim = res.result1,
+                        Fisher.classic = res.result2,
+                        orderBy = "Fisher.elim" , topNodes = 30))
+
+
+}
+
+topGOResults <- plyr::rbind.fill(tab)
+topGOResults.df <- as.data.frame(topGOResults)
+topGOResults.df$gene_ratio <- topGOResults.df$Significant / topGOResults.df$Annotated
+
+# modification appropriate for plot
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.classic <- as.numeric(topGOResults.df$Fisher.classic)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+return(topGOResults.df)
+}
+# ggplot function
+scRNA_TopGO_plot2 <- function(topGOResults.df){
+
+topGOResults.df$Fisher.elim <- as.numeric(topGOResults.df$Fisher.elim)
+topGOResults.df$Fisher.elim <- -log10(topGOResults.df$Fisher.elim)
+topGOResults.df$Term <- factor(topGOResults.df$Term, levels = rev(unique(topGOResults.df$Term)))
+
+ggplot(topGOResults.df, aes(x=gene_ratio,
+               y=Term,
+               colour=Fisher.elim,
+               size=Significant)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="gene ratio", y="GO term", colour="-log10(p-value)", size="Significant") +
+  theme_minimal() + theme(axis.text = element_text(size = 10))
+
+}
+```
+
+#### 4-1. cluster 12
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_OPC.markers[which(data9set_OPC.markers$cluster %in% "12" &data9set_OPC.markers$p_val_adj < 0.01 & data9set_OPC.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_OPC_DE_AD_Ctrl_markers[data9set_OPC_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_OPC_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:7), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:7), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+#### 4-2. cluster 38
+
+```{r warning=FALSE, message=FALSE, fig.width = 15, fig.height=5}
+# gene of interest
+# In here, I extract genes padj < 0.01 & logFC > 0.5
+genesOfInterest <- as.character(data9set_OPC.markers[which(data9set_OPC.markers$cluster %in% "38" &data9set_OPC.markers$p_val_adj < 0.01 & data9set_OPC.markers$avg_logFC > 0.5), ]$gene) 
+
+# background genes
+geneUniverse <- rownames(data9set_OPC_DE_AD_Ctrl_markers[data9set_OPC_DE_AD_Ctrl_markers$pct.1 > 0.01 & data9set_OPC_DE_AD_Ctrl_markers$pct.2 > 0.01, ])
+
+topGOResults.df <- cluster_GO(genesOfInterest, geneUniverse)
+
+topGOResults_MF.df <- topGOResults.df[which(topGOResults.df$category == "MF" & topGOResults.df$Annotated < 500), ][c(1:7), ]
+g1 <- scRNA_TopGO_plot2(topGOResults_MF.df)
+g1 <- g1 + ggtitle("Molecular function")
+
+topGOResults_BP.df <- topGOResults.df[which(topGOResults.df$category == "BP" & topGOResults.df$Annotated < 500), ][c(1:7), ]
+g2 <- scRNA_TopGO_plot2(topGOResults_BP.df)
+g2 <- g2 + ggtitle("Biological process")
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 5. DE analysis
+
+#### 5-1. AD vs Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=6}
+data9set_OPC_DE_AD_Ctrl_markers_padj <- data9set_OPC_DE_AD_Ctrl_markers[which(data9set_OPC_DE_AD_Ctrl_markers$p_val_adj < 0.01), ]
+
+ggplot(data9set_OPC_DE_AD_Ctrl_markers) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_OPC_DE_AD_Ctrl_markers_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("OPC DE analysis AD vs Ctrl") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_OPC_DE_AD_Ctrl_markers$p_val_adj) > 3 , rownames(data9set_OPC_DE_AD_Ctrl_markers),""))) 
+
+```
+
+#### 5-2. AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=6}
+data9set_OPC_DE_AD_ADp40KO_markers_padj <- data9set_OPC_DE_AD_ADp40KO_markers[which(data9set_OPC_DE_AD_ADp40KO_markers$p_val_adj < 0.01), ]
+
+ggplot(data9set_OPC_DE_AD_ADp40KO_markers) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  geom_point(data = data9set_OPC_DE_AD_ADp40KO_markers_padj, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") + theme_classic() +
+  ggtitle("OPC DE analysis AD vs ADp40KO") + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = ifelse(-log10(data9set_OPC_DE_AD_ADp40KO_markers$p_val_adj) > 3 , rownames(data9set_OPC_DE_AD_ADp40KO_markers),""))) 
+
+```
+
+### 6. GSEA
+
+```{r warning=FALSE, message=FALSE}
+GSEA_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv_GSEA_logFC_reactome.csv", row.names = 1)
+
+GSEA_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_ADp40KO.csv_GSEA_logFC_reactome.csv", row.names = 1)
+
+GSEA_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCADp40KO_Ctrl.csv_GSEA_logFC_reactome.csv", row.names = 1)
+```
+
+#### 6-1. AD vs Ctrl
+
+In here, I only showed statistically significant pathways. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 7, fig.height=6}
+ggplot(GSEA_AD_Ctrl[GSEA_AD_Ctrl$padj < 0.25, ], aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(title = "GSEA", y="Normalized Enrichment Score") + 
+  theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10), legend.position = "none")
+
+```
+
+#### 6-2. AD vs ADp40KO
+
+In here, I only showed statistically significant pathways. 
+
+```{r warning=FALSE, message=FALSE, fig.width = 9, fig.height=8}
+ggplot(GSEA_AD_Ctrl[GSEA_AD_ADp40KO$padj < 0.25, ], aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(title = "GSEA", y="Normalized Enrichment Score") + 
+  theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10), legend.position = "none")
+
+```
+
+### 7. OPC cluster 38
+
+```{r warning=FALSE, message=FALSE, fig.width = 6, fig.height=5}
+data9set_cleaned_OPC_c38.SO <- subset(data9set_cleaned_OPC.SO, subset = seurat_clusters %in% c(38))
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+# load subset of GO data (1st and 2nd column)
+GO_myelination <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination_sub.txt", sep = "\t")
+
+# remove overlap genes 
+myelination_genes <- as.vector(as.character(unique(GO_myelination$Symbol)))
+
+# remove myelination genes not in the list
+myelination_genes <- myelination_genes[myelination_genes %in% data9set_cleaned_OPC_c38.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_myelination_excel <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.xlsx", 1, header=TRUE)
+
+GO_myelination_excel_sub <- GO_myelination_excel[GO_myelination_excel$Symbol %in% myelination_genes, ]
+
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OPC_c38_1.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "1")
+data9set_cleaned_OPC_c38_2.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "2")
+data9set_cleaned_OPC_c38_3.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "3")
+data9set_cleaned_OPC_c38_4.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "4")
+data9set_cleaned_OPC_c38_5.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "5")
+data9set_cleaned_OPC_c38_6.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "6")
+data9set_cleaned_OPC_c38_7.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "7")
+data9set_cleaned_OPC_c38_8.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "8")
+data9set_cleaned_OPC_c38_9.SO <- subset(data9set_cleaned_OPC_c38.SO, subset = gemgroup %in% "9")
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+OPC1.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_1.SO, myelination_genes)
+colnames(OPC1.df) <- c("Ctrl_1", "gene")
+OPC2.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_2.SO, myelination_genes)
+colnames(OPC2.df) <- c("ADp40KO_1", "gene")
+OPC3.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_3.SO, myelination_genes)
+colnames(OPC3.df) <- c("AD_1", "gene")
+OPC4.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_4.SO, myelination_genes)
+colnames(OPC4.df) <- c("Ctrl_2", "gene")
+OPC5.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_5.SO, myelination_genes)
+colnames(OPC5.df) <- c("ADp40KO_2", "gene")
+OPC6.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_6.SO, myelination_genes)
+colnames(OPC6.df) <- c("AD_2", "gene")
+OPC7.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_7.SO, myelination_genes)
+colnames(OPC7.df) <- c("Ctrl_3", "gene")
+OPC8.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_8.SO, myelination_genes)
+colnames(OPC8.df) <- c("ADp40KO_3", "gene")
+OPC9.df <- z_score_from_gene_list(data9set_cleaned_OPC_c38_9.SO, myelination_genes)
+colnames(OPC9.df) <- c("AD_3", "gene")
+
+# merge all data frame
+OPC.df <- merge(OPC1.df, c(OPC2.df, OPC3.df, OPC4.df, OPC5.df, OPC6.df, OPC7.df, OPC8.df, OPC9.df), by = "gene")
+OPC.df <- OPC.df[,c(1,2,3,4, 6,8, 10, 12,14,16)]
+rownames(OPC.df) <- OPC.df$gene
+OPC.df$gene <- NULL
+
+# remove if all counts is zero
+OPC.df <- OPC.df[Matrix::rowSums(OPC.df) != 0, ]
+
+#hist(rowSums(OPC.df), breaks = 30)
+
+OPC.df2 <- OPC.df[rowSums(OPC.df) > 5, ]
+
+
+# calculate z-score
+OPC_zs.df <- apply(OPC.df2, 1, function(x) (x - mean(x)) / sd(x))
+OPC_zs_final.df <- data.frame(t(OPC_zs.df))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+
+heatmap.2(as.matrix(OPC_zs_final.df), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="GO:0042552 myelination genes",
+          scale="row", lhei=c(4, 10), lwid = c(3,10), cexCol=0.8)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelination",]$Symbol))
+
+heatmap.2(as.matrix(OPC_zs_final.df[rownames(OPC_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OPC_zs_final.df[rownames(OPC_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OPC_zs_final.df[rownames(OPC_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="regulation of myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "myelination",]$Symbol))
+
+heatmap.2(as.matrix(OPC_zs_final.df[rownames(OPC_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+DE_C38_AD_Ctrl <- FindMarkers(data9set_cleaned_OPC_c38.SO, ident.1 =  "AD", ident.2 = "Ctrl", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1)
+DE_C38_AD_Ctrl$gene <- rownames(DE_C38_AD_Ctrl)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+DE_C38_AD_Ctrl_m <- DE_C38_AD_Ctrl[DE_C38_AD_Ctrl$gene %in% myelination_genes, ]
+
+
+# log2FC > 1 or padj > 50
+#DE_C38_AD_Ctrl_plus.df <- DE_C38_AD_Ctrl[which(DE_C38_AD_Ctrl$avg_logFC > 0 & DE_C38_AD_Ctrl$p_val_adj < 0.01),]
+#OL_DE_AD_Ctrl_minus.df <- OL_DE_AD_Ctrl.df[which(OL_DE_AD_Ctrl.df$avg_logFC < 0 & OL_DE_AD_Ctrl.df$p_val_adj < 0.01),]
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+ggplot(DE_C38_AD_Ctrl_m) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) + 
+  #geom_point(data = OL_DE_AD_ADp40KO_plus.df, aes(x = avg_logFC, y = -log10(p_val_adj)), color = "red") +
+  ggtitle("myelination genes in AD versus ADp40KO of Oligo") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,5)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15), 
+        axis.text = element_text(size = 12, color = "black"))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+VlnPlot(data9set_cleaned_OPC_c38.SO, features = "Nrg1", group.by = "sample")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+VlnPlot(data9set_cleaned_OPC_c38.SO, features = "Gnb4", group.by = "sample")
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```

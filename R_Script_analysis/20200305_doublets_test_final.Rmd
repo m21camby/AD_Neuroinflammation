@@ -1,0 +1,153 @@
+---
+title: "doublets_final"
+author: "Skim"
+date: "3/5/2020"
+output: html_document
+---
+
+```{r}
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", 
+                                       ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+scrublet_predicted.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_scrublet_predicted_doublets_data.frame.txt", sep = "\t")
+
+data9set.df <- as.data.frame(data9set.SO@meta.data)
+data9set.df$cell_ID <- rownames(data9set.df)
+data9set_scrublet.df <- merge(data9set.df, scrublet_predicted.df, by = "cell_ID")
+data9set_scrublet.df$scrublet_prediction <- ifelse(data9set_scrublet.df$scrublet_predicted == 1, "doublets", "singlet")
+
+data9set_umap <- as.data.frame(data9set.SO@reductions$umap@cell.embeddings)
+data9set_umap$cell_ID <- rownames(data9set_umap)
+
+data9set_umap <- merge(data9set_umap, data9set_scrublet.df, by = "cell_ID")
+
+data9set_umap$scrublet_prediction
+
+```
+
+```{r fig.height=6, fig.width=7}
+ggplot(data9set_umap, aes(x = nCount_RNA, y = nFeature_RNA, color = scrublet_prediction, alpha = scrublet_prediction)) + geom_point(size = 1) + 
+  scale_color_manual(values = c("#FF9900","#3399FF")) + labs(x = "nUMIs", y = "nGenes") + theme_classic() + 
+  scale_alpha_manual(values = c(singlet = 0.2, doublets = 1))  + ggtitle("nUMIs and nGenes in doublets") + 
+theme(plot.title = element_text(size = 18, hjust = 0.5), axis.text.x = element_text(size =14, color = "black"), axis.title.x = element_text(size =16, color = "black"), axis.text.y = element_text(size =14, color = "black"), axis.title.y = element_text(size =16), legend.position = c(0.8, 0.3), legend.title = element_blank(), legend.text = element_text(size = 16)) + guides(colour = guide_legend(override.aes = list(size=5)))
+
+```
+
+```{r fig.height=6, fig.width=10}
+# cluster 41 is all doublets
+cluster_scrublet.df <- data.frame(cluster = data9set_umap$seurat_clusters, doublets = data9set_umap$scrublet_prediction)
+cluster_scrublet.df <- cluster_scrublet.df %>% group_by(cluster) %>% count(doublets)
+
+summary_cluster_scrublet.df <- data.frame(cluster = as.character(), scrublet_doublets_percent = as.numeric(), stringsAsFactors = FALSE)
+
+j = 0
+for(i in seq(1, by = 2, len = 41)){
+  #print(i)
+  #print(j)
+  summary_cluster_scrublet.df[j+1,1] <- as.character(j)
+  summary_cluster_scrublet.df[j+1,2] <- cluster_scrublet.df[i,3]/(cluster_scrublet.df[i,3]+ cluster_scrublet.df[i+1,3])
+  j = j +1 
+}
+
+# cluster 41
+summary_cluster_scrublet.df <- rbind(summary_cluster_scrublet.df, data.frame(cluster = "41", scrublet_doublets_percent = 1))
+
+# 42 ~ 44
+j = 42
+for(i in seq(84, by = 2, len = 3)){
+  #print(i)
+  #print(j)
+  summary_cluster_scrublet.df[j+1,1] <- as.character(j)
+  summary_cluster_scrublet.df[j+1,2] <- cluster_scrublet.df[i,3]/(cluster_scrublet.df[i,3]+ cluster_scrublet.df[i+1,3])
+  j = j +1 
+}
+
+summary_cluster_scrublet.df$cluster <- factor(summary_cluster_scrublet.df$cluster, levels = as.character(seq(0,44)))
+summary_cluster_scrublet.df$scrublet_singlet_percent <- 1 - summary_cluster_scrublet.df$scrublet_doublets_percent
+
+summary_cluster_scrublet.df$color <- ifelse(summary_cluster_scrublet.df$scrublet_doublets_percent > 0.5, "doublets cluster", "singlet cluster")
+
+
+ggplot(data=summary_cluster_scrublet.df, aes(x=cluster, y=scrublet_doublets_percent, fill = color)) +
+geom_bar(stat="identity", position=position_dodge())+ theme_classic()+ scale_y_continuous(expand = c(0,0)) + ggtitle("percent of doublets by scrublet in each cluster") + labs(y = "doublets percent") + theme(plot.title = element_text(size = 18, hjust = 0.5), axis.text.x = element_text(size =12, color = "black"), axis.title.x = element_text(size =18, color = "black"), axis.text.y = element_text(size =14, color = "black"), axis.title.y = element_text(size =18), legend.title = element_blank(), legend.text = element_text(size = 16), legend.position = c(0.3,0.6)) + 
+  scale_fill_manual(values = c("#FF9900","#3399FF"))
+
+
+#summary_cluster_scrublet.df2 <- summary_cluster_scrublet.df %>% gather(doublet, percent, scrublet_doublets_percent:scrublet_singlet_percent)
+#summary_cluster_scrublet.df2$doublet <- factor(summary_cluster_scrublet.df2$doublet, levels = c("scrublet_singlet_percent", "scrublet_doublets_percent"))
+#ggplot(summary_cluster_scrublet.df2, aes(x = cluster, y = percent, fill = doublet)) +
+#    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d() + 
+#  ylab("percentage") 
+
+#+ geom_text(aes(label = round(clust_prop, 3)), color = "darkgray", size = 4,  position = position_stack(0.5))
+
+```
+
+```{r fig.width= 15, fig.height=5}
+
+test_doublets.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_doublets_data.frame.txt", sep = "\t")
+test_singlet.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_only_singlet_data.frame.txt", sep = "\t")
+
+doublets_final.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200205_doublets_by_addmodulescore_zscore_doublets_data.frame.txt", sep = "\t")
+
+
+doublets_singlet.df <- data.frame(cell_type = as.character(), Freq = as.numeric(), percent= as.numeric(), cluster = as.numeric(), stringsAsFactors = FALSE)
+
+doublets_barplot <- function(test_doublets.df, test_singlet.df, cluster_number = 25){
+  test_doublets_25.df <- test_doublets.df[which(test_doublets.df$cell_ID %in% c(data9set_umap[data9set_umap$seurat_clusters == cluster_number, ]$cell_ID)), ] 
+  test_singlet_25.df <- test_singlet.df[which(test_singlet.df$cell_ID %in% c(data9set_umap[data9set_umap$seurat_clusters == cluster_number, ]$cell_ID)), ] 
+  
+  test_doublets_25.df2 <- as.data.frame(table(test_doublets_25.df[test_doublets_25.df$V6 == "doublets", ]$cell_type))
+  
+  test_singlet_25.df2 <- as.data.frame(table(test_singlet_25.df$cell_type))
+  test_singlet_25.df3 <- as.data.frame(table(test_doublets_25.df[test_doublets_25.df$V6 == "singlet", ]$cell_type))
+  
+  test_singlet_25.df2$Freq <- test_singlet_25.df2$Freq + test_singlet_25.df3$Freq
+  test_singlet_25.df2$Var1 <- str_sub(test_singlet_25.df2$Var1, end=-2)
+  doublets_singlet.df <- data.frame(cell_type = test_singlet_25.df2$Var1, Freq = test_doublets_25.df2$Freq + test_singlet_25.df2$Freq)
+  
+  doublets_singlet.df$percent <- doublets_singlet.df$Freq / sum(doublets_singlet.df$Freq)
+  doublets_singlet.df$cluster <- cluster_number
+  return(doublets_singlet.df)
+}
+
+for(i in c(0:44)){
+  print(i)
+  doublets_singlet.df2 <- doublets_barplot(test_doublets.df, test_singlet.df, cluster_number = i)
+  doublets_singlet.df <- rbind(doublets_singlet.df, doublets_singlet.df2)
+}
+
+doublets_singlet.df <- doublets_barplot(test_doublets.df, test_singlet.df, cluster_number = 25)
+
+g1 <- ggplot(doublets_singlet.df, aes(x = cluster, y = percent, fill = cell_type)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) + scale_fill_viridis_d()
+
+g1
+
+
+#+  
+#  scale_fill_manual(values=c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,144 @@
+---
+title: "pie chart vs bar plot"
+author: "Skim"
+date: "7/9/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(readr)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(ggrepel)
+library(forcats)
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+cell_counts <- data.frame(dataset = c("reference", "reference", "reference", "reference", "reference", "reference", "data", "data", "data", "data", "data", "data"),
+                        cell_type = c("Neurons", "Astrocytes", "Microglia","Oligodendrocytes", "OPC","rest", "Neurons", "Astrocytes", "Microglia","Oligodendrocytes", "OPC","rest"), 
+                        percent = c(68, 7.5, 11.99, 12.01, 0, 0.4, 61, 4, 21, 9, 3, 2))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# Order cell types by total cell count.
+cell_type_order <- 
+  cell_counts %>%
+  group_by(cell_type) %>%
+  summarize(percent = sum(percent)) %>%
+  arrange(-percent) %>%
+  pull(cell_type) %>%
+  as.character
+
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+
+# Prepare data for plotting.
+plot.data <-
+  cell_counts %>%
+  mutate(cell_type = factor(as.character(cell_type), cell_type_order)) %>%
+  group_by(dataset) %>%
+  arrange(-as.integer(cell_type)) %>%
+  mutate(cell_fraction = percent / sum(percent),
+         label_pos =
+           cumsum(lag(cell_fraction, default = 0)) + cell_fraction / 2) %>%
+  ungroup %>%
+  mutate(cell_fraction_label = paste(round(100 * cell_fraction), "%"),
+         n_cells_label = format(percent, big.mark = " "))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# Plot cell fractions colored by cell type.
+base_plot <-
+  plot.data %>%
+  ggplot(aes(y = cell_fraction)) %>%
+  + ylab("cell fraction") %>%
+  + scale_fill_brewer("cell type", palette = "Dark2") %>%
+  + theme_minimal()
+
+```
+
+Questions from Marcel
+
+1. In which dataset does each cell type account for a larger proportion?  
+2. Clearly, there are more fibroblast(other cell type?) in your data compared to the reference. But what is the fold-change?  
+3. Are there any neuronal progenitor cells in the reference data? (No for now, but maybe?)    
+4. Is the proportion of fibroblasts(other cell type ?) in your data larger than that of oligodendrocyte in the reference data?  
+
+```{r warning=FALSE, message=FALSE}
+# Version 1: Clean pie-chart.
+pie_chart <-
+  base_plot %>%
+  + facet_wrap(~dataset) %>%
+  + geom_bar(aes(x = 1, fill = cell_type), width = 1, stat = "identity") %>%
+  + coord_polar("y", direction = -1) %>%
+  + xlab(NULL) %>%
+  + theme(axis.text = element_blank(), line = element_blank(),
+      strip.text.x = element_text(size = 12, face = "bold"))
+pie_chart
+
+
+```
+
+
+Marcel: Do you still like this messier? 
+
+```{r warning=FALSE, message=FALSE}
+
+# Version 2: Annotated pie-chart.
+pie_chart %>%
+  + geom_label_repel(aes(x = 1, y = label_pos, label = n_cells_label, fill = cell_type),
+                    direction = "y", segment.size = 0, box.padding = 0, show.legend = FALSE) %>%
+  + geom_label_repel(aes(x = 1.5, y = label_pos, label = cell_fraction_label,
+                         fill = cell_type),
+                     nudge_x = .5, direction = "x", show.legend = FALSE)
+
+```
+
+```{r warning=FALSE, message=FALSE}
+# Version 3: Clean bar chart:
+bar_chart <-
+  base_plot %>%
+  + geom_bar(aes(x = cell_type, fill = cell_type, alpha = fct_rev(dataset)),
+             stat = "identity", position = "dodge") %>%
+  + scale_alpha_discrete("dataset", range = c(.6, 1),
+                         guide = guide_legend(reverse = TRUE)) %>%
+  + guides(fill = FALSE) %>%
+  + scale_x_discrete("cell type", limits = rev(cell_type_order)) %>%
+  + coord_flip()
+bar_chart
+
+
+```
+
+Marcel: Note how much cleaner this is, even if you add all the extra
+
+```{r warning=FALSE, message=FALSE}
+
+# Version 4: Annotated bar chart:
+bar_chart %>%
+  + geom_text(aes(x = cell_type,
+                  label = paste0( n_cells_label),
+                  alpha = fct_rev(dataset)),
+              position = position_dodge(width = .9), hjust = 1.1,
+              show.legend = FALSE) %>%
+  + geom_text(aes(x = cell_type,
+                  label = paste0("[", cell_fraction_label, "]"),
+                  alpha = fct_rev(dataset)),
+              position = position_dodge(width = .9), hjust = -.1,
+              show.legend = FALSE)
+
+```

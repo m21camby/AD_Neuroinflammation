@@ -1,0 +1,885 @@
+---
+title: "Comparison to Marques et al paper"
+author: "Skim"
+date: '2020 4 2 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is for analyzing Oligodendrocytes and comaprison to Marques et al., Science, 2016 paper. The paper identified 13 sub-clusters of Oligodendrocytes. 
+
+From OPC to OL, We also uncovered several genes previously uncharacterized in OLs that encode transmembrane, secreted, and cytoskeletal proteins that are as highly upregulated as myelin genes during OL differentiation. our data indicated that **CNP1** and **MOG** were both induced in OLs, and that **CNP1** was induced earlier than **MOG**. For instance, the OL-enriched genes **PNLIP** and **CHN2** are induced early during OL differentiation, whereas transferrin, **SEPP1**, and **CTSL** are all upregulated several days later. several of the OL genes, such as **MAL8* and transferrin, were initially induced as late as 5d after differentiation commenced, whereas other **non-myelin-related genes**, such as **IKBB** and **CHES1**, were initially induced at intermediate time points (24 h delay). In here, check Top 50 OL-specific expressed genes [ref](https://www.jneurosci.org/content/jneuro/26/43/10967.full.pdf)
+
+Another paper mentioned Lentiviral **GNB4** overexpression rapidly induced human oligodendrocyte differentiation. Following xenograft in hypomyelinating shiverer/rag2 mice, GNB4 overexpression augmented myelin synthesis and the ability of hOPCs to ensheath host axons, establishing GNB4 as functionally important in human myelination. 
+
+We focused on genes with differential upregula- tion in differentiated oligodendrocytes and those that were preserved across M15 homologs. The most highly upregulated was breast cancer amplified sequence 1, **BCAS1**, which was increased more than 50-fold in differen- tiating hOPCs and preserved in both M15 and M15C. upregulation of **PPP1R16B** in differentiation conditions, as well as strong upregulation with time [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5550273/pdf/main.pdf)
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+library(xlsx)
+library(viridis)
+library(ggrepel)
+library(gplots)
+library(RColorBrewer)
+library(ggrepel)
+library(viridis)
+```
+
+```{r warning=FALSE, message=FALSE}
+# before removing doublets clusters
+#load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# after removing doublets clusters
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+```
+
+Oligodendrocytes clusters = 1,5,6
+OPC = 12, 38 not included doublets suspected = 41 (Dentate & OPC), 42 (Interneuron & OPC), 44 (Astrocytes & OPC) by scrublet
+
+```{r warning=FALSE, message=FALSE}
+
+data9set_OL_OPC.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(1, 5, 6, 12, 38))
+
+```
+
+### 1. Oligo and OPC
+
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=7}
+
+# combine meta data and UMAP
+data9set.meta.data <- data9set_cleaned.SO@meta.data
+data9set_OL_OPC_umap <- as.data.frame(data9set_cleaned.SO@reductions$umap@cell.embeddings)
+data9set_OL_OPC_umap.df <- cbind(data9set.meta.data, data9set_OL_OPC_umap)
+
+# Mark Oligo cluster
+data9set_OL_OPC_umap.df$celltypes <- ifelse(data9set_OL_OPC_umap.df$seurat_clusters %in% c(1, 5, 6), "Oligo", ifelse(data9set_OL_OPC_umap.df$seurat_clusters %in% c(12, 38, 41, 42, 44), "OPC", "others"))
+
+# subset Oligo cluster
+data9set_OL_OPC_sub_umap.df <- data9set_OL_OPC_umap.df[data9set_OL_OPC_umap.df$celltypes %in% "Oligo", ]
+
+# subset OPC cluster
+data9set_OL_OPC_sub2_umap.df <- data9set_OL_OPC_umap.df[data9set_OL_OPC_umap.df$celltypes %in% "OPC", ]
+
+
+# Microglia whole UMAP
+g1 <- ggplot(data9set_OL_OPC_umap.df, aes(x = UMAP_1, y = UMAP_2)) + geom_point(color = "gray", size = 0.1) + 
+  geom_point(data = data9set_OL_OPC_sub_umap.df[data9set_OL_OPC_sub_umap.df$celltypes %in% "Oligo", ], aes(x = UMAP_1, y = UMAP_2), color = "#99CCCC", size = 0.1) +
+  geom_point(data = data9set_OL_OPC_sub2_umap.df[data9set_OL_OPC_sub2_umap.df$celltypes %in% "OPC", ], aes(x = UMAP_1, y = UMAP_2), color = "#009999", size = 0.1) +
+  theme_classic() + 
+  theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12))
+g1
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=4}
+
+
+# combine subset Oligo and OPC cluster
+data9set_OL_OPC_sub3_umap.df <- rbind(data9set_OL_OPC_sub_umap.df, data9set_OL_OPC_sub2_umap.df)
+
+g2 <- ggplot(data9set_OL_OPC_sub3_umap.df, aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) + 
+  #scale_color_manual(values=c("#E69F00", "#56B4E9"), label = paste0("cluster ", c(3, 8))) + 
+  theme_classic() + 
+  theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15)))
+g2
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=15, fig.width=10}
+g1 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 1, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("Ctrl-1 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 1, ]))) + theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g2 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 2, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("ADp40KO-1 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 2, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g3 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 3, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("AD-1 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 3, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g4 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 4, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("Ctr-2 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 4, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g5 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 5, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("ADp40KO-2 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 5, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g6 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 6, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("AD-2 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 6, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g7 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 7, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("Ctrl-3 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 7, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+g8 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 8, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("ADp40KO-3 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 8, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+ 
+g9 <- ggplot(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 9, ], aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) +  
+  ggtitle(paste0("AD-3 cells: ", nrow(data9set_OL_OPC_sub3_umap.df[data9set_OL_OPC_sub3_umap.df$gemgroup %in% 9, ]))) + 
+  theme_classic() + 
+  theme(plot.title = element_text(size= 15, hjust = 0.5), 
+        axis.title = element_text(color = "black", size =15),
+        axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.2, 0.3)) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15))) 
+
+grid.arrange(g1, g4, g7, g3, g6, g9, g2, g5, g8, ncol = 3)
+```
+
+### 2. OPC
+
+**Oligodendrocyte precursor cells** coexpressed **Pdgfra** and **Cspg4**
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Pdgfra")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Cspg4")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+Several genes (such as **Fabp7** and **Tmem100**) identified in OPCs were previously associated with astrocytes and radial glia
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Fabp7")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Tmem100")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### 3. COPs
+
+**Differentiation-committed oligodendrocyte precursors (COPs)** were distinct from OPCs and expressed Neu4 and genes involved in keeping oligodendrocytes undifferentiated (**Sox6, Bmp4**, and **Gpr17**)
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Neu4")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Sox6")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+**COPs** presented lower levels of cell cycle markers while expressing genes involved in migration (**Tns3** and **Fyn**)
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Tns3")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Fyn")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### 4. NFOL
+
+**Newly formed oligodendrocytes (NFOL1 and NFOL2)** expressed genes induced at early stages of differentiation (**Tcf7l2** and **Casr**). we observed a peak in levels of Tcf7l2, which is involved in oligodendrocyte differentiation 
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Tcf7l2")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Casr")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### 5. MFOL
+
+**Myelin-forming oligodendrocytes (MFOL1 and MFOL2)** expressed genes responsible for myelin formation (**Mal, Mog, Plp1, Opalin**, and **Serinc5**)
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Mal")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Mog")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f3 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Plp1")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f4 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Opalin")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, f3, f4, ncol = 2)
+```
+
+### 6. MOL
+
+**Mature oligodendrocytes (MOL1 to MOL6)** expressed late oligodendrocyte differentiation genes (**Klk6** and **Apod**)
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Klk6")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Apod")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) 
+grid.arrange(f1, f2, ncol = 2)
+```
+
+### 7. continuous maturation process
+
+Oligodendrocyte cell states in the continuous maturation process from precursors to mature cells.
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=15}
+f1 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Pdgfra")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) + ggtitle("OPC (Pdgfra)")
+f2 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Fyn")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) + ggtitle("COPs (Fyn)")
+f3 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Tcf7l2")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) + ggtitle("NFOL (Tcf7l2)")
+f4 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Opalin")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) + ggtitle("MFOL (Opalin)")
+f5 <- FeaturePlot(data9set_OL_OPC.SO, features = c("Apod")) + scale_x_continuous(limits = c(10,25)) + scale_y_continuous(limits = c(-20, 10)) + ggtitle("MOL (Apod)")
+grid.arrange(f1, f2, f3, f4, f5, ncol = 5)
+```
+
+### 8. ITPR2+ oligodendrocytes
+
+ITPR2+ oligodendrocytes are present in regions of active differentiation
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+VlnPlot(data9set_OL_OPC.SO, features = c("Tcf7l2"), group.by = "seurat_clusters", pt.size = 0.1)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=7}
+VlnPlot(data9set_OL_OPC.SO, features = c("Itpr2"), group.by = "seurat_clusters", pt.size = 0.1)
+```
+
+### 9. Myelin-forming oligodendrocytes by experiments
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+data9set_OL_OPC_Ctrl.SO <- subset(data9set_OL_OPC.SO, subset = sample %in% "Ctrl")
+data9set_OL_OPC_AD.SO <- subset(data9set_OL_OPC.SO, subset = sample %in% "AD")
+data9set_OL_OPC_ADp40KO.SO <- subset(data9set_OL_OPC.SO, subset = sample %in% "ADp40KO")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+v1 <- VlnPlot(data9set_OL_OPC_Ctrl.SO, features = c("Mal"), group.by = "seurat_clusters", pt.size = 0.1)
+v2 <- VlnPlot(data9set_OL_OPC_AD.SO, features = c("Mal"), group.by = "seurat_clusters", pt.size = 0.1)
+v3 <- VlnPlot(data9set_OL_OPC_ADp40KO.SO, features = c("Mal"), group.by = "seurat_clusters", pt.size = 0.1)
+
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+v1 <- VlnPlot(data9set_OL_OPC_Ctrl.SO, features = c("Mog"), group.by = "seurat_clusters", pt.size = 0.1)
+v2 <- VlnPlot(data9set_OL_OPC_AD.SO, features = c("Mog"), group.by = "seurat_clusters", pt.size = 0.1)
+v3 <- VlnPlot(data9set_OL_OPC_ADp40KO.SO, features = c("Mog"), group.by = "seurat_clusters", pt.size = 0.1)
+
+ 
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+v1 <- VlnPlot(data9set_OL_OPC_Ctrl.SO, features = c("Plp1"), group.by = "seurat_clusters", pt.size = 0.1)
+v2 <- VlnPlot(data9set_OL_OPC_AD.SO, features = c("Plp1"), group.by = "seurat_clusters", pt.size = 0.1)
+v3 <- VlnPlot(data9set_OL_OPC_ADp40KO.SO, features = c("Plp1"), group.by = "seurat_clusters", pt.size = 0.1)
+
+
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+v1 <- VlnPlot(data9set_OL_OPC_Ctrl.SO, features = c("Opalin"), group.by = "seurat_clusters", pt.size = 0.1)
+v2 <- VlnPlot(data9set_OL_OPC_AD.SO, features = c("Opalin"), group.by = "seurat_clusters", pt.size = 0.1)
+v3 <- VlnPlot(data9set_OL_OPC_ADp40KO.SO, features = c("Opalin"), group.by = "seurat_clusters", pt.size = 0.1)
+
+
+grid.arrange(v1, v2, v3, ncol = 3)
+```
+
+### 10. cluster percent by each batch
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+data9set_OL.SO <- subset(data9set_OL_OPC.SO, subset = seurat_clusters %in% c(1, 5, 6))
+
+plot.data <- data9set_OL.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 3), rep("ADp40KO-1", 3), rep("AD-1", 3),
+                              rep("Ctrl-2", 3), rep("ADp40KO-2", 3), rep("AD-2", 3),
+                              rep("Ctrl-3", 3), rep("ADp40KO-3", 3), rep("AD-3", 3)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cluster)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  scale_fill_manual(values=c("#CC0000","#33CC33",  "#000033"))
+
+```
+
+### 11. myelination genes
+
+From discussion with Nikos, remove low expressed genes and do agina with clustering. 
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+# load subset of GO data (1st and 2nd column)
+GO_myelination <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination_sub.txt", sep = "\t")
+
+# remove overlap genes 
+myelination_genes <- as.vector(as.character(unique(GO_myelination$Symbol)))
+
+# remove myelination genes not in the list
+myelination_genes <- myelination_genes[myelination_genes %in% data9set_OL.SO@assays$RNA@data@Dimnames[[1]]]
+
+GO_myelination_excel <- read.xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GO_files/GO_0042552_myelination.xlsx", 1, header=TRUE)
+
+GO_myelination_excel_sub <- GO_myelination_excel[GO_myelination_excel$Symbol %in% myelination_genes, ]
+
+##########################
+# z-score for each sample
+##########################
+data9set_cleaned_OL_1.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "1")
+data9set_cleaned_OL_2.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "2")
+data9set_cleaned_OL_3.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "3")
+data9set_cleaned_OL_4.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "4")
+data9set_cleaned_OL_5.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "5")
+data9set_cleaned_OL_6.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "6")
+data9set_cleaned_OL_7.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "7")
+data9set_cleaned_OL_8.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "8")
+data9set_cleaned_OL_9.SO <- subset(data9set_OL.SO, subset = gemgroup %in% "9")
+
+# extract log(CPM+1) data from Seurat object
+z_score_from_gene_list <- function(Seurat.SO, gene_list){
+  
+  df <- as.data.frame(Matrix::rowMeans(GetAssayData(Seurat.SO, slot = "data")))
+  df$gene <- rownames(df)
+  df <- df[rownames(df) %in% gene_list,]
+  return(df)
+}
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+OL1.df <- z_score_from_gene_list(data9set_cleaned_OL_1.SO, myelination_genes)
+colnames(OL1.df) <- c("Ctrl_1", "gene")
+OL2.df <- z_score_from_gene_list(data9set_cleaned_OL_2.SO, myelination_genes)
+colnames(OL2.df) <- c("ADp40KO_1", "gene")
+OL3.df <- z_score_from_gene_list(data9set_cleaned_OL_3.SO, myelination_genes)
+colnames(OL3.df) <- c("AD_1", "gene")
+OL4.df <- z_score_from_gene_list(data9set_cleaned_OL_4.SO, myelination_genes)
+colnames(OL4.df) <- c("Ctrl_2", "gene")
+OL5.df <- z_score_from_gene_list(data9set_cleaned_OL_5.SO, myelination_genes)
+colnames(OL5.df) <- c("ADp40KO_2", "gene")
+OL6.df <- z_score_from_gene_list(data9set_cleaned_OL_6.SO, myelination_genes)
+colnames(OL6.df) <- c("AD_2", "gene")
+OL7.df <- z_score_from_gene_list(data9set_cleaned_OL_7.SO, myelination_genes)
+colnames(OL7.df) <- c("Ctrl_3", "gene")
+OL8.df <- z_score_from_gene_list(data9set_cleaned_OL_8.SO, myelination_genes)
+colnames(OL8.df) <- c("ADp40KO_3", "gene")
+OL9.df <- z_score_from_gene_list(data9set_cleaned_OL_9.SO, myelination_genes)
+colnames(OL9.df) <- c("AD_3", "gene")
+
+# merge all data frame
+OL.df <- merge(OL1.df, c(OL2.df, OL3.df, OL4.df, OL5.df, OL6.df, OL7.df, OL8.df, OL9.df), by = "gene")
+OL.df <- OL.df[,c(1,2,3,4, 6,8, 10, 12,14,16)]
+rownames(OL.df) <- OL.df$gene
+OL.df$gene <- NULL
+
+# remove if all counts is zero
+OL.df <- OL.df[Matrix::rowSums(OL.df) != 0, ]
+
+OL.df2 <- OL.df[rowSums(OL.df) > 5, ]
+
+
+# calculate z-score
+OL_zs.df <- apply(OL.df2, 1, function(x) (x - mean(x)) / sd(x))
+OL_zs_final.df <- data.frame(t(OL_zs.df))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+
+heatmap.2(as.matrix(OL_zs_final.df), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="GO:0042552 myelination genes",
+          scale="row", lhei=c(4, 10), lwid = c(3,10), cexCol=0.8)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+### 12. subclustering
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+data9set_subcluster_OL.SO <- CreateSeuratObject(counts =  GetAssayData(data9set_OL.SO, slot = 'counts'),  min.cells = 3, min.features = 200, project = "ADp40KO")
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set_subcluster_OL.SO@meta.data), split="-"), "[[", 2)
+data9set_subcluster_OL.SO <- AddMetaData(object=data9set_subcluster_OL.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set_subcluster_OL.SO@meta.data)))
+
+table(data9set_subcluster_OL.SO@meta.data$gemgroup)
+
+# calculate MT genes
+data9set_subcluster_OL.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set_subcluster_OL.SO, pattern = "^mt-")
+data9set_subcluster_OL.SO <- subset(x = data9set_subcluster_OL.SO, subset = nCount_RNA < 30000 & nCount_RNA > 200 & percent.mt < 5)  # 3787 -> 2722
+
+data9set_subcluster_OL.SO <- NormalizeData(object = data9set_subcluster_OL.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+
+data9set_subcluster_OL.SO <- FindVariableFeatures(object = data9set_subcluster_OL.SO, nfeatures = 200, selection.method = "vst", verbose = FALSE)
+
+
+
+data9set_subcluster_OL.SO <- ScaleData(object = data9set_subcluster_OL.SO, vars.to.regress = c("percent.mt", "nCount_RNA", "gemgroup"))
+data9set_subcluster_OL.SO <- RunPCA(data9set_subcluster_OL.SO, features = VariableFeatures(object = data9set_subcluster_OL.SO), verbose = FALSE, ndims.print = "None")
+#ElbowPlot(data9set_subcluster_OL.SO, ndims = 20) #until 5 PCs
+data9set_subcluster_OL.SO <- FindNeighbors(object = data9set_subcluster_OL.SO, reduction = "pca", dims = 1:5, verbose = FALSE)
+data9set_subcluster_OL.SO <- FindClusters(object = data9set_subcluster_OL.SO, resolution = 0.4, verbose = FALSE)
+
+#data9set_subcluster_OL.SO <- RunTSNE(object = data9set_subcluster_OL.SO, dims = 1:6, nthreads = 8, perplexity = 30)
+data9set_subcluster_OL.SO <- RunUMAP(object = data9set_subcluster_OL.SO, dims = 1:5, n.neighbors = 25, min.dist = 0.1, n.epochs = 500, spread = 1)
+
+data9set_subcluster_OL.SO@meta.data$sample <- ifelse((data9set_subcluster_OL.SO$gemgroup == 1 | data9set_subcluster_OL.SO$gemgroup == 4 | data9set_subcluster_OL.SO$gemgroup == 7), 
+                                               "Ctrl", ifelse((data9set_subcluster_OL.SO$gemgroup == 2 | data9set_subcluster_OL.SO$gemgroup == 5 | data9set_subcluster_OL.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+DimPlot(object = data9set_subcluster_OL.SO, reduction = "umap")
+```
+```{r warning=FALSE, message=FALSE, fig.height=15, fig.width=15}
+
+d1 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "1", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d2 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "2", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d3 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "3", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d4 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "4", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d5 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "5", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d6 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "6", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d7 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "7", ]), reduction = "umap", cols = rep(viridis(3)[1], 45))
+
+d8 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "8", ]), reduction = "umap", cols = rep(viridis(3)[2], 45))
+
+d9 <- DimPlot(data9set_subcluster_OL.SO, cells =  rownames(data9set_subcluster_OL.SO@meta.data[data9set_subcluster_OL.SO@meta.data$gemgroup %in% "9", ]), reduction = "umap", cols = rep("#CC9966", 45))
+
+d1 <- d1 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "Ctrl-1", size = 6) 
+ 
+d2 <- d2 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 5, y = 5), label = "ADp40KO-1", size = 6) 
+
+d3 <- d3 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "AD-1", size = 6) 
+
+d4 <- d4 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "Ctrl-2", size = 6) 
+
+d5 <- d5 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 5, y = 5), label = "ADp40KO-2", size = 6) 
+
+d6 <- d6 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "AD-2", size = 6) 
+
+d7 <- d7 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "Ctrl-3", size = 6) 
+
+d8 <- d8 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 5, y = 5), label = "ADp40KO-3", size = 6) 
+
+d9 <- d9 + theme(legend.position = "none",
+        axis.line=element_blank(), 
+        axis.ticks=element_blank(), 
+        axis.text=element_blank(),
+        axis.title = element_blank()) + 
+  geom_text(geom = "text", aes(x = 6, y = 5), label = "AD-3", size = 6) 
+
+grid.arrange(d1, d4, d7, d3, d6, d9, d2, d5, d8,  ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+
+plot.data <- data9set_subcluster_OL.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster) %>%
+  summarise(count = n()) %>%
+    mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total)
+
+plot.data$gemgroup <- factor(plot.data$gemgroup, levels = c("1", "4", "7", "2", "5", "8", "3", "6", "9"))
+plot.data <- as.data.frame(plot.data)
+
+p1 <- data.frame(expgroup = c(rep("Ctrl-1", 6), rep("ADp40KO-1", 6), rep("AD-1", 6),
+                              rep("Ctrl-2", 6), rep("ADp40KO-2", 6), rep("AD-2", 6),
+                              rep("Ctrl-3", 6), rep("ADp40KO-3", 6), rep("AD-3", 6)), stringsAsFactors = FALSE)
+
+plot.data <- cbind(plot.data, p1)
+
+plot.data$expgroup <- factor(plot.data$expgroup, levels = c("Ctrl-1", "Ctrl-2", "Ctrl-3", "AD-1", "AD-2", "AD-3", "ADp40KO-1", "ADp40KO-2", "ADp40KO-3"))
+
+ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cluster)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  scale_fill_manual(values=c("#CC0000","#33CC33",  "#000033", "#FF6600","#33CCCC",  "#CC00FF"))
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+f3 <- FeaturePlot(data9set_subcluster_OL.SO, features = c("Tcf7l2")) + ggtitle("NFOL (Tcf7l2)")
+f4 <- FeaturePlot(data9set_subcluster_OL.SO, features = c("Opalin")) + ggtitle("MFOL (Opalin)")
+f5 <- FeaturePlot(data9set_subcluster_OL.SO, features = c("Apod")) + ggtitle("MOL (Apod)")
+grid.arrange(f3, f4, f5, ncol = 3)
+```
+
+
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+data9set_subcluster_OL_C3.SO <- subset(data9set_subcluster_OL.SO, subset = seurat_clusters %in% c(3))
+
+data9set_subcluster_OL_C3.SO$sample <- factor(data9set_subcluster_OL_C3.SO$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+```
+
+A mammalian-specific CNS myelin gene, tmem10, also called Opalin, encodes a type 1 transmembrane protein that is highly upregulated during early stages of OPC differentiation. We show that constitutive TMEM10 overexpression in the Oli-neu oligodendroglial cell line promotes the expression of the myelin-associated genes MAG, CNP and CGT, whereas TMEM10 knock down in primary OPCs reduces CNP mRNA expression and decreases the percentage of MBP-positive oligodendrocytes that differentiate in vitro. [ref](https://www.nature.com/articles/s41598-019-40342-x)
+
+Opalin does not play a critical role in oligodendrocyte maturation and myelination, basic sensory and nociceptive functions, locomotor activity in the home cage, and anxiety- and depressive-like behavior. However, Opalin−/− mice display increased exploratory activity in novel environments. Further studies are needed to clarify the potential biological significance of Opalin in myelin degeneration and regeneration, and more importantly in the fine-tuning mechanisms of learning and behavior. [ref](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0166732)
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+
+VlnPlot(data9set_subcluster_OL_C3.SO, features = "Opalin", y.max = 5, group.by = "sample", pt.size = 0) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 18, color = "black"),
+        axis.text.x = element_text(size = 18, color = "black", angle = 0, hjust = 0.5), 
+        title = element_text(size = 20),
+        legend.position = "none")
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+FeaturePlot(data9set_subcluster_OL_C3.SO, features = c("Opalin"), split.by = "sample",)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+VlnPlot(data9set_subcluster_OL_C3.SO, features = "Mal", y.max = 5, group.by = "sample", pt.size = 0) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 18, color = "black"),
+        axis.text.x = element_text(size = 18, color = "black", angle = 0, hjust = 0.5), 
+        title = element_text(size = 20),
+        legend.position = "none")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+VlnPlot(data9set_subcluster_OL_C3.SO, features = "Mog", y.max = 5, group.by = "sample", pt.size = 0) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 18, color = "black"),
+        axis.text.x = element_text(size = 18, color = "black", angle = 0, hjust = 0.5), 
+        title = element_text(size = 20),
+        legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=12}
+VlnPlot(data9set_subcluster_OL_C3.SO, features = "Plp1", y.max = 5, group.by = "sample", pt.size = 0) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_text(size = 18, color = "black"),
+        axis.text.x = element_text(size = 18, color = "black", angle = 0, hjust = 0.5), 
+        title = element_text(size = 20),
+        legend.position = "none")
+
+```
+
+```{r}
+DE_C3_AD_Ctrl <- FindMarkers(data9set_subcluster_OL_C3.SO, ident.1 =  "AD", ident.2 = "Ctrl", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1)
+DE_C3_AD_Ctrl$gene <- rownames(DE_C3_AD_Ctrl)
+```
+
+```{r}
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/GSEA_scRNA.R")
+
+
+# run GSEA
+set.seed(42)
+GSEA_OL_C3_AD_Ctrl_Reactome <- scRNA_GSEA(DE_C3_AD_Ctrl)
+```
+
+data suggested that in cultured OPCs, the time course of cell cycle exit coincided with the initiation of differentiation toward a myelinating phenotype. The time course of differentiation was defined by decreased levels of the progenitor marker Pdgfra and the corresponding increase of Cnpase, Mag, Plp, Mbp, Mog. Given our results on the role of E2F1, not only in regulating cell cycle components. First, E2f1 transcript levels are downregulated when OPCs differentiate into oligodendrocytes, but not when they are pushed toward the astrocytic fate by stimuli such as BMP4. Second, the expression pattern of E2f1 is inversely correlated with that of late differentiation genes (i.e.,myelin transcripts). [ref](https://www.jneurosci.org/content/jneuro/34/4/1481.full.pdf)
+
+Developmentally, oligodendrocyte precursor cells (OPCs) give rise to immature (or premyelinating) and then mature (or myelinating) OLs thatwrap neuronal axons and form myelin sheath. OPCs specifically express PDGFRα and NG2. PD0325901 is a well-known second generation analog of CI-1040, the first MEK (an MAPK kinase) inhibitor and inhibition could induce OPC to OL differentiation in a dose-dependent manner. Inhibitors correlated well with high levels of MBP detected in the same group. These results indicate that **inhibiting MAPK/ERK pathway promotes OL generation**, and the duration of MAPK/ERK inhibition might be critical in enhancing the differentiation process. [ref](https://onlinelibrary.wiley.com/doi/epdf/10.1002/glia.23606)
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_OL_C3_AD_Ctrl_Reactome_top10 <- GSEA_OL_C3_AD_Ctrl_Reactome[order(GSEA_OL_C3_AD_Ctrl_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_OL_C3_AD_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (AD vs Ctrl in Oligo Cluster 3)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+ADp40KO vs Ctrl
+
+```{r}
+DE_C3_ADp40KO_Ctrl <- FindMarkers(data9set_subcluster_OL_C3.SO, ident.1 =  "ADp40KO", ident.2 = "Ctrl", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1)
+DE_C3_ADp40KO_Ctrl$gene <- rownames(DE_C3_ADp40KO_Ctrl)
+
+# run GSEA
+set.seed(42)
+GSEA_OL_C3_ADp40KO_Ctrl_Reactome <- scRNA_GSEA(DE_C3_ADp40KO_Ctrl)
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_OL_C3_ADp40KO_Ctrl_Reactome_top10 <- GSEA_OL_C3_ADp40KO_Ctrl_Reactome[order(GSEA_OL_C3_ADp40KO_Ctrl_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_OL_C3_ADp40KO_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (ADp40KO vs Ctrl in Oligo Cluster 3)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+AD vs ADp40KO
+
+```{r}
+DE_C3_AD_ADp40KO <- FindMarkers(data9set_subcluster_OL_C3.SO, ident.1 =  "AD", ident.2 = "ADp40KO", group.by = "sample", test.use = "MAST", logfc.threshold = 0.1)
+DE_C3_AD_ADp40KO$gene <- rownames(DE_C3_AD_ADp40KO)
+
+# run GSEA
+set.seed(42)
+GSEA_OL_C3_AD_ADp40KO_Reactome <- scRNA_GSEA(DE_C3_AD_ADp40KO)
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_OL_C3_AD_ADp40KO_Reactome_top10 <- GSEA_OL_C3_AD_ADp40KO_Reactome[order(GSEA_OL_C3_AD_ADp40KO_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_OL_C3_AD_ADp40KO_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (AD vs ADp40KO in Oligo Cluster 3)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+
+```{r}
+##########################
+# z-score for each sample
+##########################
+data9set_subcluster_OL_C3_1.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "1")
+data9set_subcluster_OL_C3_2.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "2")
+data9set_subcluster_OL_C3_3.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "3")
+data9set_subcluster_OL_C3_4.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "4")
+data9set_subcluster_OL_C3_5.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "5")
+data9set_subcluster_OL_C3_6.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "6")
+data9set_subcluster_OL_C3_7.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "7")
+data9set_subcluster_OL_C3_8.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "8")
+data9set_subcluster_OL_C3_9.SO <- subset(data9set_subcluster_OL_C3.SO, subset = gemgroup %in% "9")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=5, fig.width=5}
+OL1.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_1.SO, myelination_genes)
+colnames(OL1.df) <- c("Ctrl_1", "gene")
+OL2.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_2.SO, myelination_genes)
+colnames(OL2.df) <- c("ADp40KO_1", "gene")
+OL3.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_3.SO, myelination_genes)
+colnames(OL3.df) <- c("AD_1", "gene")
+OL4.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_4.SO, myelination_genes)
+colnames(OL4.df) <- c("Ctrl_2", "gene")
+OL5.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_5.SO, myelination_genes)
+colnames(OL5.df) <- c("ADp40KO_2", "gene")
+OL6.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_6.SO, myelination_genes)
+colnames(OL6.df) <- c("AD_2", "gene")
+OL7.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_7.SO, myelination_genes)
+colnames(OL7.df) <- c("Ctrl_3", "gene")
+OL8.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_8.SO, myelination_genes)
+colnames(OL8.df) <- c("ADp40KO_3", "gene")
+OL9.df <- z_score_from_gene_list(data9set_subcluster_OL_C3_9.SO, myelination_genes)
+colnames(OL9.df) <- c("AD_3", "gene")
+
+# merge all data frame
+OL.df <- merge(OL1.df, c(OL2.df, OL3.df, OL4.df, OL5.df, OL6.df, OL7.df, OL8.df, OL9.df), by = "gene")
+OL.df <- OL.df[,c(1,2,3,4, 6,8, 10, 12,14,16)]
+rownames(OL.df) <- OL.df$gene
+OL.df$gene <- NULL
+
+# remove if all counts is zero
+OL.df <- OL.df[Matrix::rowSums(OL.df) != 0, ]
+
+#hist(rowSums(OL.df))
+
+OL.df2 <- OL.df[rowSums(OL.df) > 5, ]
+
+
+# calculate z-score
+OL_zs.df <- apply(OL.df2, 1, function(x) (x - mean(x)) / sd(x))
+OL_zs_final.df <- data.frame(t(OL_zs.df))
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=6, fig.width=7}
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+
+heatmap.2(as.matrix(OL_zs_final.df), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="GO:0042552 myelination genes",
+          scale="row", lhei=c(4, 10), lwid = c(3,10), cexCol=0.8)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "central nervous system myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="central nervous system myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7}
+genes <- unique(as.character(GO_myelination_excel_sub[GO_myelination_excel_sub$Annotated.Term %in% "positive regulation of myelination",]$Symbol))
+
+heatmap.2(as.matrix(OL_zs_final.df[rownames(OL_zs_final.df) %in% genes, ]), 
+          trace="none", 
+          col=rev(morecols(50)),
+          main="positive regulation of myelination",
+          scale="row", lhei=c(4, 8), lwid = c(2,10), cexCol=0.8, cexRow = 1, cex.main = 1)
+
+
+```
+
+```{r}
+data9set_OL_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OligodendrocytesAD_Ctrl.csv", row.names = 1)
+data9set_OL_DE_AD_Ctrl_markers$gene <- rownames(data9set_OL_DE_AD_Ctrl_markers)
+
+data9set_OPC_DE_AD_Ctrl_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv", row.names = 1)
+data9set_OPC_DE_AD_Ctrl_markers$gene <- rownames(data9set_OPC_DE_AD_Ctrl_markers)
+
+
+```
+
+```{r fig.width= 9, fig.height= 5}
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, gemgroup = gemgroup, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(gemgroup, cluster, sample) %>%
+  summarise(count = n()) %>%
+  group_by(gemgroup) %>% 
+  mutate(sample_total = sum(count)) %>%
+    mutate(cell_prop = count / sample_total) 
+
+plot.data <- plot.data[plot.data$cluster %in% c(1,5,6,12,38), ]
+
+ggplot(data=plot.data, aes(x=cluster, y=cell_prop, fill=gemgroup)) +
+  geom_point(position=position_dodge(0.8), size = 2)
+
+ggplot(plot.data, aes(x=cluster, y=cell_prop, fill = sample, color=sample)) +
+  geom_point(position=position_dodge(0.8), size = 2) + scale_color_viridis_d() + scale_fill_viridis_d() + theme_classic() +  
+  ylab("percent") +
+  theme(axis.text.x = element_text(size =15,color = "black"), 
+        axis.title.x = element_blank(), 
+        axis.text.y = element_text(size =15, color = "black"), 
+        axis.title.y = element_text(size =15), 
+        legend.title = element_blank(), 
+        legend.text = element_text(size = 15)) 
+
+```
+
+```{r}
+sessionInfo()
+```

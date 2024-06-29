@@ -1,0 +1,754 @@
+---
+title: "GSEA_for_figures"
+author: "Skim"
+date: '2020 3 29 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is Enrichment profile from gene set enrichment analysis for GSEA. Genes were ranked from most upregulated to most downregulated by different metrics (e.g. avg_logFC, sig x padj, sig x p_val). As Nikolaus didn't believe the results without showing house keeping genes and other negative results.  
+
+```{r warning = FALSE, message = FALSE}
+library(biomaRt)
+library(fgsea)
+library(ggplot2)
+library(ggrepel)
+library(gridExtra)
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/GSEA_scRNA.R")
+```
+
+detected house keeping genes: ACTB, GAPDH, PGK1, PPIA, RPL13A, B2M, 3WHAZ, SDHA, TFRC, GUSB, HMBS, HPRT1, TBP
+
+```{r warning = FALSE, message = FALSE}
+GSEA_AD_Ctrl_Reactome_prev <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/GSEA_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv_GSEA_logFC_reactome.csv", row.names = 1)
+MG_DE_AD_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv", row.names = 1)
+MG_DE_AD_Ctrl.df$gene <- rownames(MG_DE_AD_Ctrl.df)
+
+
+# ref: https://www.genomics-online.com/resources/16/5049/housekeeping-genes/
+housekeeping_genes <- c("ACTB","GAPDH","PGK1","PPIA","RPL13A", "B2M", "YWHAZ","SDHA","TFRC","GUSB", "HMBS", "HPRT1", "TBP")
+
+pathways.hallmark <- gmtPathways("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/ReactomePathways.gmt")
+
+# run GSEA
+set.seed(42)
+GSEA_MG_AD_Ctrl_Reactome <- scRNA_GSEA(MG_DE_AD_Ctrl.df)
+
+
+```
+
+### 1. housekeeping genes
+
+housekeeping genes location in Differential Expression(DE) of AD vs Ctrl in Microglia. Although non of housekeeping genes showed statistical significant padj < 0.05, B2M (Beta-2-microglobulin, avg_logFC > 0.27) and Gusb(Glucuronidase, beta, avg_logFC > 0.21) showed increased FC. Other housekeeping genes are within range (avg_logFC: -0.1 ~ 0.1)
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 5}
+
+#hist(MG_DE_AD_Ctrl.df$avg_logFC, breaks = 500)
+
+MG_DE_AD_Ctrl.df2 <- MG_DE_AD_Ctrl.df[toupper(MG_DE_AD_Ctrl.df$gene) %in% housekeeping_genes, ]
+
+g1 <- ggplot(MG_DE_AD_Ctrl.df, aes(x=avg_logFC)) + 
+  geom_histogram(binwidth=0.01, color="black", fill="white") + theme_classic() + scale_x_continuous(limits =  c(-0.7, 1.6), expand = c(0,0)) + scale_y_continuous(expand = c(0,0)) 
+
+g2 <- ggplot(MG_DE_AD_Ctrl.df2, aes(x=avg_logFC)) + 
+  geom_histogram(binwidth=0.01, color="black", fill="white") + theme_classic() + scale_x_continuous(limits =  c(-0.5, 0.5), expand = c(0,0)) + scale_y_continuous(expand = c(0,0), limits = c(0, 3)) + 
+  geom_text_repel(data = MG_DE_AD_Ctrl.df2[MG_DE_AD_Ctrl.df2$avg_logFC > 0.09, ], aes(x = avg_logFC, y = 1), label = MG_DE_AD_Ctrl.df2[MG_DE_AD_Ctrl.df2$avg_logFC > 0.09, ]$gene, force = 10, nudge_y = 0.2) +
+  geom_text_repel(data = MG_DE_AD_Ctrl.df2[which(MG_DE_AD_Ctrl.df2$avg_logFC > 0 & MG_DE_AD_Ctrl.df2$avg_logFC < 0.09), ], aes(x = avg_logFC, y = 2), label = MG_DE_AD_Ctrl.df2[which(MG_DE_AD_Ctrl.df2$avg_logFC > 0 & MG_DE_AD_Ctrl.df2$avg_logFC < 0.09), ]$gene, force = 10, nudge_y = 0.2) + 
+  geom_text_repel(data = MG_DE_AD_Ctrl.df2[which(MG_DE_AD_Ctrl.df2$avg_logFC < 0), ], aes(x = avg_logFC, y = 1), label = MG_DE_AD_Ctrl.df2[which(MG_DE_AD_Ctrl.df2$avg_logFC < 0), ]$gene, force = 20, nudge_y = 0.4)
+
+grid.arrange(g1, g2, ncol = 2)
+```
+
+### 2. GSEA plot 
+
+Olfactory Signaling Pathway: cAMP levels increased in olfactory neurons upon odor stimulation. [ref](https://reactome.org/content/detail/R-HSA-381753)
+
+Plasma lipoprotein assembly, remodeling, and clearance: reverse transport of cholesterol from peripheral tissues to LDL for return to the liver [ref](https://reactome.org/content/detail/R-HSA-174824)
+
+
+#### 2-1. top 5 high NES and low NES 
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_MG_AD_Ctrl_Reactome_top10 <- rbind(GSEA_MG_AD_Ctrl_Reactome[rev(order(GSEA_MG_AD_Ctrl_Reactome$NES))[1:10], ], GSEA_MG_AD_Ctrl_Reactome[order(GSEA_MG_AD_Ctrl_Reactome$NES)[1:10], ])
+GSEA_MG_AD_Ctrl_Reactome_top10$sig <- ifelse(GSEA_MG_AD_Ctrl_Reactome_top10$padj < .25, "True", "False")
+
+
+ggplot(GSEA_MG_AD_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 10 by NES (AD vs Ctrl in Microglia)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_MG_AD_Ctrl_Reactome_top10 <- GSEA_MG_AD_Ctrl_Reactome[order(GSEA_MG_AD_Ctrl_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_MG_AD_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (AD vs Ctrl in Microglia)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+
+#### 2-2. top 20 low padj
+
+```{r warning = FALSE, message = FALSE, fig.width= 10, fig.height= 7}
+
+GSEA_MG_AD_Ctrl_Reactome_top10 <- GSEA_MG_AD_Ctrl_Reactome[order(GSEA_MG_AD_Ctrl_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_MG_AD_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (AD vs Ctrl in Microglia)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+Volcano plot of genes
+
+```{r warning = FALSE, message = FALSE, fig.width= 6, fig.height= 5}
+#bm <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM.df")
+#bm2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM2.df")
+
+MG_DE_AD_Ctrl_sub.df <- MG_DE_AD_Ctrl.df[MG_DE_AD_Ctrl.df$gene %in% c("Olfr111", "Rtp4", "Prkg1", "Kcnma1", "Itpr1", "Olfr110", "Reep5", "Pde1a"), ]
+
+ggplot(MG_DE_AD_Ctrl_sub.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) +
+  ggtitle("Leading edge genes AD vs Ctrl") + 
+  theme_classic() + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  xlim(c(-0.2, 1.2)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = rownames(MG_DE_AD_Ctrl_sub.df))) 
+```
+
+#### 2-3. shuffling avg_log2FC and GSEA (negative control)
+
+as our results is not from random results, I shuffled avg_logFC and do GSEA again.
+
+```{r warning = FALSE, message = FALSE}
+# run GSEA
+MG_DE_AD_Ctrl.df2 <- MG_DE_AD_Ctrl.df
+
+# shuffle the avg_logFC
+# ref: https://www.reddit.com/r/RStudio/comments/84ikf3/how_to_randomly_shuffle_contents_of_a_single/
+MG_DE_AD_Ctrl.df2$avg_logFC <- sample(MG_DE_AD_Ctrl.df2$avg_logFC, replace = FALSE)
+set.seed(42)
+GSEA_MG_AD_Ctrl_Reactome_suffle <- scRNA_GSEA(MG_DE_AD_Ctrl.df2)
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 15, fig.height= 7}
+
+
+GSEA_MG_AD_Ctrl_Reactome_suffle_top10 <- rbind(GSEA_MG_AD_Ctrl_Reactome_suffle[rev(order(GSEA_MG_AD_Ctrl_Reactome_suffle$NES))[1:10], ], GSEA_MG_AD_Ctrl_Reactome_suffle[order(GSEA_MG_AD_Ctrl_Reactome_suffle$NES)[1:10], ])
+
+GSEA_MG_AD_Ctrl_Reactome_suffle_top10$sig <- ifelse(GSEA_MG_AD_Ctrl_Reactome_suffle_top10$padj < .25, "True", "False")
+
+ggplot(GSEA_MG_AD_Ctrl_Reactome_suffle_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "shuffled data of GSEA top 10 by padj (AD vs Ctrl in Microglia)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+#### 2-4. GSAE top 20 padj of ADp40KO vs Ctrl
+
+```{r warning = FALSE, message = FALSE}
+
+MG_DE_ADp40KO_Ctrl.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaADp40KO_Ctrl.csv", row.names = 1)
+MG_DE_ADp40KO_Ctrl.df$gene <- rownames(MG_DE_ADp40KO_Ctrl.df)
+
+# run GSEA
+set.seed(42)
+GSEA_MG_ADp40KO_Ctrl_Reactome <- scRNA_GSEA(MG_DE_ADp40KO_Ctrl.df)
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 6, fig.height= 5}
+#bm <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM.df")
+#bm2 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200113_CCI_test_GENE_BM2.df")
+
+MG_DE_ADp40KO_Ctrl_sub.df <- MG_DE_ADp40KO_Ctrl.df[MG_DE_ADp40KO_Ctrl.df$gene %in% c("Olfr111", "Rtp4", "Prkg1", "Kcnma1", "Itpr1", "Olfr110", "Reep5", "Pde1a"), ]
+
+ggplot(MG_DE_ADp40KO_Ctrl_sub.df) + geom_point(aes(x = avg_logFC, y = -log10(p_val_adj))) +
+  ggtitle("Leading edge genes ADp40KO vs Ctrl") + 
+  theme_classic() + 
+   xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  xlim(c(-0.2, 1.2)) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = rel(1.5), hjust = 0.5),
+        axis.title = element_text(size = rel(1.25))) +
+  geom_text_repel(aes(x = avg_logFC, y = -log10(p_val_adj), label = rownames(MG_DE_ADp40KO_Ctrl_sub.df))) 
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 15, fig.height= 7}
+
+GSEA_MG_ADp40KO_Ctrl_Reactome_top10 <- GSEA_MG_ADp40KO_Ctrl_Reactome[order(GSEA_MG_ADp40KO_Ctrl_Reactome$padj)[1:20], ]
+
+ggplot(GSEA_MG_ADp40KO_Ctrl_Reactome_top10, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill= padj < 0.25)) +
+  coord_flip() +
+  labs(title = "GSEA top 20 by padj (ADp40KO vs Ctrl in Microglia)", y="Normalized Enrichment Score") + 
+  theme_classic() + theme(axis.title.y = element_blank(), axis.text.y = element_text(size = 10))
+
+```
+
+
+
+### 3. Plasma lipoprotein assembly, remodeling, and clearance (GSEA using logFC as metric)
+
+One example of ES > 0.5 & padj < 0.25
+
+```{r warning = FALSE, message = FALSE}
+# run GSEA
+set.seed(42)
+GSEA_MG_AD_Ctrl_Reactome <- scRNA_GSEA(MG_DE_AD_Ctrl.df)
+
+pathway = pathways.hallmark[["Plasma lipoprotein assembly, remodeling, and clearance"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+#pathway
+
+# including housekeeping genes
+pathway2 <- c(housekeeping_genes)
+#pathway2
+```
+
+```{r warning = FALSE, message = FALSE}
+# normalize rank
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+#statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+```
+
+```{r warning = FALSE, message = FALSE}
+# extract position in the rank
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+#pathway
+statsAdj.df1 <- statsAdj.df[pathway, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+# extract position in the rank of house keeping genes
+pathway2 <- unname(as.vector(na.omit(match(pathway2, names(statsAdj)))))
+pathway2 <- sort(pathway2)
+#pathway2
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+# calculate running sum ranks
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r warning = FALSE, message = FALSE}
+# calculate running sum ranks of house keeping genes 
+gseaRes2 <- calcGseaStat(statsAdj, selectedStats = pathway2,
+                          returnAllExtremes = TRUE)
+bottoms2 <- gseaRes2$bottoms
+tops2 <- gseaRes2$tops
+#gseaRes2
+```
+
+```{r warning = FALSE, message = FALSE}
+# for figure
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE}
+# for figure house keeping genes. 
+#n <- length(statsAdj)
+xs2 <- as.vector(rbind(pathway2 - 1, pathway2))
+ys2 <- as.vector(rbind(bottoms2, tops2))
+toPlot2 <- data.frame(x=c(0, xs2, n + 1), y=c(0, ys2, 0))
+  
+diff2 <- (max(tops2) - min(bottoms2)) / 8
+
+```
+
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 6}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_classic() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  geom_segment(data = data.frame(x=pathway2, gene = statsAdj.df[pathway2, ]$gene),
+                 mapping=aes(x=x, y=-diff2/2, xend=x, yend=diff2/2),
+                 size=0.2, color = "red") + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank(), axis.text = element_text(size =12), axis.title = element_text(size = 15), plot.title = element_text(size = 15, hjust = 0.5)) + 
+  ggtitle("Plasma lipoprotein assembly, remodeling, and clearance") + 
+  ylab("Enrichment score (ES)") + 
+  xlab("Rank in Ordered genes") + 
+  ylim(c(-0.2, 0.8)) + scale_x_continuous(expand = c(-0.0001,0)) + 
+#  scale_x_continuous(expand = c(-0.0001,0)) + 
+  geom_hline(yintercept=max(tops), colour="red", linetype="dashed") +
+  geom_hline(yintercept=0, colour="black", linetype="dashed", size = 0.3) + 
+  geom_text_repel(data = data.frame(x=pathway2, statsAdj.df[pathway2, ]), aes(x = x, y = -diff2/2), label = data.frame(x=pathway2, statsAdj.df[pathway2, ])$gene, force = 10, nudge_y = -0.1)
+
+
+```
+
+
+### 4. HSF1-dependent transactivation
+
+One example of ES < -0.5 & padj < 0.25
+
+
+Heat shock factor 1 (HSF1) is a protein that in humans is encoded by the HSF1 gene. This pathway is induced by not only temperature stress, but also by a variety of other stressors such as hypoxic conditions and exposure to contaminants.
+
+```{r warning = FALSE, message = FALSE}
+pathway = pathways.hallmark[["HSF1-dependent transactivation"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+#pathway
+
+# including housekeeping genes
+pathway2 <- c(housekeeping_genes)
+```
+
+```{r warning = FALSE, message = FALSE}
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+#statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+#pathway
+statsAdj.df1 <- statsAdj.df[pathway, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway2 <- unname(as.vector(na.omit(match(pathway2, names(statsAdj)))))
+pathway2 <- sort(pathway2)
+#pathway2
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes2 <- calcGseaStat(statsAdj, selectedStats = pathway2,
+                          returnAllExtremes = TRUE)
+bottoms2 <- gseaRes2$bottoms
+tops2 <- gseaRes2$tops
+#gseaRes2
+```
+
+```{r warning = FALSE, message = FALSE}
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE}
+#n <- length(statsAdj)
+xs2 <- as.vector(rbind(pathway2 - 1, pathway2))
+ys2 <- as.vector(rbind(bottoms2, tops2))
+toPlot2 <- data.frame(x=c(0, xs2, n + 1), y=c(0, ys2, 0))
+  
+diff2 <- (max(tops2) - min(bottoms2)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 6}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_classic() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  geom_segment(data = data.frame(x=pathway2, gene = statsAdj.df[pathway2, ]$gene),
+                 mapping=aes(x=x, y=-diff2/2, xend=x, yend=diff2/2),
+                 size=0.2, color = "red") + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank(), axis.text = element_text(size =12), axis.title = element_text(size = 15), plot.title = element_text(size = 15, hjust = 0.5)) + 
+  ggtitle("HSF1-dependent transactivation") + 
+  ylab("Enrichment score (ES)") + 
+  xlab("Rank in Ordered genes") + 
+  ylim(c(-0.75, 0.2)) + 
+  scale_x_continuous(expand = c(-0.0001,0)) + 
+  geom_hline(yintercept=min(bottoms), colour="red", linetype="dashed") +
+  geom_hline(yintercept=0, colour="black", linetype="dashed", size = 0.3) + 
+  geom_text_repel(data = data.frame(x=pathway2, statsAdj.df[pathway2, ]), aes(x = x, y = diff2/2), label = data.frame(x=pathway2, statsAdj.df[pathway2, ])$gene, force = 10, nudge_y = 0.1)
+
+
+```
+
+### 5. HS-GAG degradation 
+
+One example of ES > 0.5 & NES > 1.5 & padj > 0.25 which is non-significant pathway
+
+```{r warning = FALSE, message = FALSE}
+pathway = pathways.hallmark[["HS-GAG degradation"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+#pathway
+
+# including housekeeping genes
+pathway2 <- c(housekeeping_genes)
+```
+
+```{r warning = FALSE, message = FALSE}
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+#statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+#pathway
+statsAdj.df1 <- statsAdj.df[pathway, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway2 <- unname(as.vector(na.omit(match(pathway2, names(statsAdj)))))
+pathway2 <- sort(pathway2)
+#pathway2
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes2 <- calcGseaStat(statsAdj, selectedStats = pathway2,
+                          returnAllExtremes = TRUE)
+bottoms2 <- gseaRes2$bottoms
+tops2 <- gseaRes2$tops
+#gseaRes2
+```
+
+```{r warning = FALSE, message = FALSE}
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE}
+#n <- length(statsAdj)
+xs2 <- as.vector(rbind(pathway2 - 1, pathway2))
+ys2 <- as.vector(rbind(bottoms2, tops2))
+toPlot2 <- data.frame(x=c(0, xs2, n + 1), y=c(0, ys2, 0))
+  
+diff2 <- (max(tops2) - min(bottoms2)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 6}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_classic() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  geom_segment(data = data.frame(x=pathway2, gene = statsAdj.df[pathway2, ]$gene),
+                 mapping=aes(x=x, y=-diff2/2, xend=x, yend=diff2/2),
+                 size=0.2, color = "red") + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank(), axis.text = element_text(size =12), axis.title = element_text(size = 15), plot.title = element_text(size = 15, hjust = 0.5)) + 
+  ggtitle("HS-GAG degradation") + 
+  ylab("Enrichment score (ES)") + 
+  xlab("Rank in Ordered genes") + 
+  ylim(c(-0.2, 0.75)) + 
+  scale_x_continuous(expand = c(-0.0001,0)) + 
+  geom_hline(yintercept=max(tops), colour="red", linetype="dashed") +
+  geom_hline(yintercept=0, colour="black", linetype="dashed", size = 0.3) + 
+  geom_text_repel(data = data.frame(x=pathway2, statsAdj.df[pathway2, ]), aes(x = x, y = -diff2/2), label = data.frame(x=pathway2, statsAdj.df[pathway2, ])$gene, force = 10, nudge_y = -0.1)
+
+
+```
+
+### 6. Signaling by FGFR3 in disease 
+
+One example of NES = 0.25 & padj > 0.25 which is non-significant pathway
+
+```{r warning = FALSE, message = FALSE}
+pathway = pathways.hallmark[["Signaling by FGFR3 in disease"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+#pathway
+
+# including housekeeping genes
+pathway2 <- c(housekeeping_genes)
+```
+
+```{r warning = FALSE, message = FALSE}
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+#statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+#pathway
+statsAdj.df1 <- statsAdj.df[pathway, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway2 <- unname(as.vector(na.omit(match(pathway2, names(statsAdj)))))
+pathway2 <- sort(pathway2)
+#pathway2
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes2 <- calcGseaStat(statsAdj, selectedStats = pathway2,
+                          returnAllExtremes = TRUE)
+bottoms2 <- gseaRes2$bottoms
+tops2 <- gseaRes2$tops
+#gseaRes2
+```
+
+```{r warning = FALSE, message = FALSE}
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE}
+#n <- length(statsAdj)
+xs2 <- as.vector(rbind(pathway2 - 1, pathway2))
+ys2 <- as.vector(rbind(bottoms2, tops2))
+toPlot2 <- data.frame(x=c(0, xs2, n + 1), y=c(0, ys2, 0))
+  
+diff2 <- (max(tops2) - min(bottoms2)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 6}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_classic() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  geom_segment(data = data.frame(x=pathway2, gene = statsAdj.df[pathway2, ]$gene),
+                 mapping=aes(x=x, y=-diff2/2, xend=x, yend=diff2/2),
+                 size=0.2, color = "red") + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank(), axis.text = element_text(size =12), axis.title = element_text(size = 15), plot.title = element_text(size = 15, hjust = 0.5)) + 
+  ggtitle("Signaling by FGFR3 in disease") + 
+  ylab("Enrichment score (ES)") + 
+  xlab("Rank in Ordered genes") + 
+  ylim(c(-0.5, 0.5)) + 
+  scale_x_continuous(expand = c(-0.0001,0)) + 
+  geom_hline(yintercept=max(tops), colour="red", linetype="dashed") +
+  geom_hline(yintercept=0, colour="black", linetype="dashed", size = 0.3) + 
+  geom_text_repel(data = data.frame(x=pathway2, statsAdj.df[pathway2, ]), aes(x = x, y = diff2/2), label = data.frame(x=pathway2, statsAdj.df[pathway2, ])$gene, force = 10, nudge_y = 0.1)
+
+
+```
+
+
+### 7. Miscellaneous transport and binding events (GSEA using padj as metric)
+
+GSEA using padj as metric gives only one statistical significant results.
+
+```{r warning = FALSE, message = FALSE}
+# run GSEA
+set.seed(42)
+GSEA_MG_AD_Ctrl_Reactome2 <- scRNA_GSEA(MG_DE_AD_Ctrl.df, pathway = "Reactome", metric = "padj")
+
+
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway = pathways.hallmark[["Miscellaneous transport and binding events"]]
+gseaParam=1
+rnk <- rank(-ranks)
+ord <- order(rnk)
+#pathway
+
+# including housekeeping genes
+pathway2 <- c(housekeeping_genes)
+```
+
+```{r warning = FALSE, message = FALSE}
+statsAdj <- ranks[ord]
+statsAdj <- sign(statsAdj) * (abs(statsAdj) ^ gseaParam)
+# normalized by max value
+statsAdj <- statsAdj / max(abs(statsAdj))
+
+#statsAdj
+
+statsAdj.df <- as.data.frame(statsAdj)
+statsAdj.df$gene <- rownames(statsAdj.df)
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway <- unname(as.vector(na.omit(match(pathway, names(statsAdj)))))
+pathway <- sort(pathway)
+#pathway
+statsAdj.df1 <- statsAdj.df[pathway, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+pathway2 <- unname(as.vector(na.omit(match(pathway2, names(statsAdj)))))
+pathway2 <- sort(pathway2)
+#pathway2
+statsAdj.df2 <- statsAdj.df[pathway2, ]
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes <- calcGseaStat(statsAdj, selectedStats = pathway,
+                          returnAllExtremes = TRUE)
+bottoms <- gseaRes$bottoms
+tops <- gseaRes$tops
+```
+
+```{r warning = FALSE, message = FALSE}
+
+gseaRes2 <- calcGseaStat(statsAdj, selectedStats = pathway2,
+                          returnAllExtremes = TRUE)
+bottoms2 <- gseaRes2$bottoms
+tops2 <- gseaRes2$tops
+#gseaRes2
+```
+
+```{r warning = FALSE, message = FALSE}
+n <- length(statsAdj)
+xs <- as.vector(rbind(pathway - 1, pathway))
+ys <- as.vector(rbind(bottoms, tops))
+toPlot <- data.frame(x=c(0, xs, n + 1), y=c(0, ys, 0))
+  
+diff <- (max(tops) - min(bottoms)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE}
+#n <- length(statsAdj)
+xs2 <- as.vector(rbind(pathway2 - 1, pathway2))
+ys2 <- as.vector(rbind(bottoms2, tops2))
+toPlot2 <- data.frame(x=c(0, xs2, n + 1), y=c(0, ys2, 0))
+  
+diff2 <- (max(tops2) - min(bottoms2)) / 8
+
+```
+
+```{r warning = FALSE, message = FALSE, fig.width= 12, fig.height= 6}
+ggplot(toPlot, aes(x=x, y=y)) + geom_point(color="black", size=1) + 
+  geom_line(color="green") + 
+  theme_classic() +
+  geom_segment(data = data.frame(x=pathway),
+                 mapping=aes(x=x, y=-diff/2, xend=x, yend=diff/2),
+                 size=0.2) + 
+  geom_segment(data = data.frame(x=pathway2, gene = statsAdj.df[pathway2, ]$gene),
+                 mapping=aes(x=x, y=-diff2/2, xend=x, yend=diff2/2),
+                 size=0.2, color = "red") + 
+  theme(panel.border=element_blank(), panel.grid.minor=element_blank(), axis.text = element_text(size =12), axis.title = element_text(size = 15), plot.title = element_text(size = 15, hjust = 0.5)) + 
+  ggtitle("Miscellaneous transport and binding events") + 
+  ylab("Enrichment score (ES)") + 
+  xlab("Rank in Ordered genes") + 
+  ylim(c(-0.1, 1.2)) + 
+  geom_hline(yintercept=max(tops), colour="red", linetype="dashed") +
+  geom_hline(yintercept=0, colour="black", linetype="dashed", size = 0.3) + 
+  geom_text_repel(data = data.frame(x=pathway2, statsAdj.df[pathway2, ]), aes(x = x, y = diff2/2), label = data.frame(x=pathway2, statsAdj.df[pathway2, ])$gene, force = 10, nudge_y = 0.1)
+
+
+```
+
+### 8. GSEA using p_value as metric 
+
+Using p-value for GSEA doesn't give any statistical results. 
+
+```{r warning = FALSE, message = FALSE}
+# run GSEA
+#set.seed(42)
+#GSEA_MG_AD_Ctrl_Reactome3 <- scRNA_GSEA(MG_DE_AD_Ctrl.df, pathway = "Reactome", metric = "pvalue")
+
+
+```
+
+
+```{r warning = FALSE, message = FALSE}
+sessionInfo()
+```

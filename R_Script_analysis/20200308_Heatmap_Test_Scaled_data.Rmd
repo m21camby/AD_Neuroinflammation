@@ -1,0 +1,287 @@
+---
+title: "Heatmap test"
+author: "Skim"
+date: '2020 3 8 '
+output: html_document
+---
+
+```{r}
+data9set_scaled.df2 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200308_Scaled_data_10000_Cell_type.csv", row.names = 1, check.names = FALSE)
+data9set_cleaned_all_markers <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Cluster_markers.csv", row.names = 1)
+
+
+
+# cell type by region
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Seurat.Obj")
+
+data9set_cleaned.SO.small@active.ident <- factor(data9set_cleaned.SO.small@active.ident, 
+                                           levels = c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neurons", "Subiculum",
+                                                      "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Choroid Plexus", "Astrocytes",
+                                                      "Microglia","Macrophage", "Oligo", "OPC", "Fibroblast", 
+                                                      "Vascular Endothelial", "VLMC", "Pericytes"))
+
+data9set_cleaned.SO.small$cell_type <- data9set_cleaned.SO.small@active.ident
+data9set_cleaned.SO.small_meta.data <- data9set_cleaned.SO.small@meta.data
+
+# cell type
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200221_figure1_for_meeting_report_Seurat_object.Robj")
+data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+data9set_cleaned.SO_meta.data <- data9set_cleaned.SO@meta.data
+data9set_cleaned.SO_meta.data$Cell <- rownames(data9set_cleaned.SO_meta.data)
+
+data9set_cleaned.SO_meta.data_sub <- data9set_cleaned.SO_meta.data[,c(9,10)]
+
+top5 <- data9set_cleaned_all_markers %>% group_by(cluster) %>% top_n(5, avg_logFC)
+```
+
+
+```{r fig.height=10, fig.width=6}
+
+
+write.csv(data9set_scaled.df2_sub, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200308_Scaled_data_10000_Cell_type_top55.csv", quote=F)
+
+data9set_scaled.df2_sub <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200308_Scaled_data_10000_Cell_type_top55.csv", row.names = 1, check.names = FALSE)
+data9set_scaled.df2_sub <- data9set_scaled.df2[as.character(top5$gene), ]
+data9set_scaled.df2_sub$gene <- rownames(data9set_scaled.df2_sub)
+
+data9set_scaled.df2_sub.long <- gather(data = data9set_scaled.df2_sub, z_score, key = Cell, "ACACGCGCACGTATAC-1":"TTTCACACAAACGGCA-9")
+
+data9set_scaled.df2_sub.long2 <- left_join(data9set_scaled.df2_sub.long, data9set_cleaned.SO_meta.data_sub, by = "Cell")
+
+colnames(data9set_scaled.df2_sub)
+tail(colnames(data9set_scaled.df2_sub))
+
+ggplot(data = data9set_scaled.df2_sub.long2, mapping = aes(x = cell_type, y = gene, fill = z_score)) +
+  geom_tile() +  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(), 
+                                         axis.text.x = element_text(angle = 90), 
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white")) + scale_fill_viridis_c(limits=c(-10, 10))
+
+```
+
+```{r fig.height=10, fig.width=6}
+Ex <- c("Kcnip4", "Slit3", "Grin2a", "Tafa1", "Hs6st3")
+In <- c("Grip1", "Erbb4", "Nxph1", "Kcnmb2", "Kcnc2")
+Cr <- c("Reln", "Dach1","Ndnf", "Thsd7b", "Cdh4")
+Cp <- c("Htr2c", "Otx2os1", "Ttr", "Enpp2", "Spag16")
+As <- c("Slc1a2", "Gpc5", "Wdr17", "Slc1a3", "Rgs20")
+Mg <- c("Inpp5d", "Tgfbr1", "Ly86", "Fyb", "Hexb")
+Ma <- c("F13a1", "Mrc1", "Rbpj", "Stab1", "P2rx7")
+Ol <- c("St18", "Prr5l", "Mbp", "Plp1","Mog")
+Op <- c("Lhfpl3", "Sox6", "Ptprz1","Vcan", "Pdgfra")
+Fb <- c("Slc7a11", "Ranbp3l", "Slc6a20a", "Cped1", "Atp1a2")
+Vc <- c("Flt1", "Ebf1","Slco1a4", "Ly6a", "Atp13a5")
+
+genes <- c(Ex, In, Cr, Cp, As, Mg, Ma, Ol, Op, Fb, Vc)
+
+data9set_scaled.df2_sub <- data9set_scaled.df2[genes, ]
+data9set_scaled.df2_sub$gene <- rownames(data9set_scaled.df2_sub)
+
+?gather
+
+data9set_scaled.df2_sub.long <- gather(data = data9set_scaled.df2_sub, z_score, key = Cell, "ACACGCGCACGTATAC-1":"TTTCACACAAACGGCA-9")
+
+data9set_scaled.df2_sub.long2 <- left_join(data9set_scaled.df2_sub.long, data9set_cleaned.SO_meta.data_sub, by = "Cell")
+
+data9set_scaled.df2_sub.long2$gene <- factor(data9set_scaled.df2_sub.long2$gene, levels = rev(genes))
+
+ggplot(data = data9set_scaled.df2_sub.long2, mapping = aes(x = cell_type, y = gene, fill = z_score)) +
+  geom_tile() +  theme_classic() + theme(axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(), 
+                                         axis.text.x = element_text(angle = 90, size = 12, color = "black"), 
+                                         axis.text.y = element_text(size = 11, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) + 
+  scale_fill_viridis_c(limits=c(-2, 2), na.value = "#FDE725FF", labels = c("low", " ", " "," ", "max"))
+
+viridis(3)
+```
+
+```{r}
+
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Seurat.Obj")
+
+data9set_cleaned.SO.small@active.ident <- factor(data9set_cleaned.SO.small@active.ident, 
+                                                 levels = c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neurons", "Subiculum",
+                                                            "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Choroid Plexus", "Astrocytes",
+                                                            "Microglia","Macrophage", "Oligo", "OPC", "Fibroblast", 
+                                                            "Vascular Endothelial", "VLMC", "Pericytes"))
+data9set_cleaned.SO.small$cell_type <- data9set_cleaned.SO.small@active.ident
+
+
+#############################################
+# subset equal number 
+
+data9set_cleaned.SO.small_DG <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Dentate Gyrus"))
+data9set_cleaned.SO.small_DG <- subset(data9set_cleaned.SO.small_DG, downsample = 100)
+
+data9set_cleaned.SO.small_CA1 <- subset(data9set_cleaned.SO, subset = cell_type %in% c("CA1 Neurons"))
+data9set_cleaned.SO.small_CA1 <- subset(data9set_cleaned.SO.small_CA1, downsample = 100)
+
+data9set_cleaned.SO.small_CA2 <- subset(data9set_cleaned.SO, subset = cell_type %in% c("CA2/CA3 Neurons"))
+data9set_cleaned.SO.small_CA2 <- subset(data9set_cleaned.SO.small_CA2, downsample = 100)
+
+data9set_cleaned.SO.small_SB <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Subiculum"))
+data9set_cleaned.SO.small_SB <- subset(data9set_cleaned.SO.small_SB, downsample = 100)
+
+data9set_cleaned.SO.small_IN <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Inhibitory Interneurons"))
+data9set_cleaned.SO.small_IN <- subset(data9set_cleaned.SO.small_IN, downsample = 100)
+
+data9set_cleaned.SO.small_N <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Neurons"))
+data9set_cleaned.SO.small_N <- subset(data9set_cleaned.SO.small_N, downsample = 100)
+# Cajal
+data9set_cleaned.SO.small_CR <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Cajal Retzius"))
+data9set_cleaned.SO.small_CR <- subset(data9set_cleaned.SO.small_CR, downsample = 100)
+# Chorid
+data9set_cleaned.SO.small_CP <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Choroid Plexus"))
+data9set_cleaned.SO.small_CP <- subset(data9set_cleaned.SO.small_CP, downsample = 100)
+# AS
+data9set_cleaned.SO.small_AS <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+data9set_cleaned.SO.small_AS <- subset(data9set_cleaned.SO.small_AS, downsample = 100)
+# MG
+data9set_cleaned.SO.small_MG <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Microglia"))
+data9set_cleaned.SO.small_MG <- subset(data9set_cleaned.SO.small_MG, downsample = 100)
+# MA
+data9set_cleaned.SO.small_MA <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Macrophage"))
+data9set_cleaned.SO.small_MA <- subset(data9set_cleaned.SO.small_MA, downsample = 100)
+# OL
+data9set_cleaned.SO.small_OL <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo"))
+data9set_cleaned.SO.small_OL <- subset(data9set_cleaned.SO.small_OL, downsample = 100)
+# OP
+data9set_cleaned.SO.small_OP <- subset(data9set_cleaned.SO, subset = cell_type %in% c("OPC"))
+data9set_cleaned.SO.small_OP <- subset(data9set_cleaned.SO.small_OP, downsample = 100)
+#FB
+data9set_cleaned.SO.small_FB <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Fibroblast"))
+data9set_cleaned.SO.small_FB <- subset(data9set_cleaned.SO.small_FB, downsample = 100)
+#VE
+data9set_cleaned.SO.small_VE <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Vascular Endothelial"))
+data9set_cleaned.SO.small_VE <- subset(data9set_cleaned.SO.small_VE, downsample = 100)
+#VL
+data9set_cleaned.SO.small_VL <- subset(data9set_cleaned.SO, subset = cell_type %in% c("VLMC"))
+data9set_cleaned.SO.small_VL <- subset(data9set_cleaned.SO.small_VL, downsample = 100)
+#PE
+data9set_cleaned.SO.small_PE <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Pericytes"))
+data9set_cleaned.SO.small_PE <- subset(data9set_cleaned.SO.small_PE, downsample = 100)
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, cells = c(Cells(data9set_cleaned.SO.small_DG),
+                                                                   Cells(data9set_cleaned.SO.small_CA1),
+                                                                   Cells(data9set_cleaned.SO.small_CA2),
+                                                                   Cells(data9set_cleaned.SO.small_SB),
+                                                                   Cells(data9set_cleaned.SO.small_IN),
+                                                                   Cells(data9set_cleaned.SO.small_N),
+                                                                   Cells(data9set_cleaned.SO.small_CR),
+                                                                   Cells(data9set_cleaned.SO.small_CP),
+                                                                   Cells(data9set_cleaned.SO.small_AS),
+                                                                   Cells(data9set_cleaned.SO.small_MG),
+                                                                   Cells(data9set_cleaned.SO.small_MA),
+                                                                   Cells(data9set_cleaned.SO.small_OL),
+                                                                   Cells(data9set_cleaned.SO.small_OP),
+                                                                   Cells(data9set_cleaned.SO.small_FB),
+                                                                   Cells(data9set_cleaned.SO.small_VE),
+                                                                   Cells(data9set_cleaned.SO.small_VL),
+                                                                   Cells(data9set_cleaned.SO.small_PE)))
+
+save(data9set_cleaned.SO.small, file =  "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Seurat.Obj")
+#data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, downsample = 1000)
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap_Seurat.Obj")
+
+data9set_cleaned.SO.small@active.ident <- factor(data9set_cleaned.SO.small@active.ident, 
+                                           levels = c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neurons", "Subiculum",
+                                                      "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Choroid Plexus", "Astrocytes",
+                                                      "Microglia","Macrophage", "Oligo", "OPC", "Fibroblast", 
+                                                      "Vascular Endothelial", "VLMC", "Pericytes"))
+
+DoHeatmap(data9set_cleaned.SO.small, features = c("Gad2", "Hexb"), angle = 90) 
+
+DoHeatmap(data9set_cleaned.SO.small, features = c(GM.df3$gene, "Gad2", GM.df4$gene, "Hexb", GM.df5$gene), angle = 90) + 
+  scale_fill_viridis() + theme(legend.title = element_blank()) + guides(color=guide_legend("Identity"), fill = FALSE)
+
+length(unique(GM.df2$gene))
+
+
+
+
+
+```
+
+```{r test}
+
+GM.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker_top10.csv")
+#GM.df <- as.data.frame(GM.df)
+
+# GM.df2 <- GM.df[c(seq(1,5), seq(1,5) + 100, seq(1,5) + 20, seq(1,5) + 130, seq(1,5) + 180,
+#                   seq(1,5) + 90, seq(1,5) + 210, seq(1,5) + 270, seq(1,5) + 110,
+#                   seq(1,5) + 140, seq(1,5) + 150,seq(1,5) + 170, seq(1,5) + 190, seq(1,5) + 200,
+#                   seq(1,5) + 70, seq(1,5) + 160, seq(1,5) + 220, seq(1,5) + 300,
+#                   seq(1,5) + 240, seq(1,5) + 290, seq(1,5) + 320, seq(1,5) + 400, seq(1,5) + 280,
+#                   seq(1,5) + 40, seq(1,5) + 30, seq(1,5) + 80, seq(1,5) + 370,
+#                   seq(1,5) + 10, seq(1,5) + 50, seq(1,5) + 60, seq(1,5) + 120, seq(1,5) + 380,
+#                   seq(1,5) + 230, seq(1,5) + 360, seq(1,5) + 390, seq(1,5) + 350, seq(1,5) + 280, seq(1,5) + 260), ]
+#
+# GM.df2$gene <- as.character(GM.df2$gene)
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, downsample = 1000)
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, cells = sample(Cells(data9set_cleaned.SO), 5000))
+
+data9set_cleaned.SO.small$cell_type <- data9set_cleaned.SO.small@active.ident
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO.small, subset = cell_type %in% c("Excitatory Neurons", "Inhibitory Interneurons", "Astrocytes","Microglia",
+                                                                                  "Oligodendrocytes", "OPC"))
+
+data9set_cleaned.SO.small_Ex <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Excitatory Neurons"), cells = sample(Cells(data9set_cleaned.SO), 100))
+data9set_cleaned.SO.small_In <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Inhibitory Interneurons"), cells = sample(Cells(data9set_cleaned.SO), 100))
+
+
+################################################################################################################################################
+data9set_cleaned.SO.small_Ex <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Excitatory Neurons"))
+data9set_cleaned.SO.small_Ex2 <- subset(data9set_cleaned.SO.small_Ex, downsample = 10)
+
+
+data9set_cleaned.SO.small_In <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Inhibitory Interneurons"))
+data9set_cleaned.SO.small_In2 <- subset(data9set_cleaned.SO.small_In, downsample = 10)
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, cells = c(Cells(data9set_cleaned.SO.small_Ex2),Cells(data9set_cleaned.SO.small_In2)))
+
+DoHeatmap(data9set_cleaned.SO.small, features = c("Tafa1","Gad1"))
+################################################################################################################################################
+
+
+pbmc.combined <- merge(object1 = data9set_cleaned.SO.small_Ex, object2 = data9set_cleaned.SO.small_In)
+
+DoHeatmap(data9set_cleaned.SO.small, features = c(as.vector(ex_gene[ex_gene %in% rownames(data9set_cleaned.SO.small@assays$RNA@scale.data)]), unique(as.character(top5$gene)), balanced = TRUE))
+
+unique(as.character(top5$gene))
+
+as.vector(unique(top5$gene)[unique(top5$gene) %in% rownames(data9set_cleaned.SO.small@assays$RNA@scale.data)])
+
+ex_gene[ex_gene %in% rownames(data9set_cleaned.SO.small@assays$RNA@scale.data)]
+
+ex_gene <- top20[top20$cluster %in% "Excitatory Neurons", ]$gene
+
+length(ex_gene)
+
+g1 <- DoHeatmap(data9set_cleaned.SO.small, features = c("Slit3", "Gad1", "Cck"))
+
++ scale_fill_viridis()
+
+g1 <- ggplot(plot.data, aes(x = expgroup, y = cell_prop, fill = cell_type)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + ylab("percentage") + 
+  theme(axis.text.x = element_text(size =14, angle = 90, color = "black"), axis.title.x = element_blank(), axis.text.y = element_text(size =14, color = "black"),
+        axis.title.y = element_text(size =14), legend.title = element_blank(), legend.text = element_text(size = 12)) +  
+  scale_fill_manual(values=c("#CC0000", "#FF6600", "#FF9900","#CC9900", "#FFCC66", "#99CC00","#003300", "#99CCCC", "#009999", "#3399FF","#000033"))
+
+FeaturePlot(data9set_cleaned.SO, features = c("Tafa1"))
+
+
+ggsave(filename = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/Paper_Fig/Fig1_Marker_genes_Heatmap.png", 
+       plot = g1, 
+  scale = 1, width = 8, height = 7, units = "in", device = "png",
+  dpi = 300)
+
+
+```
+

@@ -1,0 +1,196 @@
+---
+title: "GO_GSEA_from_DE_Excel"
+author: "Skim"
+date: "1/24/2020"
+output: html_document
+---
+
+```{r warning=FALSE, message=FALSE}
+library(xlsx)
+library(topGO)
+library(fgsea)
+library(biomaRt)
+```
+
+## GO 
+
+```{r warning=FALSE, message=FALSE}
+source("/data/rajewsky/home/skim/Microglia_Heppner/Codes/DroNc_AD/src/TopGO_scRNA.R")
+
+test <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_14ADp40KO_Ctrl.csv", row.names = 1)
+
+length(which(test$avg_logFC > 0.1 & test$p_val_adj < 0.01))
+
+
+
+scRNA_topGO_test <- function(DE_results.df,
+                       logFC = 0.25,
+                       InterestGenes = "all",
+                       significant = 0.01,
+                       organism = "Mouse",
+                       stats.use = "fisher",
+                       algorithm.use1 = "elim",
+                       algorithm.use2 = "classic",
+                       topnodes.print=50,
+                       num.char=100){
+
+if((InterestGenes == "up" &&  length(which(DE_results.df$avg_logFC > logFC)) > 0) | (InterestGenes == "down" &&  length(which(DE_results.df$avg_logFC < -logFC)) > 0) | (InterestGenes == "all" && length(which(abs(DE_results.df$avg_logFC) > logFC)) > 0)){
+#if(length(DE_results.df$avg_logFC < -logFC) > 0){
+    print("yes")
+}else{
+  print("No")
+}
+}
+
+
+
+
+test_GO <- scRNA_topGO_test(test, InterestGenes = "all", logFC = 0.2)
+
+test_GO <- scRNA_topGO(test, InterestGenes = "all", logFC = 0.2)
+
+test_GO2 <- scRNA_topGO(test, InterestGenes = "all", logFC = 0.5)
+
+test_GO <- test_GO[c(31:60), ]
+test_GO <- test_GO[which(test_GO$Annotated < 500), ]
+
+scRNA_TopGO_plot2(test_GO)
+
+```
+
+```{r}
+geneUniverse <- rownames(test)
+genesOfInterest <- c(rownames(test[which(test$avg_logFC > 0.25 & test$p_val_adj < 0.01), ]), rownames(test[which(test$avg_logFC < -0.25 & test$p_val_adj < 0.01), ]))
+```
+
+```{r}
+test_files <- list.files("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files", all.files=FALSE,
+    full.names=FALSE)
+
+# remove top20.csv
+test_files <- test_files[grep("top20.csv",test_files,invert=TRUE)]
+
+test_files2 <- test_files[1:2]
+
+test_files2[1]
+
+test <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/", i), row.names = 1)
+  
+length(test_files2)
+
+for(i in 1:2){
+  test <- read.csv(paste0("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/", test_files[i]), row.names = 1)
+  test_GO <- scRNA_topGO(test, InterestGenes = "all", logFC = 0.25)
+}
+
+
+```
+
+## GSEA
+
+```{r warning=FALSE, message=FALSE}
+test <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/20200117_Clustering_DE_by_MAST_each_Cluster_14ADp40KO_Ctrl.csv", row.names = 1)
+
+
+# Creating rnk file
+test$Gene <- rownames(test)
+test$metric= test$avg_logFC
+
+test$fcsign <- sign(test$avg_logFC)
+test$logP = -log10(test$p_val_adj)
+test$metric= test$logP/test$fcsign
+
+AD_Ctrl_metric <- test[,c("Gene", "metric")]
+AD_Ctrl_metric$Gene <- toupper(AD_Ctrl_metric$Gene)
+
+pathways.hallmark <- gmtPathways("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/ReactomePathways.gmt")
+pathways.hallmark2 <- gmtPathways("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/ext_files/h.all.v7.0.symbols.gmt")
+
+ranks <- tibble::deframe(AD_Ctrl_metric)
+fgseaRes <- fgsea(pathways.hallmark, ranks, minSize=15, maxSize=500, nperm=1000)
+fgseaRes2 <- fgsea(pathways.hallmark2, ranks, minSize=15, maxSize=500, nperm=1000)
+
+
+topUp <- fgseaRes %>% 
+    filter(ES > 0) %>% 
+    top_n(10, wt=-padj)
+topDown <- fgseaRes %>% 
+    filter(ES < 0) %>% 
+    top_n(10, wt=-padj)
+topPathways <- bind_rows(topUp, topDown) %>% 
+    arrange(-ES)
+
+
+datatable(topPathways, options = list(pageLength = 5, dom = 'tip'))
+
+barplot(sort(ranks, decreasing = T))
+
+```
+
+## test mouse genome
+
+```{r warning=FALSE, message=FALSE, fig.width= 5, fig.height=4}
+library(biomaRt)
+mart <- useDataset("mmusculus_gene_ensembl", mart=useMart("ensembl"))
+
+bm <- getBM(attributes=c("ensembl_gene_id", "hsapiens_homolog_associated_gene_name"),  
+            filters = 'mgi_symbol',
+            values = rownames(test),
+            mart=mart)
+
+bm <- bm %>% distinct() %>% as_tibble() %>% na_if("") %>% na.omit() %>% as.data.frame()
+
+bm.df <- data.frame(ensembl_gene_id= bm$ensembl_gene_id, hsapiens_homolog_associated_gene_name = bm$hsapiens_homolog_associated_gene_name, stringsAsFactors = FALSE)
+
+
+bm2 <- getBM(attributes=c("ensembl_gene_id", "mgi_symbol"),  
+            filters = 'mgi_symbol',
+            values = rownames(test),
+            mart=mart)
+
+
+bm2.df <- as.data.frame(bm2)
+
+colnames(bm2.df) %in% colnames(bm.df)
+
+names(bm.df)
+
+names(bm.df) <- gsub("\\s"," ",names(bm.df))
+names(bm.df) <- names(bm.df) %>% stringr::str_replace_all("\\s","_")
+
+
+total <- merge(bm.df,bm2.df, by = "ensembl_gene_id")
+
+capFirst <- function(s) { 
+
+    paste(toupper(substring(s, 1, 1)), substring(s, 2), sep = "")} 
+
+total$mgi_symbol <- toupper(total$mgi_symbol) 
+
+total$sanity <- ifelse(total$hsapiens_homolog_associated_gene_name == total$mgi_symbol, "same", "diff")
+
+
+###########
+# run GSEA
+total2 <- data.frame(Gene = total$mgi_symbol, HGene = total$hsapiens_homolog_associated_gene_name)
+
+
+test_HUMAN <- merge(test, total2, by = "Gene")
+
+
+data9set_MG.marker0_HUMAN <- right_join(AD_Ctrl_MG_metric, total2, by = "Gene")
+
+data9set_MG.marker0_HUMAN <- data9set_MG.marker0_HUMAN[, c(3,2)]
+
+ranks <- tibble::deframe(data9set_MG.marker0_HUMAN)
+
+fgseaRes <- fgsea(pathways.hallmark, ranks, minSize=10, maxSize=500, nperm=100000)
+fgseaRes2 <- fgsea(pathways.hallmark2, ranks, minSize=15, maxSize=500, nperm=100000)
+```
+
+```{r}
+
+
+
+```
+

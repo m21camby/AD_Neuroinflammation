@@ -1,0 +1,279 @@
+---
+title: "For lab meeting"
+author: "Skim"
+date: "2/10/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(tidyverse)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(DT)
+library(xlsx)
+library(viridis)
+library(ggrepel)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+# old resolution 0.6
+#load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200104_pre_analysis_9sets_Seurat_object.Robj")
+# new resolutio 0.8 by Shirin
+load("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200117_Clustering_DE_by_MAST_Seurat_object.Robj")
+# data was swapped between AD and ADp40KO
+#data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "AD", "ADp40KO"))
+# new swapped assignment
+data9set.SO@meta.data$sample <- ifelse((data9set.SO$gemgroup == 1 | data9set.SO$gemgroup == 4 | data9set.SO$gemgroup == 7), "Ctrl", ifelse((data9set.SO$gemgroup == 2 | data9set.SO$gemgroup == 5 | data9set.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+
+data9set.SO@meta.data$sample <- factor(data9set.SO@meta.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+DimPlot(data9set.SO, reduction = "umap", label = TRUE, label.size = 4)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=15}
+FeaturePlot(data9set.SO, features = "Il12b", pt.size = .7, split.by = "sample", order = TRUE)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=15}
+FeaturePlot(data9set.SO, features = "Il12rb1", pt.size = .7, split.by = "sample", order = TRUE)
+
+#data9set.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il12",data9set.SO@assays$RNA@counts@Dimnames[[1]])]
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 5, fig.width=15}
+FeaturePlot(data9set.SO, features = "Il12rb2", pt.size = .7, split.by = "sample", order = TRUE)
+
+#data9set.SO@assays$RNA@counts@Dimnames[[1]][grepl("^Il12",data9set.SO@assays$RNA@counts@Dimnames[[1]])]
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+
+VlnPlot(data9set.SO, features = "nCount_RNA", group.by = "gemgroup", pt.size = 0) + 
+  geom_text(aes(x = 1, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "1", ]$nCount_RNA)),  size=3) + 
+  geom_text(aes(x = 2, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "2", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 3, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "3", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 4, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "4", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 5, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "5", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 6, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "6", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 7, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "7", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 8, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "8", ]$nCount_RNA)),  size=3) +
+  geom_text(aes(x = 9, y = 29000, label=median(data9set.SO@meta.data[data9set.SO@meta.data$gemgroup == "9", ]$nCount_RNA)),  size=3)
+
+
+```
+
+### remove 8 doublets suspicious clusters
+
+Remove cluster 25 (Dentate & Oligodendrocytes), 31 (Dentate & Microglia), 33 (Astrocytes & Dentate & Oligodendrocytes), 34 (Microglia & Oligodendrocytes), 41 (Dentate & Polydendrocytes), 42 (Interneuron & Polydendrocytes), 43 (Astrocytes & Microglia), 44 (Astrocytes & Polydendrocytes) which are doublets cluster by Scrublet
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+
+#c(seq(0,24), seq(26,30), 32, seq(35,40))
+
+data9set_cleaned.SO  <- subset(data9set.SO, subset = seurat_clusters %in% c(seq(0,24), seq(26,30), 32, seq(35,40)))
+
+DimPlot(data9set_cleaned.SO, reduction = "umap", label = TRUE, label.size = 4)
+
+```
+
+In here, I renamed cluster annotation. 
+
+Cluster 2: Neurons -> CA1 neurons  
+Cluster 13: Subiculum -> CA1 Neurons    
+Cluster 15: Neurons -> Subiculum  
+Cluster 17: Neuron (Interneuron/subiculum) -> Subiculum  
+Cluster 18: Neurons -> CA1 Neurons  
+Cluster 19: Neurons -> Subiculum  
+Cluster 20: Inhibitory Interneurons -> Subiculum  
+Cluster 21: Inhibitory Interneurons -> CA2/CA3 Neuron  
+Cluster 27: Neurons (Subiculum/Interneurons/ExCA) -> CA2/CA3 Neuron  
+Cluster 29: Microglia/Neuron/Fibroblast -> Neurons  
+Cluster 40: Neuron (subiculum/Cajal Rutz) -> Neurons
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+
+data9set_cleaned.SO <- RenameIdents(data9set_cleaned.SO, '0' = "Dentate Gyrus", '1' = "Oligo", '2' = "CA1 Neurons", '3' = "Microglia", 
+                            '4' = "Astrocytes", '5' = "Oligo", '6' = "Oligo", '7' = "Inhibitory Interneurons", '8' = "Microglia", 
+                            '9' = "CA2/CA3 Neuron", '10' = "Dentate Gyrus", '11' = "Subiculum", '12' = "OPC", 
+                            '13' = "CA1 Neurons", '14' = "Subiculum", '15' = "Subiculum", 
+                            '16' = "Inhibitory Interneurons", '17' = "Subiculum", '18' = "CA1 Neurons",
+                            '19' = "Subiculum", '20' = "Subiculum", '21' = "CA2/CA3 Neuron", '22' = "Inhibitory Interneurons",
+                            '23' = "Fibroblast", '24' = "Neurons", '26' = "Choroid Plexus", 
+                            '27' = "CA2/CA3 Neuron", '28' = "Cajal Retzius", '29' = "Neurons", '30' = "Inhibitory Interneurons",
+                            '32' = "Neurons", 
+                            '35' = "Pericytes", '36' = "Vascular Endothelial",'37' = "Microglia", '38' = "OPC",
+                            '39' = "VLMC", '40' = "Neurons")
+
+data9set_cleaned.SO@active.ident <- factor(data9set_cleaned.SO@active.ident, 
+                                           levels = c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neuron", "Subiculum",
+                                                      "Inhibitory Interneurons", "Neurons", "Cajal Retzius", "Astrocytes",
+                                                      "Microglia", "Oligo", "OPC", "Fibroblast", 
+                                                      "Vascular Endothelial", "VLMC", "Pericytes", "Choroid Plexus"))
+
+DimPlot(data9set_cleaned.SO, reduction = "umap", label = TRUE, label.size = 4)
+
+save(data9set_cleaned.SO, file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+# ref: http://oshlacklab.com/combes-organoid-paper/07_Combined_Clustering.html#conserved_markers
+data9set_cleaned.SO@meta.data$sample <- ifelse((data9set_cleaned.SO$gemgroup == 1 | data9set_cleaned.SO$gemgroup == 4 | data9set_cleaned.SO$gemgroup == 7), "Ctrl", ifelse((data9set_cleaned.SO$gemgroup == 2 | data9set_cleaned.SO$gemgroup == 5 | data9set_cleaned.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+data9set_cleaned.SO@meta.data$cell_type <- data9set_cleaned.SO@active.ident
+
+plot.data <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cluster, sample) %>%
+    summarise(count = n()) %>%
+    mutate(clust_total = sum(count)) %>%
+    mutate(clust_prop = count / clust_total) %>%
+    group_by(sample) %>%
+    mutate(dataset_total = sum(count)) %>%
+    ungroup() %>%
+    mutate(dataset_prop = count / dataset_total)
+
+plot.data$sample <- factor(plot.data$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+ggplot(plot.data, aes(x = cluster, y = count, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(limits = c(0, 15000), expand = c(0,0)) + scale_fill_viridis_d()
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+
+plot.data2 <- plot.data[c(40:111), ]
+
+ggplot(plot.data2, aes(x = cluster, y = count, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(limits = c(0, 2500), expand = c(0,0)) + scale_fill_viridis_d()
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height= 7, fig.width=12}
+ggplot(plot.data, aes(x = cluster, y = clust_prop, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d() + ylab("percentage")
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 6, fig.width=8}
+plot.data2 <- data9set_cleaned.SO@meta.data %>%
+    dplyr::select(sample, cell_type, cluster = seurat_clusters) %>%
+    mutate(cluster = cluster) %>%
+    group_by(cell_type, sample) %>% 
+    summarise(count = n()) %>% mutate(type_total = sum(count)) %>%
+  mutate(total = sum(plot.data2$type_total)/3) %>% 
+  mutate(sample_prop = count / total) %>% 
+  mutate(type_prop = type_total /total) %>% 
+  mutate(sample_type_prop = count /type_total)
+
+plot.data2$sample <- factor(plot.data2$sample, levels = c("Ctrl", "AD", "ADp40KO"))
+
+type <- c("Neurons", "Astro", "Oligo", "Microglia", "OPC", "Vascular", "Fibroblast", "Pericytes", "Choroid Plexus")
+percent <- c(round(100*(sum(unique(plot.data2[c(1:21), ]$type_total))/82298),1), 
+             round(100*(sum(unique(plot.data2[c(22:24), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(28:30), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(25:27), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(31:33), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(37:42), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(34:36), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(43:45), ]$type_total))/82298),1),
+             round(100*(sum(unique(plot.data2[c(46:48), ]$type_total))/82298),1))
+
+output <- data.frame(type= type, percent = percent)
+
+ggplot(output, aes(x = 2, y= percent, fill = factor(percent))) + 
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar(theta = "y", start=0) + 
+  theme_void() + 
+  theme(axis.ticks = element_blank(), axis.title = element_blank(), axis.text=element_blank(), axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5), legend.position = "none", legend.text = element_blank(),
+        ) + 
+  xlim(1, 3) + scale_fill_viridis_d() + 
+  geom_text(data =  output[1,], aes(y = 25, label = paste0("Neuron: ", percent, "%")), size = 3) + 
+  geom_text(data =  output[3,], aes(y = 70, label = paste0("Oligo: ", percent, "%")), size = 3) + 
+  geom_text(data =  output[4,], aes(y = 85, label = paste0("MG: ", percent, "%")), size = 3) + 
+  geom_text(data =  output[2,], aes(x = 2, y = 92, label = paste0("AS: ", percent, "%")), size = 3) +
+  geom_text_repel(data = output[5,], aes(x = 2.5, y = 96, label = paste0("OPC: ", percent, "%")), 
+                    nudge_x = 0.2, nudge_y = -0.5,
+                    segment.size = .7, 
+                    show.legend = FALSE, size = 3) +
+   geom_text_repel(data = output[7,], aes(x = 2.5, y = 98, label = paste0("FB: ", percent, "%")), 
+                    nudge_x = 0.3, nudge_y = -0.5,
+                    segment.size = .7, 
+                    show.legend = FALSE, size = 3) +
+   geom_text_repel(data = output[9,], aes(x = 2.5, y = 99, label = paste0("CP: ", percent, "%")), 
+                    nudge_x = 0.5, nudge_y = 0,
+                    segment.size = .7, 
+                    show.legend = FALSE, size = 3) + 
+  geom_text_repel(data = output[6,], aes(x = 2.5, y = 99.5, label = paste0("VS: ", percent, "%")), 
+                    nudge_x = 0.7, nudge_y = 1,
+                    segment.size = .7, 
+                    show.legend = FALSE, size = 3) +
+   geom_text_repel(data = output[8,], aes(x = 2.5, y = 100, label = paste0("PC: ", percent, "%")), 
+                    nudge_x = 0.7, nudge_y = 3.9,
+                    segment.size = .7, 
+                    show.legend = FALSE, size = 3)
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 6, fig.width=12}  
+ggplot(plot.data2, aes(x = cell_type, y = sample_type_prop, fill = sample)) +
+    geom_col() + theme_classic() + scale_y_continuous(expand = c(0,0)) + scale_fill_viridis_d()+ ylab("percentage") +
+  geom_text(aes(label = round(sample_type_prop, 3)), color = "darkgray", size = 4,  position = position_stack(0.5)) + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height= 18, fig.width=15}
+GM.df <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_FindMarkers_each_cluster_data9set_marker_top10.csv")
+GM.df <- as.data.frame(GM.df)
+
+GM.df2 <- GM.df[c(seq(1,5), seq(1,5) + 100, seq(1,5) + 20, seq(1,5) + 130, seq(1,5) + 180, 
+                  seq(1,5) + 90, seq(1,5) + 210, seq(1,5) + 270, seq(1,5) + 110, 
+                  seq(1,5) + 140, seq(1,5) + 150,seq(1,5) + 170, seq(1,5) + 190, seq(1,5) + 200,
+                  seq(1,5) + 70, seq(1,5) + 160, seq(1,5) + 220, seq(1,5) + 300,
+                  seq(1,5) + 240, seq(1,5) + 290, seq(1,5) + 320, seq(1,5) + 400, seq(1,5) + 280, 
+                  seq(1,5) + 40, seq(1,5) + 30, seq(1,5) + 80, seq(1,5) + 370,
+                  seq(1,5) + 10, seq(1,5) + 50, seq(1,5) + 60, seq(1,5) + 120, seq(1,5) + 380,
+                  seq(1,5) + 230, seq(1,5) + 360, seq(1,5) + 390, seq(1,5) + 350, seq(1,5) + 280, seq(1,5) + 260), ]
+
+GM.df2$gene <- as.character(GM.df2$gene)
+
+data9set_cleaned.SO.small <- subset(data9set_cleaned.SO, downsample = 1000)
+
+DoHeatmap(data9set_cleaned.SO.small, features = unique(GM.df2$gene)) + scale_fill_viridis()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

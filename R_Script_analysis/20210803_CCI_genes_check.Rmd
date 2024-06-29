@@ -1,0 +1,473 @@
+---
+title: "CCI check"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+* Nrp1, Nrp2, Vegfa, Ephb2, Grin2b (DG, CA1, CA2/3, subiculumn, IN)
+
+* Nrg1, Nrg2, Nrg4, Erbb3, Erbb4 (DG, CA1, CA2/3, subiculumn, IN, NFOL, MFOL, MOL)
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(cowplot)
+```
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+```
+
+```{r warning=FALSE, message=FALSE}
+DG_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Dentate_Gyrus_AD_ADp40KO.csv", row.names = 1)
+
+CA1_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA1_AD_ADp40KO.csv", row.names = 1)
+
+CA2_3_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/CA2_3_AD_ADp40KO.csv", row.names = 1)
+
+subi_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/subiculum_AD_ADp40KO.csv", row.names = 1)
+
+IN_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/Inhibitory_Neurons_AD_ADp40KO.csv", row.names = 1)
+
+OPC_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_ADp40KO.csv", row.names = 1)
+
+NFOL_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/NFOL_AD_ADp40KO.csv", row.names = 1)
+
+MFOL_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MFOL_AD_ADp40KO.csv", row.names = 1)
+
+MOL_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/MOL_AD_ADp40KO.csv", row.names = 1)
+
+OPC_DE <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/edgeR/cell_type/OPC_AD_ADp40KO.csv", row.names = 1)
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                                             seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                                             seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                                             seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                                             seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                                             seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                                             seurat_clusters %in% c(6) ~ "MOL",
+                                                                                             seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                                             seurat_clusters %in% c(38) ~ "NFOL",
+                                                                                             seurat_clusters %in% c(12) ~ "OPC",
+                                                                                             seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                                             seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                                             seurat_clusters %in% c(36) ~ "Vascular",
+                                                                                             seurat_clusters %in% c(39) ~ "VLMC",
+                                                                                             seurat_clusters %in% c(26) ~ "Choroid",
+                                                                                             seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                                             seurat_clusters %in% c(28) ~ "Cajal",
+                                                                                             seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                                             seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+data9set_cleaned.SO$cell_type <- meta.df$cell_type
+
+# give levels to large cell type
+data9set_cleaned.SO$cell_type <- factor(data9set_cleaned.SO$cell_type, levels = c("Dentate_Gyrus", "CA1", "CA2_3", "subiculum",  "Unidentified_Neurons", 
+                                                                                  "Inhibitory_Neurons", "MOL", "MFOL", "OPC", "NFOL", "Microglia","Astrocytes",
+                                                                                  "Vascular", "VLMC", "Choroid", "Fibroblast", "Cajal", "Pericyte", "Macrophage"))
+
+```
+
+
+```{r warning=FALSE, message=FALSE}
+Vlnplot_gene_subset <- function(Cell_type = c("Inhibitory_Neurons"), gene = "Vegfa", ymax1 = 2.8, ymax2 = 11){
+   data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% Cell_type)
+
+  data9set_sub_ctrl.SO <- subset(data9set_sub.SO, subset = sample %in% c("Ctrl"))
+  data9set_sub_AD.SO <- subset(data9set_sub.SO, subset = sample %in% c("AD"))
+  data9set_sub_ADp40KO.SO <- subset(data9set_sub.SO, subset = sample %in% c("ADp40KO"))
+
+  #print("1st")
+  
+  IN_Ctrl_Vegfa <- data9set_sub_ctrl.SO@assays$RNA@data[rownames(data9set_sub_ctrl.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_Ctrl_Vegfa) <- "gene"
+  IN_Ctrl_Vegfa$celltype <- "Ctrl"
+
+  IN_AD_Vegfa <- data9set_sub_AD.SO@assays$RNA@data[rownames(data9set_sub_AD.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_AD_Vegfa) <- "gene"
+  IN_AD_Vegfa$celltype <- "AD"
+
+  IN_ADp40KO_Vegfa <- data9set_sub_ADp40KO.SO@assays$RNA@data[rownames(data9set_sub_ADp40KO.SO@assays$RNA@data) %in% gene, ] %>% as.data.frame
+  colnames(IN_ADp40KO_Vegfa) <- "gene"
+  IN_ADp40KO_Vegfa$celltype <- "ADp40KO"
+  
+  IN_Vegfa <- rbind(IN_Ctrl_Vegfa, IN_AD_Vegfa, IN_ADp40KO_Vegfa)
+  
+  IN_Vegfa$celltype <- factor(IN_Vegfa$celltype, levels = c("Ctrl", "AD", "ADp40KO"))
+  
+  #print("2nd")
+  
+    g1 <- ggplot(IN_Vegfa, aes(x=celltype, y=gene, color=celltype)) + 
+    geom_violin(trim=FALSE, width=1.2) + 
+    geom_jitter(position=position_jitter(0.2), size = 0.3, alpha = 0.3) +
+    geom_text(x=1, y=ymax1, label=paste0("avg: ", round(mean(IN_Ctrl_Vegfa$gene),3)), size = 4, color = "black") +
+      geom_text(x=1, y=ymax1-1, label=paste0("non-zero %: ", round((sum(IN_Ctrl_Vegfa$gene != 0) / nrow(IN_Ctrl_Vegfa)),3)), size = 4, color = "black") +  
+    geom_text(x=2, y=ymax1, label=paste0("avg: ", round(mean(IN_AD_Vegfa$gene),3)), size = 4, color = "black") +
+      geom_text(x=2, y=ymax1-1, label=paste0("non-zero %: ", round((sum(IN_AD_Vegfa$gene != 0) / nrow(IN_AD_Vegfa)),3)), size = 4, color = "black") +
+    geom_text(x=3, y=ymax1, label=paste0("avg: ", round(mean(IN_ADp40KO_Vegfa$gene),3)), size = 4, color = "black") + theme_cowplot() + theme(legend.position = "none") +
+      geom_text(x=3, y=ymax1-1, label=paste0("non-zero %: ", round((sum(IN_ADp40KO_Vegfa$gene != 0) / nrow(IN_ADp40KO_Vegfa)),3)), size = 4, color = "black") +
+    ggtitle(paste0(Cell_type, ": ", gene, " w/ zero counts")) 
+
+    #################
+    # CCI normalized
+    #################
+    
+   data9set_cleaned_Ctrl.df <- as.data.frame(as.matrix(data9set_sub_ctrl.SO@assays$RNA@counts))
+   data9set_cleaned_Ctrl.df <- as.data.frame(apply(data9set_cleaned_Ctrl.df, 2, function(x) (x/sum(x))*10000))
+   
+   data9set_cleaned_AD.df <- as.data.frame(as.matrix(data9set_sub_AD.SO@assays$RNA@counts))
+   data9set_cleaned_AD.df <- as.data.frame(apply(data9set_cleaned_AD.df, 2, function(x) (x/sum(x))*10000))
+    
+   data9set_cleaned_ADp40KO.df <- as.data.frame(as.matrix(data9set_sub_ADp40KO.SO@assays$RNA@counts))
+   data9set_cleaned_ADp40KO.df <- as.data.frame(apply(data9set_cleaned_ADp40KO.df, 2, function(x) (x/sum(x))*10000))
+     
+  IN_Ctrl_Vegfa2 <- data9set_cleaned_Ctrl.df[rownames(data9set_cleaned_Ctrl.df) %in% gene, ,drop = FALSE] %>% t %>% as.data.frame
+  colnames(IN_Ctrl_Vegfa2) <- "gene"
+  IN_Ctrl_Vegfa2$celltype <- "Ctrl"
+
+  IN_AD_Vegfa2 <- data9set_cleaned_AD.df[rownames(data9set_cleaned_AD.df) %in% gene, ,drop = FALSE] %>% t %>% as.data.frame
+  colnames(IN_AD_Vegfa2) <- "gene"
+  IN_AD_Vegfa2$celltype <- "AD"
+
+  IN_ADp40KO_Vegfa2 <- data9set_cleaned_ADp40KO.df[rownames(data9set_cleaned_ADp40KO.df) %in% gene, ,drop = FALSE] %>% t %>% as.data.frame
+  colnames(IN_ADp40KO_Vegfa2) <- "gene"
+  IN_ADp40KO_Vegfa2$celltype <- "ADp40KO"
+  
+  IN_Vegfa2 <- rbind(IN_Ctrl_Vegfa2, IN_AD_Vegfa2, IN_ADp40KO_Vegfa2)
+  
+  IN_Vegfa2$celltype <- factor(IN_Vegfa2$celltype, levels = c("Ctrl", "AD", "ADp40KO")) 
+  
+  #print("3rd") 
+   
+    g2 <- ggplot(IN_Vegfa2, aes(x=celltype, y=gene, color=celltype)) + 
+    geom_violin(trim=FALSE) + 
+    geom_jitter(position=position_jitter(0.2), size = 0.3, alpha = 0.3)  +
+    geom_text(x=1, y=ymax2, label=paste0("avg: ", round(mean(IN_Ctrl_Vegfa2$gene),3)), size = 4, color = "black") +
+    geom_text(x=1, y=ymax2-2, label=paste0("non-zero %: ", round((sum(IN_Ctrl_Vegfa2$gene != 0) / nrow(IN_Ctrl_Vegfa2)),3)), size = 4, color = "black") +  
+      
+    geom_text(x=2, y=ymax2, label=paste0("avg: ", round(mean(IN_AD_Vegfa2$gene),3)), size = 4, color = "black") +
+    geom_text(x=2, y=ymax2-2, label=paste0("non-zero %: ", round((sum(IN_AD_Vegfa2$gene != 0) / nrow(IN_AD_Vegfa2)),3)), size = 4, color = "black") +  
+      
+    geom_text(x=3, y=ymax2, label=paste0("avg: ", round(mean(IN_ADp40KO_Vegfa2$gene),3)), size = 4, color = "black") +
+    geom_text(x=3, y=ymax2-2, label=paste0("non-zero %: ", round((sum(IN_ADp40KO_Vegfa2$gene != 0) / nrow(IN_ADp40KO_Vegfa2)),3)), size = 4, color = "black") +   
+      theme_cowplot() + theme(legend.position = "none") + 
+    ggtitle(paste0(Cell_type, ": ", gene, " CCI normalized")) + coord_cartesian(ylim = c(0, ymax2 + 2))
+    
+    
+    grid.arrange(g1, g2, ncol =2)
+}
+
+```
+
+## 1. Vegfa
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Inhibitory_Neurons"), gene = "Vegfa", ymax2 = 11) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+IN_DE[IN_DE$gene %in% "Vegfa", c(6:11)]
+```
+
+## 2. Grin2b
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Grin2b", ymax1 = 4, ymax2 = 55) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Grin2b", ymax1 = 4, ymax2 = 60) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Grin2b", ymax1 = 4, ymax2 = 55) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Grin2b", ymax1 = 4, ymax2 = 50) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- DG_DE[DG_DE$gene %in% "Grin2b", c(6:11)]
+rownames(t1) <- "DG"
+
+t2 <- CA1_DE[CA1_DE$gene %in% "Grin2b", c(6:11)]
+rownames(t2) <- "CA1"
+
+t3 <- CA2_3_DE[CA2_3_DE$gene %in% "Grin2b", c(6:11)]
+rownames(t3) <- "CA2/3"
+
+t4 <- subi_DE[subi_DE$gene %in% "Grin2b", c(6:11)]
+rownames(t4) <- "subi"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 3. Ephb2
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Ephb2", ymax1 = 3, ymax2 = 12) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Ephb2", ymax1 = 3, ymax2 = 12) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Ephb2", ymax1 = 3, ymax2 = 12) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Ephb2", ymax1 = 3, ymax2 = 12) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- DG_DE[DG_DE$gene %in% "Ephb2", c(6:11)]
+rownames(t1) <- "DG"
+
+t2 <- CA1_DE[CA1_DE$gene %in% "Ephb2", c(6:11)]
+rownames(t2) <- "CA1"
+
+t3 <- CA2_3_DE[CA2_3_DE$gene %in% "Ephb2", c(6:11)]
+rownames(t3) <- "CA2/3"
+
+t4 <- subi_DE[subi_DE$gene %in% "Ephb2", c(6:11)]
+rownames(t4) <- "subi"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 4. Nrp1
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Nrp1", ymax1 = 3.5, ymax2 = 40) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Nrp1", ymax1 = 3.5, ymax2 = 30) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Nrp1", ymax1 = 3.5, ymax2 = 50) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Nrp1", ymax1 = 3.5, ymax2 = 30) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- DG_DE[DG_DE$gene %in% "Nrp1", c(6:11)]
+rownames(t1) <- "DG"
+
+t2 <- CA1_DE[CA1_DE$gene %in% "Nrp1", c(6:11)]
+rownames(t2) <- "CA1"
+
+t3 <- CA2_3_DE[CA2_3_DE$gene %in% "Nrp1", c(6:11)]
+rownames(t3) <- "CA2/3"
+
+t4 <- subi_DE[subi_DE$gene %in% "Nrp1", c(6:11)]
+rownames(t4) <- "subi"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 5. Nrg1
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Nrg1", ymax1 = 3.5, ymax2 = 60) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Nrg1", ymax1 = 3.5, ymax2 = 60) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Nrg1", ymax1 = 3.5, ymax2 = 40) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Nrg1", ymax1 = 3.5, ymax2 = 70) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- DG_DE[DG_DE$gene %in% "Nrg1", c(6:11)]
+rownames(t1) <- "DG"
+
+t2 <- CA1_DE[CA1_DE$gene %in% "Nrg1", c(6:11)]
+rownames(t2) <- "CA1"
+
+t3 <- CA2_3_DE[CA2_3_DE$gene %in% "Nrg1", c(6:11)]
+rownames(t3) <- "CA2/3"
+
+t4 <- subi_DE[subi_DE$gene %in% "Nrg1", c(6:11)]
+rownames(t4) <- "subi"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 6. Nrg4
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("Dentate_Gyrus"), gene = "Nrg4", ymax1 = 2, ymax2 = 15) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA1"), gene = "Nrg4", ymax1 = 2, ymax2 = 15) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("CA2_3"), gene = "Nrg4", ymax1 = 2, ymax2 = 10) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("subiculum"), gene = "Nrg4", ymax1 = 2, ymax2 = 10) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- DG_DE[DG_DE$gene %in% "Nrg4", c(6:11)]
+rownames(t1) <- "DG"
+
+t2 <- CA1_DE[CA1_DE$gene %in% "Nrg4", c(6:11)]
+rownames(t2) <- "CA1"
+
+t3 <- CA2_3_DE[CA2_3_DE$gene %in% "Nrg4", c(6:11)]
+rownames(t3) <- "CA2/3"
+
+t4 <- subi_DE[subi_DE$gene %in% "Nrg4", c(6:11)]
+rownames(t4) <- "subi"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 7. Erbb3
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("NFOL"), gene = "Erbb3", ymax1 = 3.5, ymax2 = 15) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("MFOL"), gene = "Erbb3", ymax1 = 3.5, ymax2 = 25) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("MOL"), gene = "Erbb3", ymax1 = 3.5, ymax2 = 25) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("OPC"), gene = "Erbb3", ymax1 = 3.5, ymax2 = 25) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- NFOL_DE[NFOL_DE$gene %in% "Erbb3", c(6:11)]
+rownames(t1) <- "NFOL"
+
+t2 <- MFOL_DE[MFOL_DE$gene %in% "Erbb3", c(6:11)]
+rownames(t2) <- "MFOL"
+
+t3 <- MOL_DE[MOL_DE$gene %in% "Erbb3", c(6:11)]
+rownames(t3) <- "MOL"
+
+t4 <- OPC_DE[OPC_DE$gene %in% "Erbb3", c(6:11)]
+rownames(t4) <- "OPC"
+
+rbind(t1, t2, t3, t4)
+```
+
+## 8. Erbb4
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("NFOL"), gene = "Erbb4", ymax1 = 3.5, ymax2 = 70) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("MFOL"), gene = "Erbb4", ymax1 = 3.5, ymax2 = 50) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("MOL"), gene = "Erbb4", ymax1 = 3.5, ymax2 = 40) 
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+Vlnplot_gene_subset(Cell_type = c("OPC"), gene = "Erbb4", ymax1 = 3.5, ymax2 = 40) 
+
+```
+
+AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width=11, fig.height=4.5}
+t1 <- NFOL_DE[NFOL_DE$gene %in% "Erbb4", c(6:11)]
+rownames(t1) <- "NFOL"
+
+t2 <- MFOL_DE[MFOL_DE$gene %in% "Erbb4", c(6:11)]
+rownames(t2) <- "MFOL"
+
+t3 <- MOL_DE[MOL_DE$gene %in% "Erbb4", c(6:11)]
+rownames(t3) <- "MOL"
+
+t4 <- OPC_DE[OPC_DE$gene %in% "Erbb4", c(6:11)]
+rownames(t4) <- "OPC"
+
+rbind(t1, t2, t3, t4)
+```
+
+
+
+
+```{r warning=FALSE, message=FALSE}
+
+sessionInfo()
+```

@@ -1,0 +1,111 @@
+---
+title: "Il12b count"
+author: "Skim"
+date: '2020 9 14 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(Seurat)
+library(edgeR)
+library(dplyr)
+library(tidyverse)
+library(irr)
+library(tidyr)
+library(scran)
+library(scales)
+library(gridExtra)
+library(DT)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+# load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+# data9set_cleaned.SO$cell_type <- data9set_cleaned.SO@active.ident
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+# # Microglia
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Microglia"))
+# 
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# MG <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Microglia")
+# 
+# 
+# # Astrocytes
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+# 
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# AS <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Astrocytes")
+# 
+# # Astrocytes
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Astrocytes"))
+# 
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# AS <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Astrocytes")
+# 
+# # Oligo
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Oligo"))
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# OL <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Oligo")
+# 
+# # OPC
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("OPC"))
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# OPC <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "OPC")
+# 
+# # IN
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Inhibitory Interneurons"))
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# IN <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Inhibitory")
+# 
+# 
+# # EX
+# 
+# data9set_sub.SO <- subset(data9set_cleaned.SO, subset = cell_type %in% c("Dentate Gyrus", "CA1 Neurons", "CA2/CA3 Neuron", "Subiculum", "Neurons"))
+# data9set_sub_2.SO <- subset(data9set_sub.SO, subset = sample %in% "AD")
+# perm_df2 <- as.data.frame(GetAssayData(data9set_sub_2.SO, slot = "data"))
+# EX <- data.frame(total = ncol(perm_df2), Il12b = rowSums(perm_df2[rownames(perm_df2) %in% "Il12b", ] != 0), cell_type = "Excitatory")
+# 
+
+
+
+# all <- rbind(MG, AS, OL, OPC, IN, EX)
+# all$percent <- all$Il12b / all$total
+
+# write.csv(all, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200914_Il12b_proportion_cell_type_all.csv")
+all <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200914_Il12b_proportion_cell_type_all.csv", row.names = 1)
+
+ggplot(all, aes(x = cell_type, y = percent, fill = cell_type)) + geom_bar(stat="identity") + 
+  ylim(c(0, 0.1)) + geom_text(aes(label=round(percent, 3)), vjust=1.6, color="white", size=3.5)+
+  theme_classic()
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+all$not_expressed <- all$total - all$Il12b
+
+datatable(all)
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=4, fig.width=6}
+sessionInfo()
+
+```

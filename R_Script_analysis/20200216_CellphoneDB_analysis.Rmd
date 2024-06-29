@@ -1,0 +1,472 @@
+---
+title: "CCI"
+author: "Skim"
+date: "2/16/2020"
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(DT)
+library(gridExtra)
+library(nichenetr)
+library(tidyverse)
+library(irr)
+```
+
+#### 1. cellphonedb analysis Oligo & MG (Ctrl, Cell type)
+
+In y-axis, left is ligand while right is receptor. In x-axis, first row is sender cell type while second row is receiver cell type. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+pvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_Ctrl.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl_cell_type/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_Ctrl.df[is.na(sigmeanvalue_Ctrl.df)] <- 0
+
+sigmeanvalue_Ctrl.df <- data.frame(sigmeanvalue_Ctrl.df[, c(2, 5,6, 13:268)], na.rm=TRUE)
+
+sigmeanvalue_Ctrl.df <- sigmeanvalue_Ctrl.df %>% distinct()
+
+# pvalue modification
+pvalue_Ctrl.df <- data.frame(pvalue_Ctrl.df[, c(2, 5,6, 12:267)], na.rm=TRUE)
+pvalue_Ctrl.df <- pvalue_Ctrl.df[which(pvalue_Ctrl.df$interacting_pair %in% sigmeanvalue_Ctrl.df$interacting_pair & pvalue_Ctrl.df$gene_a %in% sigmeanvalue_Ctrl.df$gene_a & pvalue_Ctrl.df$gene_b %in% sigmeanvalue_Ctrl.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_Ctrl.df <- sigmeanvalue_Ctrl.df[, c(1,4:260)]
+sigmeanvalue_Ctrl.df <- sigmeanvalue_Ctrl.df %>% distinct()
+
+pvalue_Ctrl.df <- pvalue_Ctrl.df[, c(1,4:260)]
+pvalue_Ctrl.df <- pvalue_Ctrl.df %>% distinct()
+
+
+sigmeanvalue_Ctrl.df2 <- sigmeanvalue_Ctrl.df %>% gather(sigmean, sigmeanvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+pvalue_Ctrl.df2 <- pvalue_Ctrl.df %>% gather(p, pvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+
+
+sigmeanvalue_Ctrl.df2$ID <- paste0(sigmeanvalue_Ctrl.df2$interacting_pair, sigmeanvalue_Ctrl.df2$sigmean)
+pvalue_Ctrl.df2$ID <- paste0(pvalue_Ctrl.df2$interacting_pair, pvalue_Ctrl.df2$p)
+
+# merge sigmean and pvalue
+CPDB_Ctrl.df <- merge(sigmeanvalue_Ctrl.df2, pvalue_Ctrl.df2, by = "ID")
+# conver log10
+CPDB_Ctrl.df$logpvalue <- -log10(CPDB_Ctrl.df$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_Ctrl.df <- CPDB_Ctrl.df[which(CPDB_Ctrl.df$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_Ctrl.df$logpvalue[is.infinite(CPDB_Ctrl.df$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_Ctrl_OL_MG.df <- CPDB_Ctrl.df[which(CPDB_Ctrl.df$sigmean %in% c("Microglia.Oligo", "Oligo.Microglia", "Oligo.Oligo", "Microglia.Microglia")), ]
+
+for(i in 1:nrow(CPDB_Ctrl_OL_MG.df)){
+  CPDB_Ctrl_OL_MG.df[i, "sender"] <- strsplit(CPDB_Ctrl_OL_MG.df$sigmean, '[.]')[[i]][1]
+  CPDB_Ctrl_OL_MG.df[i, "receiver"] <- strsplit(CPDB_Ctrl_OL_MG.df$sigmean, '[.]')[[i]][2]
+}
+
+#CPDB_Ctrl_OL_MG.df$logpvalue <- as.factor(CPDB_Ctrl_OL_MG.df$logpvalue)
+
+ggplot(CPDB_Ctrl_OL_MG.df, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+  geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+```
+
+#### 1-2. cellphonedb analysis Oligo & MG (Ctrl, by cluster)
+
+```{r warning=FALSE, message=FALSE,  fig.width= 15, fig.height= 12}
+pvalue_Ctrl2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_Ctrl2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_Ctrl2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_Ctrl/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_Ctrl2.df[is.na(sigmeanvalue_Ctrl2.df)] <- 0
+
+sigmeanvalue_Ctrl2.df <- data.frame(sigmeanvalue_Ctrl2.df[, c(2, 5,6, 13:1381)], na.rm=TRUE)
+
+sigmeanvalue_Ctrl2.df <- sigmeanvalue_Ctrl2.df %>% distinct()
+
+
+# pvalue modification
+pvalue_Ctrl2.df <- data.frame(pvalue_Ctrl2.df[, c(2, 5,6, 12:1380)], na.rm=TRUE)
+pvalue_Ctrl2.df <- pvalue_Ctrl2.df[which(pvalue_Ctrl2.df$interacting_pair %in% sigmeanvalue_Ctrl2.df$interacting_pair & pvalue_Ctrl2.df$gene_a %in% sigmeanvalue_Ctrl2.df$gene_a & pvalue_Ctrl2.df$gene_b %in% sigmeanvalue_Ctrl2.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_Ctrl2.df <- sigmeanvalue_Ctrl2.df[, c(1,4:1373)]
+sigmeanvalue_Ctrl2.df <- sigmeanvalue_Ctrl2.df %>% distinct()
+
+pvalue_Ctrl2.df <- pvalue_Ctrl2.df[, c(1,4:1373)]
+pvalue_Ctrl2.df <- pvalue_Ctrl2.df %>% distinct()
+
+
+sigmeanvalue_Ctrl2.df2 <- sigmeanvalue_Ctrl2.df %>% gather(sigmean, sigmeanvalue, X0.0:X40.40)
+pvalue_Ctrl2.df2 <- pvalue_Ctrl2.df %>% gather(p, pvalue, X0.0:X40.40)
+
+
+
+sigmeanvalue_Ctrl2.df2$ID <- paste0(sigmeanvalue_Ctrl2.df2$interacting_pair, sigmeanvalue_Ctrl2.df2$sigmean)
+pvalue_Ctrl2.df2$ID <- paste0(pvalue_Ctrl2.df2$interacting_pair, pvalue_Ctrl2.df2$p)
+
+# merge sigmean and pvalue
+CPDB_Ctrl.df2 <- merge(sigmeanvalue_Ctrl2.df2, pvalue_Ctrl2.df2, by = "ID")
+# conver log10
+CPDB_Ctrl.df2$logpvalue <- -log10(CPDB_Ctrl.df2$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_Ctrl.df2 <- CPDB_Ctrl.df2[which(CPDB_Ctrl.df2$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_Ctrl.df2$logpvalue[is.infinite(CPDB_Ctrl.df2$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_Ctrl_OL_MG.df2 <- CPDB_Ctrl.df2[which(CPDB_Ctrl.df2$sigmean %in% c("X3.1", "X3.5", "X3.8", "X8.1", "X8.5", "X8.6", "X37.1", "X37.5", "X37.6", 
+                                                                        "X3.3", "X3.8", "X3.37", "X8.3", "X8.8", "X8.37", "X37.3", "X37.8","X37.37",
+                                                                       "X1.3", "X1.8", "X1.37", "X5.3", "X5.8", "X5.37", "X6.3", "X6.8", "X6.37",
+                                                                       "X1.1", "X1.5", "X1.6", "X5.1", "X5.5", "X5.6", "X6.1", "X6.5", "X6.6")), ]
+
+
+
+for(i in 1:nrow(CPDB_Ctrl_OL_MG.df2)){
+  CPDB_Ctrl_OL_MG.df2[i, "sender"] <- paste0("cluster", str_split(sub(".", "", CPDB_Ctrl_OL_MG.df2$sigmean), "\\.")[[i]][1])
+  CPDB_Ctrl_OL_MG.df2[i, "receiver"] <- strsplit(CPDB_Ctrl_OL_MG.df2$sigmean, '[.]')[[i]][2]
+}
+
+#CPDB_Ctrl_OL_MG.df$logpvalue <- as.factor(CPDB_Ctrl_OL_MG.df$logpvalue)
+
+ggplot(CPDB_Ctrl_OL_MG.df2, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+  geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+```
+
+#### 2. cellphonedb analysis Oligo & MG (AD, Cell type)
+
+In y-axis, left is ligand while right is receptor. In x-axis, first row is sender cell type while second row is receiver cell type. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+pvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD_cell_type/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD_cell_type/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_AD.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD_cell_type/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_AD.df[is.na(sigmeanvalue_AD.df)] <- 0
+
+sigmeanvalue_AD.df <- data.frame(sigmeanvalue_AD.df[, c(2, 5,6, 13:268)], na.rm=TRUE)
+
+sigmeanvalue_AD.df <- sigmeanvalue_AD.df %>% distinct()
+
+# pvalue modification
+pvalue_AD.df <- data.frame(pvalue_AD.df[, c(2, 5,6, 12:267)], na.rm=TRUE)
+pvalue_AD.df <- pvalue_AD.df[which(pvalue_AD.df$interacting_pair %in% sigmeanvalue_AD.df$interacting_pair & pvalue_AD.df$gene_a %in% sigmeanvalue_AD.df$gene_a & pvalue_AD.df$gene_b %in% sigmeanvalue_AD.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_AD.df <- sigmeanvalue_AD.df[, c(1,4:260)]
+sigmeanvalue_AD.df <- sigmeanvalue_AD.df %>% distinct()
+
+pvalue_AD.df <- pvalue_AD.df[, c(1,4:260)]
+pvalue_AD.df <- pvalue_AD.df %>% distinct()
+
+
+sigmeanvalue_AD.df2 <- sigmeanvalue_AD.df %>% gather(sigmean, sigmeanvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+pvalue_AD.df2 <- pvalue_AD.df %>% gather(p, pvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+
+
+sigmeanvalue_AD.df2$ID <- paste0(sigmeanvalue_AD.df2$interacting_pair, sigmeanvalue_AD.df2$sigmean)
+pvalue_AD.df2$ID <- paste0(pvalue_AD.df2$interacting_pair, pvalue_AD.df2$p)
+
+# merge sigmean and pvalue
+CPDB_AD.df <- merge(sigmeanvalue_AD.df2, pvalue_AD.df2, by = "ID")
+# conver log10
+CPDB_AD.df$logpvalue <- -log10(CPDB_AD.df$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_AD.df <- CPDB_AD.df[which(CPDB_AD.df$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_AD.df$logpvalue[is.infinite(CPDB_AD.df$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_AD_OL_MG.df <- CPDB_AD.df[which(CPDB_AD.df$sigmean %in% c("Microglia.Oligo", "Oligo.Microglia", "Oligo.Oligo", "Microglia.Microglia")), ]
+
+for(i in 1:nrow(CPDB_AD_OL_MG.df)){
+  CPDB_AD_OL_MG.df[i, "sender"] <- strsplit(CPDB_AD_OL_MG.df$sigmean, '[.]')[[i]][1]
+  CPDB_AD_OL_MG.df[i, "receiver"] <- strsplit(CPDB_AD_OL_MG.df$sigmean, '[.]')[[i]][2]
+}
+
+ggplot(CPDB_AD_OL_MG.df, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+
+```
+
+#### 2-2. cellphonedb analysis Oligo & MG (AD, by cluster)
+
+```{r warning=FALSE, message=FALSE,  fig.width= 15, fig.height= 12}
+pvalue_AD2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_AD2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_AD2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_AD/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_AD2.df[is.na(sigmeanvalue_AD2.df)] <- 0
+
+sigmeanvalue_AD2.df <- data.frame(sigmeanvalue_AD2.df[, c(2, 5,6, 13:1381)], na.rm=TRUE)
+
+sigmeanvalue_AD2.df <- sigmeanvalue_AD2.df %>% distinct()
+
+
+# pvalue modification
+pvalue_AD2.df <- data.frame(pvalue_AD2.df[, c(2, 5,6, 12:1380)], na.rm=TRUE)
+pvalue_AD2.df <- pvalue_AD2.df[which(pvalue_AD2.df$interacting_pair %in% sigmeanvalue_AD2.df$interacting_pair & pvalue_AD2.df$gene_a %in% sigmeanvalue_AD2.df$gene_a & pvalue_AD2.df$gene_b %in% sigmeanvalue_AD2.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_AD2.df <- sigmeanvalue_AD2.df[, c(1,4:1373)]
+sigmeanvalue_AD2.df <- sigmeanvalue_AD2.df %>% distinct()
+
+pvalue_AD2.df <- pvalue_AD2.df[, c(1,4:1373)]
+pvalue_AD2.df <- pvalue_AD2.df %>% distinct()
+
+
+sigmeanvalue_AD2.df2 <- sigmeanvalue_AD2.df %>% gather(sigmean, sigmeanvalue, X0.0:X40.40)
+pvalue_AD2.df2 <- pvalue_AD2.df %>% gather(p, pvalue, X0.0:X40.40)
+
+
+
+sigmeanvalue_AD2.df2$ID <- paste0(sigmeanvalue_AD2.df2$interacting_pair, sigmeanvalue_AD2.df2$sigmean)
+pvalue_AD2.df2$ID <- paste0(pvalue_AD2.df2$interacting_pair, pvalue_AD2.df2$p)
+
+# merge sigmean and pvalue
+CPDB_AD.df2 <- merge(sigmeanvalue_AD2.df2, pvalue_AD2.df2, by = "ID")
+# conver log10
+CPDB_AD.df2$logpvalue <- -log10(CPDB_AD.df2$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_AD.df2 <- CPDB_AD.df2[which(CPDB_AD.df2$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_AD.df2$logpvalue[is.infinite(CPDB_AD.df2$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_AD_OL_MG.df2 <- CPDB_AD.df2[which(CPDB_AD.df2$sigmean %in% c("X3.1", "X3.5", "X3.8", "X8.1", "X8.5", "X8.6", "X37.1", "X37.5", "X37.6", 
+                                                                        "X3.3", "X3.8", "X3.37", "X8.3", "X8.8", "X8.37", "X37.3", "X37.8","X37.37",
+                                                                       "X1.3", "X1.8", "X1.37", "X5.3", "X5.8", "X5.37", "X6.3", "X6.8", "X6.37",
+                                                                       "X1.1", "X1.5", "X1.6", "X5.1", "X5.5", "X5.6", "X6.1", "X6.5", "X6.6")), ]
+
+
+
+for(i in 1:nrow(CPDB_AD_OL_MG.df2)){
+  CPDB_AD_OL_MG.df2[i, "sender"] <- paste0("cluster", str_split(sub(".", "", CPDB_AD_OL_MG.df2$sigmean), "\\.")[[i]][1])
+  CPDB_AD_OL_MG.df2[i, "receiver"] <- strsplit(CPDB_AD_OL_MG.df2$sigmean, '[.]')[[i]][2]
+}
+
+#CPDB_Ctrl_OL_MG.df$logpvalue <- as.factor(CPDB_Ctrl_OL_MG.df$logpvalue)
+
+ggplot(CPDB_AD_OL_MG.df2, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+  geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+```
+
+#### 3. cellphonedb analysis Oligo & MG (ADp40KO, Cell type)
+
+In y-axis, left is ligand while right is receptor. In x-axis, first row is sender cell type while second row is receiver cell type. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 7, fig.height= 6}
+pvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO_cell_type/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO_cell_type/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_ADp40KO.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO_cell_type/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_ADp40KO.df[is.na(sigmeanvalue_ADp40KO.df)] <- 0
+
+sigmeanvalue_ADp40KO.df <- data.frame(sigmeanvalue_ADp40KO.df[, c(2, 5,6, 13:268)], na.rm=TRUE)
+
+sigmeanvalue_ADp40KO.df <- sigmeanvalue_ADp40KO.df %>% distinct()
+
+# pvalue modification
+pvalue_ADp40KO.df <- data.frame(pvalue_ADp40KO.df[, c(2, 5,6, 12:267)], na.rm=TRUE)
+pvalue_ADp40KO.df <- pvalue_ADp40KO.df[which(pvalue_ADp40KO.df$interacting_pair %in% sigmeanvalue_ADp40KO.df$interacting_pair & pvalue_ADp40KO.df$gene_a %in% sigmeanvalue_ADp40KO.df$gene_a & pvalue_ADp40KO.df$gene_b %in% sigmeanvalue_ADp40KO.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_ADp40KO.df <- sigmeanvalue_ADp40KO.df[, c(1,4:260)]
+sigmeanvalue_ADp40KO.df <- sigmeanvalue_ADp40KO.df %>% distinct()
+
+pvalue_ADp40KO.df <- pvalue_ADp40KO.df[, c(1,4:260)]
+pvalue_ADp40KO.df <- pvalue_ADp40KO.df %>% distinct()
+
+
+sigmeanvalue_ADp40KO.df2 <- sigmeanvalue_ADp40KO.df %>% gather(sigmean, sigmeanvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+pvalue_ADp40KO.df2 <- pvalue_ADp40KO.df %>% gather(p, pvalue, Astrocytes.Astrocytes:Vascular.Endothelial.Vascular.Endothelial)
+
+
+sigmeanvalue_ADp40KO.df2$ID <- paste0(sigmeanvalue_ADp40KO.df2$interacting_pair, sigmeanvalue_AD.df2$sigmean)
+pvalue_ADp40KO.df2$ID <- paste0(pvalue_ADp40KO.df2$interacting_pair, pvalue_AD.df2$p)
+
+# merge sigmean and pvalue
+CPDB_ADp40KO.df <- merge(sigmeanvalue_ADp40KO.df2, pvalue_ADp40KO.df2, by = "ID")
+# conver log10
+CPDB_ADp40KO.df$logpvalue <- -log10(CPDB_ADp40KO.df$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_ADp40KO.df <- CPDB_ADp40KO.df[which(CPDB_ADp40KO.df$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_ADp40KO.df$logpvalue[is.infinite(CPDB_ADp40KO.df$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_ADp40KO_OL_MG.df <- CPDB_ADp40KO.df[which(CPDB_ADp40KO.df$sigmean %in% c("Microglia.Oligo", "Oligo.Microglia", "Oligo.Oligo", "Microglia.Microglia")), ]
+
+for(i in 1:nrow(CPDB_ADp40KO_OL_MG.df)){
+  CPDB_ADp40KO_OL_MG.df[i, "sender"] <- strsplit(CPDB_ADp40KO_OL_MG.df$sigmean, '[.]')[[i]][1]
+  CPDB_ADp40KO_OL_MG.df[i, "receiver"] <- strsplit(CPDB_ADp40KO_OL_MG.df$sigmean, '[.]')[[i]][2]
+}
+
+ggplot(CPDB_ADp40KO_OL_MG.df, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+        geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+
+```
+
+#### 3-2. cellphonedb analysis Oligo & MG (ADp40KO, by cluster)
+
+```{r warning=FALSE, message=FALSE,  fig.width= 15, fig.height= 12}
+pvalue_ADp40KO2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO/pvalues.txt", sep = "\t", header = TRUE)
+meanvalue_ADp40KO2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO/means.txt", sep = "\t", header = TRUE)
+sigmeanvalue_ADp40KO2.df <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/out/cellphoneDB_ADp40KO/significant_means.txt", sep = "\t", header = TRUE)
+
+# sigmeanvalue modification
+sigmeanvalue_ADp40KO2.df[is.na(sigmeanvalue_ADp40KO2.df)] <- 0
+
+sigmeanvalue_ADp40KO2.df <- data.frame(sigmeanvalue_ADp40KO2.df[, c(2, 5,6, 13:1381)], na.rm=TRUE)
+
+sigmeanvalue_ADp40KO2.df <- sigmeanvalue_ADp40KO2.df %>% distinct()
+
+
+# pvalue modification
+pvalue_ADp40KO2.df <- data.frame(pvalue_ADp40KO2.df[, c(2, 5,6, 12:1380)], na.rm=TRUE)
+pvalue_ADp40KO2.df <- pvalue_ADp40KO2.df[which(pvalue_ADp40KO2.df$interacting_pair %in% sigmeanvalue_ADp40KO2.df$interacting_pair & pvalue_ADp40KO2.df$gene_a %in% sigmeanvalue_ADp40KO2.df$gene_a & pvalue_ADp40KO2.df$gene_b %in% sigmeanvalue_ADp40KO2.df$gene_b), ]
+
+# remove overapping information
+sigmeanvalue_ADp40KO2.df <- sigmeanvalue_ADp40KO2.df[, c(1,4:1373)]
+sigmeanvalue_ADp40KO2.df <- sigmeanvalue_ADp40KO2.df %>% distinct()
+
+pvalue_ADp40KO2.df <- pvalue_ADp40KO2.df[, c(1,4:1373)]
+pvalue_ADp40KO2.df <- pvalue_ADp40KO2.df %>% distinct()
+
+
+sigmeanvalue_ADp40KO2.df <- sigmeanvalue_ADp40KO2.df %>% gather(sigmean, sigmeanvalue, X0.0:X40.40)
+pvalue_ADp40KO2.df <- pvalue_ADp40KO2.df %>% gather(p, pvalue, X0.0:X40.40)
+
+
+
+sigmeanvalue_ADp40KO2.df$ID <- paste0(sigmeanvalue_ADp40KO2.df$interacting_pair, sigmeanvalue_ADp40KO2.df$sigmean)
+pvalue_ADp40KO2.df$ID <- paste0(pvalue_ADp40KO2.df$interacting_pair, pvalue_ADp40KO2.df$p)
+
+# merge sigmean and pvalue
+CPDB_ADp40KO.df2 <- merge(sigmeanvalue_ADp40KO2.df, pvalue_ADp40KO2.df, by = "ID")
+# conver log10
+CPDB_ADp40KO.df2$logpvalue <- -log10(CPDB_ADp40KO.df2$pvalue)
+
+
+# remove 0 in sigmean
+CPDB_ADp40KO.df2 <- CPDB_ADp40KO.df2[which(CPDB_ADp40KO.df2$sigmeanvalue > 0), ]
+# assign Infinity in logpvalue as 3
+CPDB_ADp40KO.df2$logpvalue[is.infinite(CPDB_ADp40KO.df2$logpvalue)] <- 3
+
+####################
+# subset Oligo & MG
+####################
+
+CPDB_ADp40KO_OL_MG.df2 <- CPDB_ADp40KO.df2[which(CPDB_ADp40KO.df2$sigmean %in% c("X3.1", "X3.5", "X3.8", "X8.1", "X8.5", "X8.6", "X37.1", "X37.5", "X37.6", 
+                                                                        "X3.3", "X3.8", "X3.37", "X8.3", "X8.8", "X8.37", "X37.3", "X37.8","X37.37",
+                                                                       "X1.3", "X1.8", "X1.37", "X5.3", "X5.8", "X5.37", "X6.3", "X6.8", "X6.37",
+                                                                       "X1.1", "X1.5", "X1.6", "X5.1", "X5.5", "X5.6", "X6.1", "X6.5", "X6.6")), ]
+
+
+
+for(i in 1:nrow(CPDB_ADp40KO_OL_MG.df2)){
+  CPDB_ADp40KO_OL_MG.df2[i, "sender"] <- paste0("cluster", str_split(sub(".", "", CPDB_ADp40KO_OL_MG.df2$sigmean), "\\.")[[i]][1])
+  CPDB_ADp40KO_OL_MG.df2[i, "receiver"] <- strsplit(CPDB_ADp40KO_OL_MG.df2$sigmean, '[.]')[[i]][2]
+}
+
+#CPDB_Ctrl_OL_MG.df$logpvalue <- as.factor(CPDB_Ctrl_OL_MG.df$logpvalue)
+
+ggplot(CPDB_ADp40KO_OL_MG.df2, aes(x=receiver,
+               y=interacting_pair.x,
+               colour=sigmeanvalue,
+               size=logpvalue)) +
+  geom_point() +
+        expand_limits(x=0) +
+        labs(x="cluster", y="Signaling", colour="mean expression", size="-log10(p value)") +
+  theme_minimal() + theme(axis.title.x = element_blank(), 
+                          axis.text.x =  element_text(size = 10), 
+                          panel.margin = unit(0, "lines"), 
+         strip.background = element_blank()) + facet_grid(.~sender, scales="free", space = "free", switch = "x")
+```
+
+
+
+
