@@ -1,0 +1,457 @@
+---
+title: "DE pri-miRNAs"
+author: "Skim"
+date: '2020 5 13 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE}
+#.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#.libPaths(c(.libPaths()))
+library(Seurat, lib.loc="/data/rajewsky/shared_libs/R/")
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(scran)
+library(edgeR)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_Seurat_with_intergenic_pri_miRNA.obj")
+data9set.SO$cell_type <- data9set.SO@active.ident
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+#data9set_cleaned.SO@assays$RNA@data[c(1:10), c(1:10)]
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+#data9set.SO@assays$RNA@data[c(1:10), c(1:10)]
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+z_score_DE_genes <- function(Seurat_object, list_genes){
+  for(i in c(1:9)){
+  if(i == 1){
+    cell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  }
+  else{
+    tempcell_avg.df <- as.data.frame(Matrix::rowMeans(GetAssayData(object = subset(Seurat_object, subset = gemgroup %in% i), slot = 'data')))
+  cell_avg.df <- cbind(cell_avg.df, tempcell_avg.df)
+  }
+}
+#print("1st")
+cell_avg.df$gene <- rownames(cell_avg.df)
+#print("2nd")
+cell_avg.df <- cell_avg.df[cell_avg.df$gene %in% list_genes, ]
+#print("3rd")
+cell_avg.df$gene <- NULL
+
+# calculate z-score (high)
+cell_avg_z_score.df <- as.data.frame(t(apply(cell_avg.df, 1, function(x) (x - mean(x)) / sd(x))))
+return(cell_avg_z_score.df)
+} 
+```
+
+### 1. Neurons
+
+#### 1-1. Subiculum
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+Subi_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_SubiculumAD_Ctrl.csv")
+Subi_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_SubiculumADp40KO_Ctrl.csv")
+Subi_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_SubiculumAD_ADp40KO.csv")
+
+```
+
+Mir99ahg is one of 1429 genes associated with the alzheimer disease phenotype in GWAS datasets from the GWASdb SNP-Phenotype Associations dataset[ref](http://amp.pharm.mssm.edu/Harmonizome/gene_set/alzheimer+disease/GWASdb+SNP-Phenotype+Associations)
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set_cleaned.SO, features = "Mir99ahg", pt.size = 0) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+FeaturePlot(data9set_cleaned.SO, features = "Mir99ahg")
+```
+
+Mir99ahg was less expressed in AD & ADp40KO compare to Ctrl
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+data9set_subi.SO <- subset(data9set.SO, subset = cell_type %in% "Subiculum")
+
+VlnPlot(data9set_subi.SO, features = "Mir99ahg", group.by = "sample", pt.size = 0)
+```
+
+mir-1970 is less expressed in AD & ADp40KO compare to WT. 
+
+Mir-1970 is targeting Il12b [ref](http://www.targetscan.org/cgi-bin/targetscan/mmu_72/targetscan.cgi?species=Mouse&gid=&mir_sc=&mir_c=&mir_nc=&mir_vnc=miR-1970&mirg=)
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(data9set_subi.SO, features = "mir-1970", group.by = "sample", pt.size = 0)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+FeaturePlot(data9set.SO, features = "mir-1970")
+```
+
+Mir124a-1hg is less expressed in AD and more less in ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+VlnPlot(data9set_subi.SO, features = "Mir124a-1hg", group.by = "sample", pt.size = 0) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 3}
+list_genes <- c("mir-1970", "Mir124a-1hg", "Mir99ahg")
+subi_z_score <- z_score_DE_genes(data9set_subi.SO, list_genes)
+colnames(subi_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+subi_z_score$gene <- rownames(subi_z_score)
+#subi_z_score[,c(10,1:9)]
+
+subi_z_score2 <- gather(subi_z_score, sample, z_score, WT_1:AD_3)
+
+subi_z_score2$sample <- factor(subi_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = subi_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("pri-miRNA in Subiculum") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-2, 2))
+```
+
+
+
+#### 1-2. Dentate Gyrus
+
+In Dentate Gyrus, there were no pri-miRNA DE genes. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+DG_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Dentate GyrusAD_Ctrl.csv")
+DG_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Dentate GyrusADp40KO_Ctrl.csv")
+DG_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Dentate GyrusAD_ADp40KO.csv")
+
+```
+
+#### 1-3. CA1
+
+In CA1, there were no pri-miRNA DE genes. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+CA1_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA1 NeuronsAD_Ctrl.csv")
+CA1_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA1 NeuronsADp40KO_Ctrl.csv")
+CA1_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA1 NeuronsAD_ADp40KO.csv")
+
+```
+
+#### 1-3. CA2/CA3
+
+In CA2/3, there were no pri-miRNA DE genes. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+CA23_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA2_CA3_AD_Ctrl.csv")
+CA23_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA2_CA3_ADp40KO_Ctrl.csv")
+CA23_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_CA2_CA3_AD_ADp40KO.csv")
+
+```
+
+### 2. Inhibitory interneurons
+
+In CA2/3, there were no pri-miRNA DE genes. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+IN_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_Ctrl.csv")
+IN_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Inhibitory InterneuronsADp40KO_Ctrl.csv")
+IN_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Inhibitory InterneuronsAD_ADp40KO.csv")
+
+data9set_IN.SO <- subset(data9set.SO, subset = cell_type %in% "Inhibitory Interneurons")
+```
+
+mir-1970 is less expressed in ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+VlnPlot(data9set_IN.SO, features = "mir-1970", group.by = "sample", pt.size = 0) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 2}
+list_genes <- c("mir-1970")
+IN_z_score <- z_score_DE_genes(data9set_IN.SO, list_genes)
+colnames(IN_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+IN_z_score$gene <- rownames(IN_z_score)
+#subi_z_score[,c(10,1:9)]
+
+IN_z_score2 <- gather(IN_z_score, sample, z_score, WT_1:AD_3)
+
+IN_z_score2$sample <- factor(IN_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = IN_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("pri-miRNA in Inhibitory Interneurons") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-2, 2))
+```
+
+### 3. Astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+AS_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_AstrocytesAD_Ctrl.csv")
+AS_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_AstrocytesADp40KO_Ctrl.csv")
+AS_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_AstrocytesAD_ADp40KO.csv")
+
+```
+
+Mir99ahg is upregulated only in ADp40KO in astrocytes
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+data9set_AS.SO <- subset(data9set.SO, subset = cell_type %in% "Astrocytes")
+
+VlnPlot(data9set_AS.SO, features = "Mir99ahg", group.by = "sample", pt.size = 0) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 2}
+list_genes <- c("Mir99ahg")
+AS_z_score <- z_score_DE_genes(data9set_AS.SO, list_genes)
+colnames(AS_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+AS_z_score$gene <- rownames(AS_z_score)
+#subi_z_score[,c(10,1:9)]
+
+AS_z_score2 <- gather(AS_z_score, sample, z_score, WT_1:AD_3)
+
+AS_z_score2$sample <- factor(AS_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = AS_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("pri-miRNA in Astrocytes") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-2, 2))
+```
+
+
+### 4. Oligo
+
+In oligodendrocytes, there were no pri-miRNA DE genes. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+OL_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OligoAD_Ctrl.csv")
+OL_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OligoADp40KO_Ctrl.csv")
+OL_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OligoAD_ADp40KO.csv")
+
+```
+
+### 5. Microglia
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+MG_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv")
+MG_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_MicrogliaADp40KO_Ctrl.csv")
+MG_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv")
+
+data9set_MG.SO <- subset(data9set.SO, subset = cell_type %in% "Microglia")
+
+```
+
+mir-146a is less expressed in AD compare to WT and ADp40KO
+
+In the literature, In the brain tissues of cT2DM rats, it was observed that the expressions of inflammatory mediators (COX-2, TNF-α, IL-1β) and oxidative stress indicators including MDA and p22phox were elevated, which were negatively correlated with the expression of miR-146a. [ref](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5960742/) [ref2](https://www.nature.com/articles/srep38339)
+
+A reduced effect of miR-146a on the abnormal activation of microglia in the hippocampus indicates that miR-146a is a potential therapeutic target of POCD [ref](https://www.frontiersin.org/articles/10.3389/fnmol.2019.00125/full)
+
+MicroRNA-146a protects against cognitive decline induced by surgical trauma by suppressing hippocampal neuroinflammation in mice.[ref](https://www.ncbi.nlm.nih.gov/pubmed/30685530)
+
+miR-146a-3p targeting Il12rb1 [ref](http://www.targetscan.org/cgi-bin/targetscan/mmu_72/targetscan.cgi?species=Mouse&mir_vnc=miR-146a-3p)
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+VlnPlot(data9set_MG.SO, features = "mir-146a", group.by = "sample") + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+data9set_MG.SO <- subset(data9set.SO, subset = seurat_clusters %in% c(3, 8))
+
+
+# # edgeR
+# # convert Seurat object to sce object
+# sce <- as.SingleCellExperiment(data9set_MG.SO)
+# 
+# # convert to dge by edgeR
+# dge <- scran::convertTo(sce, type = "edgeR")
+# 
+# dge$samples$group <- dge$samples$sample
+# 
+# table(dge$samples$group)
+# 
+# dge <- calcNormFactors(dge)
+# 
+# meta <- data.frame(id = rownames(data9set_MG.SO@meta.data),
+#                    group = data9set_MG.SO$sample,
+#                    stringsAsFactors = FALSE)
+# 
+# 
+# cdr <- scale(colMeans(data9set_MG.SO@assays$RNA@counts))
+# 
+# design <- model.matrix(~ cdr + meta$group)
+# #design2 <- model.matrix(~0+meta$group)
+# 
+# dge <- estimateDisp(dge, design = design)
+# 
+# dge$samples$group <- relevel(dge$samples$group, ref="Ctrl")
+# 
+# fit <- glmQLFit(dge, design = design)
+# 
+# # AD vs ctrl
+# 
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,0))
+# tt <- topTags(qlf, n = Inf)
+# 
+# resNoFilt <- topTags(tt, n=nrow(tt$table))
+# 
+# resNoFilt <- resNoFilt %>% as.data.frame
+# 
+# resNoFilt$gene <- rownames(resNoFilt)
+# 
+# resNoFilt_final <- resNoFilt %>% as.data.frame
+# 
+# write.csv(resNoFilt_final, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_AD_Ctrl.csv")
+
+
+resNoFilt_final <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_AD_Ctrl.csv")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+# # 3-3. AD vs ADp40KO
+# qlf <- glmQLFTest(fit, contrast = c(0,0,1,-1))
+# tt <- topTags(qlf, n = Inf)
+# resNoFilt2 <- topTags(tt, n=nrow(tt$table))
+# resNoFilt2 <- resNoFilt2 %>% as.data.frame
+# resNoFilt2$gene <- rownames(resNoFilt2)
+# resNoFilt2_final <- resNoFilt2 %>% as.data.frame
+#   
+# write.csv(resNoFilt2_final, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_AD_ADp40KO.csv")
+
+
+resNoFilt2_final <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_AD_ADp40KO.csv")
+
+# # 3-4. ADp40KO vs Ctrl 
+# qlf <- glmQLFTest(fit, contrast = c(0,0,0,1))
+# tt <- topTags(qlf, n = Inf)
+# resNoFilt3 <- topTags(tt, n=nrow(tt$table))
+# resNoFilt3 <- resNoFilt3 %>% as.data.frame
+# resNoFilt3$gene <- rownames(resNoFilt3)
+# resNoFilt3_final <- resNoFilt3 %>% as.data.frame
+# 
+# write.csv(resNoFilt3_final, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_ADp40KO_Ctrl.csv")
+
+
+resNoFilt3_final <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_Microglia_edgeR_ADp40KO_Ctrl.csv")
+
+```
+  
+  
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+FeaturePlot(data9set.SO, features = "mir-146a")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 2}
+list_genes <- c("mir-146a")
+MG_z_score <- z_score_DE_genes(data9set_MG.SO, list_genes)
+colnames(MG_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+MG_z_score$gene <- rownames(MG_z_score)
+#subi_z_score[,c(10,1:9)]
+
+MG_z_score2 <- gather(MG_z_score, sample, z_score, WT_1:AD_3)
+
+MG_z_score2$sample <- factor(MG_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = MG_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("pri-miRNA in Microglia") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-1, 2.2))
+```
+
+### 6. OPC
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+OPC_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OPCAD_Ctrl.csv")
+OPC_DE_ADp40KO_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OPCADp40KO_Ctrl.csv")
+OPC_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/DE_csv_files/20200513_pri_miRNA_Cell_type_DE_by_MAST_OPCAD_ADp40KO.csv")
+
+data9set_OPC.SO <- subset(data9set.SO, subset = cell_type %in% "OPC")
+
+```
+
+
+Check mir-1970, Mir124a-1hg, Mir9-3hg, Mir99ahg
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 3.5}
+list_genes <- c("mir-1970", "Mir124a-1hg", "Mir9-3hg", "Mir99ahg")
+OPC_z_score <- z_score_DE_genes(data9set_OPC.SO, list_genes)
+colnames(OPC_z_score) <- c("WT_1", "AD.p40KO_1", "AD_1", "WT_2", "AD.p40KO_2", "AD_2", "WT_3", "AD.p40KO_3", "AD_3")
+
+OPC_z_score$gene <- rownames(OPC_z_score)
+#OPC_z_score[,c(10,1:9)]
+
+OPC_z_score2 <- gather(OPC_z_score, sample, z_score, WT_1:AD_3)
+
+OPC_z_score2$sample <- factor(OPC_z_score2$sample, levels = c("WT_1", "WT_2", "WT_3", "AD.p40KO_1", "AD.p40KO_2", "AD.p40KO_3", "AD_1", "AD_2","AD_3"))
+
+ggplot(data = OPC_z_score2, mapping = aes(x = sample, y = gene, fill = z_score)) +
+  ggtitle("pri-miRNA in OPC") + 
+  geom_tile()+  theme_classic() + theme(plot.title = element_text(size = 15, hjust = 0.5), 
+                                        axis.title.y = element_blank(),
+                                         axis.title.x = element_blank(),
+                                         axis.text.x = element_text(angle = 90, vjust = 0, size = 12, color = "black"),
+                                         axis.text.y = element_text(size = 12, color = "black"),
+                                         axis.line = element_line(color = "white"),
+                                         axis.ticks = element_line(color = "white"),
+                                         legend.title = element_blank(),
+                                         legend.text = element_text(size = 11, color = "black")) +
+ scale_fill_viridis_c(limits=c(-2.1, 2))
+```
+
+```{r warning=FALSE, message=FALSE}
+sessionInfo()
+```
+
+

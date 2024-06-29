@@ -1,0 +1,53 @@
+# This folder is for pri-miRNA and pre-miRNA
+# 
+
+
+# Check whether pre-miRNA is within pri-miRNA
+
+awk ' $4 < $13 {print} ' combined_pri_miRNA_mmu_pre_miRNA.txt |wc -l
+2314
+
+awk ' $5 > $14 {print} ' combined_pri_miRNA_mmu_pre_miRNA.txt |wc -l
+2314
+
+All prei-miRNA is within in pri-miRNA
+
+
+###########################
+# 1. Extract Unique genes
+###########################
+sort -u -k 1,1 -k 4,4 -k 5,5 personalized_pri_miRNA_chr_removed.gtf  > personalized_pri_miRNA_chr_removed_unique.gtf
+
+# Check duplicated transcripts
+# Check by Check_duplicated_transcript_ID_gtf.ipynb, there are duplicated transcripts exist 
+# C2C12.19402.6  ::  2
+# E14tg2a.56939.6  ::  4
+# CT26.39140.3  ::  2
+# E14tg2a.92827.6  ::  2
+# C2C12.67123.1  ::  2
+# C2C12.100547.8  ::  2
+# E14tg2a.211117.7  ::  2
+# Neuro2a.145805.23  ::  2
+# Neuro2a.145805.16  ::  3
+# C2C12.118418.3  ::  2
+# C2C12.130072.1  ::  2
+
+########################################################
+# 2. I keep first occurrance of duplicated and remove rest
+######################################################## 
+awk '/E14tg2a.56939.6|C2C12.19402.6|CT26.39140.3|E14tg2a.92827.6|C2C12.67123.1|C2C12.100547.8|E14tg2a.211117.7|Neuro2a.145805.23|Neuro2a.145805.16|C2C12.118418.3|C2C12.130072.1/&&c++>0 {next} 1' personalized_pri_miRNA_chr_removed_unique.gtf > personalized_pri_miRNA_chr_removed_unique_remove_duplicated.gtf
+
+##########################
+# 3. extract coding miRNA
+########################## 
+bedtools intersect -wa -a personalized_pri_miRNA_chr_removed_unique_remove_duplicated.gtf -b only_protein_coding_genes.txt > putative_protein_coding_pri_miRNA.txt
+
+#######################################
+# 4. extract coding and non-coding miRNAs
+####################################### 
+bedtools intersect -s -wa -wb -a personalized_pri_miRNA_chr_removed_unique_remove_duplicated.gtf -b ../miRNA_gtf_intergenic_only/only_protein_coding_lncRNA_genes.txt > putative_protein_coding_pri_miRNA_gene_name_included.txt
+
+
+
+
+

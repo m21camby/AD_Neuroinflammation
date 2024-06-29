@@ -1,0 +1,450 @@
+---
+title: "pyscenic"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+library(gridExtra)
+library(DT)
+library(readxl)
+library(cowplot)
+library(tidyr)
+library(Seurat, lib.loc = "/data/rajewsky/home/skim/R/")
+library(cowplot)
+
+library(readr)
+library(RColorBrewer)
+library(ggrepel)
+library(gplots)#
+library(pheatmap)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+rss <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed__rss_cell_type_1st.csv",row.names = 1)
+
+rss_t <- rss %>% t %>% as.data.frame
+
+rss2 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed__rss_cell_type_2nd.csv",row.names = 1)
+
+rss2_t <- rss2 %>% t %>% as.data.frame
+
+rss3 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed__rss_cell_type_3rd.csv",row.names = 1)
+
+rss3_t <- rss3 %>% t %>% as.data.frame
+
+rss4 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed__rss_cell_type_4th.csv",row.names = 1)
+
+rss4_t <- rss4 %>% t %>% as.data.frame
+
+# reg <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/reg.csv", stringsAsFactors=FALSE)
+# reg[1,1] <- "TF"
+# reg[1,2] <- "MotifID"
+# colnames(reg) <- reg[1, ]
+# reg <- reg[-c(1,2), ]
+# reg$AUC <- reg$AUC %>% as.numeric
+# reg$NES <- reg$NES %>% as.numeric
+# reg$MotifSimilarityQvalue <- reg$MotifSimilarityQvalue %>% as.numeric
+# reg$OrthologousIdentity <- reg$OrthologousIdentity %>% as.numeric
+# reg$RankAtMax <- reg$RankAtMax %>% as.numeric
+# saveRDS(reg, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/reg_final.rda")
+
+reg <- readRDS(file = "/data/rajewsky/projects/cdr1as_ko_snRNA/3rd_sequencing_run/pyscenic/reg_final.rda")
+
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+
+#adj <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/adj.tsv")
+
+Mafb <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/adj_Mafb.tsv")
+Mafb <- Mafb[Mafb$V1 %in% "Mafb", ]
+Stat1 <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/adj_Stat1.tsv")
+Stat1 <- Stat1[Stat1$V1 %in% "Stat1", ]
+
+```
+
+### 1-1. glial cells raw
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+rss_t_1 <- rss_t[, c("Astrocytes_Ctrl", "Astrocytes_AD", "Astrocytes_ADp40KO",
+                       "Microglia_Ctrl", "Microglia_AD", "Microglia_ADp40KO",
+                       "MOL_Ctrl","MOL_AD","MOL_ADp40KO",
+                       "MFOL_Ctrl","MFOL_AD","MFOL_ADp40KO",
+                       "NFOL_Ctrl","NFOL_AD","NFOL_ADp40KO",
+                       "OPC_Ctrl","OPC_AD","OPC_ADp40KO")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss_t_1), cluster_cols = FALSE)
+```
+
+### 1-2. glial cells z-score
+
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+rss_t_z <- as.data.frame(t(apply(rss_t, 1, function(x) (x - mean(x)) / sd(x))))
+
+rss_t_z <- rss_t_z[, c("Astrocytes_Ctrl", "Astrocytes_AD", "Astrocytes_ADp40KO",
+                       "Microglia_Ctrl", "Microglia_AD", "Microglia_ADp40KO",
+                       "MOL_Ctrl","MOL_AD","MOL_ADp40KO",
+                       "MFOL_Ctrl","MFOL_AD","MFOL_ADp40KO",
+                       "NFOL_Ctrl","NFOL_AD","NFOL_ADp40KO",
+                       "OPC_Ctrl","OPC_AD","OPC_ADp40KO")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss_t_z), cluster_cols = FALSE)
+
+# heatmap.2(as.matrix(rss_t_z), 
+#           trace="none", 
+#           col=rev(morecols(50)),
+#           #Colv=FALSE,
+#           main="cell number per cluster in all samples",
+#           scale="row", lhei=c(1.5, 10), lwid = c(2,10), cexCol=0.8)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+reg_interesting <- dplyr::filter(reg, TF %in% "Rel")
+reg_interesting$TargetGenes
+
+```
+
+### 1-3. neuronal cells raw
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+rss_t_1 <- rss_t[, c("subiculum_Ctrl", "subiculum_AD", "subiculum_ADp40KO",
+                       "CA1_Ctrl", "CA1_AD", "CA1_ADp40KO",
+                       "CA2_3_Ctrl","CA2_3_AD","CA2_3_ADp40KO",
+                       "Dentate_Gyrus_Ctrl","Dentate_Gyrus_AD","Dentate_Gyrus_ADp40KO",
+                       "Inhibitory_Neurons_Ctrl","Inhibitory_Neurons_AD","Inhibitory_Neurons_ADp40KO")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss_t_1), cluster_cols = FALSE)
+```
+
+### 1-4. neuronal cells z-score
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+rss_t_z <- as.data.frame(t(apply(rss_t, 1, function(x) (x - mean(x)) / sd(x))))
+
+rss_t_z <- rss_t_z[, c("subiculum_Ctrl", "subiculum_AD", "subiculum_ADp40KO",
+                       "CA1_Ctrl", "CA1_AD", "CA1_ADp40KO",
+                       "CA2_3_Ctrl","CA2_3_AD","CA2_3_ADp40KO",
+                       "Dentate_Gyrus_Ctrl","Dentate_Gyrus_AD","Dentate_Gyrus_ADp40KO",
+                       "Inhibitory_Neurons_Ctrl","Inhibitory_Neurons_AD","Inhibitory_Neurons_ADp40KO")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss_t_z), cluster_cols = FALSE)
+
+```
+
+### 2-1. glial cells replicates raw
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+rss2_t_1 <- rss2_t[, c("Astrocytes_Ctrl_1", "Astrocytes_Ctrl_4", "Astrocytes_Ctrl_7",
+                       "Astrocytes_AD_3", "Astrocytes_AD_6","Astrocytes_AD_9",
+                       "Astrocytes_ADp40KO_2","Astrocytes_ADp40KO_5","Astrocytes_ADp40KO_8",
+                       "Microglia_Ctrl_1", "Microglia_Ctrl_4", "Microglia_Ctrl_7",
+                       "Microglia_AD_3", "Microglia_AD_6","Microglia_AD_9",
+                       "Microglia_ADp40KO_2","Microglia_ADp40KO_5","Microglia_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_1), cluster_cols = FALSE)
+```
+
+### 2-2. glial cells replicates z-score
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+rss2_t_z <- as.data.frame(t(apply(rss2_t, 1, function(x) (x - mean(x)) / sd(x))))
+
+rss2_t_z_1 <- rss2_t_z[, c("Astrocytes_Ctrl_1", "Astrocytes_Ctrl_4", "Astrocytes_Ctrl_7",
+                       "Astrocytes_AD_3", "Astrocytes_AD_6","Astrocytes_AD_9",
+                       "Astrocytes_ADp40KO_2","Astrocytes_ADp40KO_5","Astrocytes_ADp40KO_8",
+                       "Microglia_Ctrl_1", "Microglia_Ctrl_4", "Microglia_Ctrl_7",
+                       "Microglia_AD_3", "Microglia_AD_6","Microglia_AD_9",
+                       "Microglia_ADp40KO_2","Microglia_ADp40KO_5","Microglia_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_z_1), cluster_cols = FALSE)
+```
+
+### 2-3. Oligo cells replicates raw
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+rss2_t_1 <- rss2_t[, c("OPC_Ctrl_1", "OPC_Ctrl_4", "OPC_Ctrl_7",
+                       "OPC_AD_3", "OPC_AD_6","OPC_AD_9",
+                       "OPC_ADp40KO_2","OPC_ADp40KO_5","OPC_ADp40KO_8",
+                       "NFOL_Ctrl_1", "NFOL_Ctrl_4", "NFOL_Ctrl_7",
+                       "NFOL_AD_3", "NFOL_AD_6","NFOL_AD_9",
+                       "NFOL_ADp40KO_2","NFOL_ADp40KO_5","NFOL_ADp40KO_8",
+                       "MFOL_Ctrl_1", "MFOL_Ctrl_4", "MFOL_Ctrl_7",
+                       "MFOL_AD_3", "MFOL_AD_6","MFOL_AD_9",
+                       "MFOL_ADp40KO_2","MFOL_ADp40KO_5","MFOL_ADp40KO_8",
+                       "MOL_Ctrl_1", "MOL_Ctrl_4", "MOL_Ctrl_7",
+                       "MOL_AD_3", "MOL_AD_6","MOL_AD_9",
+                       "MOL_ADp40KO_2","MOL_ADp40KO_5","MOL_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_1), cluster_cols = FALSE)
+```
+
+
+### 2-4. Oligo cells replicates z-score
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=12}
+
+rss2_t_z_1 <- rss2_t_z[, c("OPC_Ctrl_1", "OPC_Ctrl_4", "OPC_Ctrl_7",
+                       "OPC_AD_3", "OPC_AD_6","OPC_AD_9",
+                       "OPC_ADp40KO_2","OPC_ADp40KO_5","OPC_ADp40KO_8",
+                       "NFOL_Ctrl_1", "NFOL_Ctrl_4", "NFOL_Ctrl_7",
+                       "NFOL_AD_3", "NFOL_AD_6","NFOL_AD_9",
+                       "NFOL_ADp40KO_2","NFOL_ADp40KO_5","NFOL_ADp40KO_8",
+                       "MFOL_Ctrl_1", "MFOL_Ctrl_4", "MFOL_Ctrl_7",
+                       "MFOL_AD_3", "MFOL_AD_6","MFOL_AD_9",
+                       "MFOL_ADp40KO_2","MFOL_ADp40KO_5","MFOL_ADp40KO_8",
+                       "MOL_Ctrl_1", "MOL_Ctrl_4", "MOL_Ctrl_7",
+                       "MOL_AD_3", "MOL_AD_6","MOL_AD_9",
+                       "MOL_ADp40KO_2","MOL_ADp40KO_5","MOL_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_z_1), cluster_cols = FALSE)
+```
+
+### 2-5. Neuronal cells replicates raw
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+rss2_t_1 <- rss2_t[, c("subiculum_Ctrl_1", "subiculum_Ctrl_4", "subiculum_Ctrl_7",
+                       "subiculum_AD_3", "subiculum_AD_6","subiculum_AD_9",
+                       "subiculum_ADp40KO_2","subiculum_ADp40KO_5","subiculum_ADp40KO_8",
+                       "Dentate_Gyrus_Ctrl_1", "Dentate_Gyrus_Ctrl_4", "Dentate_Gyrus_Ctrl_7",
+                       "Dentate_Gyrus_AD_3", "Dentate_Gyrus_AD_6","Dentate_Gyrus_AD_9",
+                       "Dentate_Gyrus_ADp40KO_2","Dentate_Gyrus_ADp40KO_5","Dentate_Gyrus_ADp40KO_8",
+                       "CA1_Ctrl_1", "CA1_Ctrl_4", "CA1_Ctrl_7",
+                       "CA1_AD_3", "CA1_AD_6","CA1_AD_9",
+                       "CA1_ADp40KO_2","CA1_ADp40KO_5","CA1_ADp40KO_8",
+                       "CA2_3_Ctrl_1", "CA2_3_Ctrl_4", "CA2_3_Ctrl_7",
+                       "CA2_3_AD_3", "CA2_3_AD_6","CA2_3_AD_9",
+                       "CA2_3_ADp40KO_2","CA2_3_ADp40KO_5","CA2_3_ADp40KO_8",
+                       "Inhibitory_Neurons_Ctrl_1", "Inhibitory_Neurons_Ctrl_4", "Inhibitory_Neurons_Ctrl_7",
+                       "Inhibitory_Neurons_AD_3", "Inhibitory_Neurons_AD_6","Inhibitory_Neurons_AD_9",
+                       "Inhibitory_Neurons_ADp40KO_2","Inhibitory_Neurons_ADp40KO_5","Inhibitory_Neurons_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_1), cluster_cols = FALSE)
+```
+
+
+### 2-6. Neuronal cells replicates z-score
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+
+rss2_t_z_1 <- rss2_t_z[, c("subiculum_Ctrl_1", "subiculum_Ctrl_4", "subiculum_Ctrl_7",
+                       "subiculum_AD_3", "subiculum_AD_6","subiculum_AD_9",
+                       "subiculum_ADp40KO_2","subiculum_ADp40KO_5","subiculum_ADp40KO_8",
+                       "Dentate_Gyrus_Ctrl_1", "Dentate_Gyrus_Ctrl_4", "Dentate_Gyrus_Ctrl_7",
+                       "Dentate_Gyrus_AD_3", "Dentate_Gyrus_AD_6","Dentate_Gyrus_AD_9",
+                       "Dentate_Gyrus_ADp40KO_2","Dentate_Gyrus_ADp40KO_5","Dentate_Gyrus_ADp40KO_8",
+                       "CA1_Ctrl_1", "CA1_Ctrl_4", "CA1_Ctrl_7",
+                       "CA1_AD_3", "CA1_AD_6","CA1_AD_9",
+                       "CA1_ADp40KO_2","CA1_ADp40KO_5","CA1_ADp40KO_8",
+                       "CA2_3_Ctrl_1", "CA2_3_Ctrl_4", "CA2_3_Ctrl_7",
+                       "CA2_3_AD_3", "CA2_3_AD_6","CA2_3_AD_9",
+                       "CA2_3_ADp40KO_2","CA2_3_ADp40KO_5","CA2_3_ADp40KO_8",
+                       "Inhibitory_Neurons_Ctrl_1", "Inhibitory_Neurons_Ctrl_4", "Inhibitory_Neurons_Ctrl_7",
+                       "Inhibitory_Neurons_AD_3", "Inhibitory_Neurons_AD_6","Inhibitory_Neurons_AD_9",
+                       "Inhibitory_Neurons_ADp40KO_2","Inhibitory_Neurons_ADp40KO_5","Inhibitory_Neurons_ADp40KO_8")]
+
+mypalette <- brewer.pal(11,"RdYlBu")
+morecols <- colorRampPalette(mypalette)
+
+par(mar=c(1,1,1,1))
+pheatmap(as.matrix(rss2_t_z_1), cluster_cols = FALSE)
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=8}
+
+# New assigned cell type
+
+meta.df <- data9set_cleaned.SO@meta.data %>% mutate(cell_type = case_when(seurat_clusters %in% c(0, 10) ~ "Dentate_Gyrus",
+                                                                          seurat_clusters %in% c(2, 13, 18, 40) ~ "CA1",
+                                                                          seurat_clusters %in% c(9, 21, 27, 32) ~ "CA2_3",
+                                                                          seurat_clusters %in% c(11, 14, 15, 17, 19, 20) ~ "subiculum",
+                                                                          seurat_clusters %in% c(24, 29) ~ "Unidentified_Neurons",
+                                                                          seurat_clusters %in% c(7, 16, 22, 30) ~ "Inhibitory_Neurons",
+                                                                          seurat_clusters %in% c(6) ~ "MOL",
+                                                                          seurat_clusters %in% c(1, 5) ~ "MFOL",
+                                                                          seurat_clusters %in% c(38) ~ "NFOL",
+                                                                          seurat_clusters %in% c(12) ~ "OPC",
+                                                                          seurat_clusters %in% c(3, 8) ~ "Microglia",
+                                                                          seurat_clusters %in% c(4) ~ "Astrocytes",
+                                                                          seurat_clusters %in% c(36) ~ "Vascular",
+                                                                          seurat_clusters %in% c(39) ~ "VLMC",
+                                                                          seurat_clusters %in% c(26) ~ "Choroid",
+                                                                          seurat_clusters %in% c(23) ~ "Fibroblast",
+                                                                          seurat_clusters %in% c(28) ~ "Cajal",
+                                                                          seurat_clusters %in% c(35) ~ "Pericyte",
+                                                                          seurat_clusters %in% c(37) ~ "Macrophage"))
+
+
+
+tmp <- data9set_cleaned.SO@reductions$umap@cell.embeddings
+
+meta.df$UMAP1 <- tmp[, 1]
+meta.df$UMAP2 <- tmp[, 2]
+
+meta.df <- meta.df %>% mutate(large_cell_type = case_when(cell_type %in% c("Dentate_Gyrus", "CA1", "CA2_3","subiculum","Unidentified_Neurons") ~ "Excitatory Neurons",
+                                                          cell_type %in% c("Inhibitory_Neurons") ~ "Inhibitory Neurons",
+                                                          cell_type %in% c("MOL", "MFOL","NFOL") ~ "Oligodendrocytes",
+                                                          cell_type %in% c("Astrocytes") ~ "Astrocytes",
+                                                          cell_type %in% c("Microglia") ~ "Microglia",
+                                                          cell_type %in% c("OPC") ~ "OPC",
+                                                          cell_type %in% c("Vascular", "VLMC","Choroid","Fibroblast","Cajal","Pericyte","Macrophage") ~ "Rest"))
+
+
+meta.df$large_cell_type <- factor(meta.df$large_cell_type, levels = c("Excitatory Neurons", "Inhibitory Neurons", "Oligodendrocytes", "OPC", "Microglia", "Astrocytes", "Rest"))
+
+
+
+auc <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed_auc_mtx.csv")
+
+meta.df$Mafb_reg <- auc[, colnames(auc) %in% "Mafb..."] 
+meta.df$Neurod2_reg <- auc[, colnames(auc) %in% "Neurod2..."] 
+meta.df$Msx1_reg <- auc[, colnames(auc) %in% "Msx1..."] 
+
+
+ggplot(meta.df, aes(x = UMAP1, y = UMAP2, color = Mafb_reg)) + geom_point() + theme_cowplot()
+
+
+v1 <- ggplot(meta.df[meta.df$cell_type %in% "Microglia", ], aes(x=sample, y=Mafb_reg, color=sample))  + 
+  geom_violin(trim=FALSE, width = 1, adjust = 2) + 
+  geom_boxplot() + 
+  scale_color_manual(values=c("#CC0000", "#FF6600", "#99CCCC", "#009999", "#99CC00","#FFCC66", "purple")) + 
+  theme_classic() + 
+  #geom_jitter(position=position_jitter(0.2), size = 1.5, alpha = 0.5) + scale_y_continuous(expand = c(0,0),limits=c(0, 4)) +  
+  ggtitle("Il12b expression") + 
+  theme(legend.position = "none", axis.title.x = element_blank(), 
+        axis.title.y = element_text(size = 12, family = "helvetica", color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 0.5, size = 12, family = "helvetica", color = "black"),
+        axis.text.y = element_text(size = 12, family = "helvetica", color = "black"),
+        plot.title = element_text(family = "helvetica", color = "black", hjust = 0.5)) + coord_cartesian(ylim = c(-0.1,1))
+v1
+
+v1 <- ggplot(meta.df[meta.df$cell_type %in% "Microglia", ], aes(x=Mafb_reg, color=sample))  +  geom_density(adjust = 2)
+
+
+
+ggplot(meta.df, aes(x = UMAP1, y = UMAP2, color = Msx1_reg)) + geom_point()
+
+v1 <- ggplot(meta.df[meta.df$cell_type %in% "Microglia", ], aes(x=sample, y=Msx1_reg, color=sample))  + 
+  geom_violin(trim=FALSE, width = 1) + 
+  #geom_boxplot() + 
+  scale_color_manual(values=c("#CC0000", "#FF6600", "#99CCCC", "#009999", "#99CC00","#FFCC66", "purple")) + 
+  theme_classic() + 
+  geom_jitter(position=position_jitter(0.2), size = 1.5, alpha = 0.5) + scale_y_continuous(expand = c(0,0),limits=c(0, 4)) +  
+  ggtitle("Il12b expression") + 
+  theme(legend.position = "none", axis.title.x = element_blank(), 
+        axis.title.y = element_text(size = 12, family = "helvetica", color = "black"),
+        axis.text.x = element_text(angle = 45, vjust = 0.5, size = 12, family = "helvetica", color = "black"),
+        axis.text.y = element_text(size = 12, family = "helvetica", color = "black"),
+        plot.title = element_text(family = "helvetica", color = "black", hjust = 0.5)) + coord_cartesian(ylim = c(-0.1,0.5))
+v1
+
+
+
+ggplot(meta.df, aes(x = UMAP1, y = UMAP2, color = Neurod2_reg)) + geom_point()
+
+```
+
+### 3-1. Mafb cumulative plot
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=8}
+cumulative_plot <- function(DF, is.target, target, labels){
+  ggplot(DF, aes(x = logFC, color = is.target)) +
+  stat_ecdf() +
+  theme_classic() +
+  ylab("Cumulative fraction") +
+  xlim(-0.5, 0.5) +
+  scale_color_manual(values = c("black", "red"),
+                     breaks = c(F, T),
+                     labels = c(paste0("nontargets (", sum(!DF$is.target), ")"),
+                                paste0(target," targets (", sum(DF$is.target), ")")),
+                     name   = "") +
+  theme(axis.line.y=element_line(size=.5),
+        axis.line.x=element_line(size=.5),
+        axis.text.x=element_text(size=15,  family="Helvetica", color="black"),
+        axis.text.y=element_text(size=15,  family="Helvetica", color="black"),
+        axis.title.x=element_text(size=15, family="Helvetica", color="black"),
+        axis.title.y=element_text(size=15, family="Helvetica", color="black"),
+        legend.text = element_text(size=10, family="Helvetica", color="black"),
+        legend.position = c(0.01, 1),
+        legend.justification = c(0, 1),
+        aspect.ratio=1,
+        plot.title=element_text(size=15, face="bold", family="Helvetica", hjust=0.5)) +
+  annotate("text", x = 0.2, y = 0.2, label = labels, colour = "#003366", face = "bold", size = 4, family="Helvetica")
+}
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=8}
+
+MG_AD_WT_DE$is.target <- rownames(MG_AD_WT_DE) %in% Mafb[c(1:10), ]$V2
+#wilcox.test(log2FoldChange ~ is.target, data = res1.df, alt = "two.sided")
+cumulative_plot(MG_AD_WT_DE, is.target = is.target,"miR-7-5p", "p-value < 2.2e-16")
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=8}
+
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.height=7, fig.width=8}
+
+
+```
+
+
+```{r warning=FALSE, message=FALSE, fig.height=18, fig.width=15}
+sessionInfo()
+```
+
+

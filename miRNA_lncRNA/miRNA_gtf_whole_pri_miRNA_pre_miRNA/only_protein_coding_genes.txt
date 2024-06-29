@@ -1,0 +1,1 @@
+../miRNA_gtf_intergenic_only/only_protein_coding_genes.txt

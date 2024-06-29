@@ -1,0 +1,42 @@
+
+File use: mm10__refseq-r80__500bp_up_and_100bp_down_tss.mc9nr.feather & motifs-v9-nr.mgi-m0.001-o0.0.tbl
+
+# set pythonpath
+PYTHONPATH=/data/rajewsky/home/skim/conda/anaconda3/envs/pyscenic/lib/python3.8/site-packages/
+
+# install h5py
+/data/rajewsky/home/skim/conda/anaconda3/envs/pyscenic/bin/pip install h5py
+
+# unset jupyter
+unset JUPYTER_CONFIG_DIR
+#
+
+
+# download ranking the whole genome feature format file
+https://resources.aertslab.org/cistarget/
+
+# download motif annotation database file
+https://pyscenic.readthedocs.io/en/latest/installation.html
+
+
+# 1) Run GRNBoost2 network inference
+
+pyscenic grn --num_workers 20 --output adj.tsv --method grnboost2 filtered.loom Mouse_TFs_list.txt &
+
+
+# 2) Run candidate regulon generation and regulon prediction
+
+pyscenic ctx adj.tsv mm10__refseq-r80__500bp_up_and_100bp_down_tss.mc9nr.feather --annotations_fname motifs-v9-nr.mgi-m0.001-o0.0.tbl --expression_mtx_fname filtered.loom --mode "dask_multiprocessing" --output reg.csv --num_workers 20 --mask_dropouts
+
+# 3) Cellular enrichment
+
+pyscenic aucell filtered.loom reg.csv --output SCENIC.loom --num_workers 2
+
+
+
+
+# to look for motif logo
+https://motifcollections.aertslab.org/v9/logos/
+
+
+

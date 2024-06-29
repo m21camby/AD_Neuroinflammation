@@ -1,0 +1,558 @@
+---
+title: "targetscan mir-146"
+author: "Skim"
+date: '2020 6 1 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This report is to check target genes of mir-146a. We expected to see downregulation of mir-146a target genes in ADp40KO compare to AD. However, the analysis results isn't conclusive to say target genes are downregulated. In here, I tested other miRNAs e.g. mir-206, let-7a and mir-1970. And I tested AD vs Ctrl, AD vs ADp40KO and Cluster 8 (DAM) vs 3 (homeostatic). 
+
+```{r warning=FALSE, message=FALSE}
+#.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+#.libPaths(c(.libPaths()))
+#library(Seurat, lib.loc="/data/rajewsky/shared_libs/R/")
+library(Seurat)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(gridExtra)
+library(xlsx)
+library(readxl)
+```
+
+Tested miRNAs
+
+**mir-146-5p** (broadly conserved microRNA family), **mir-146a-3p** (other miRBase annotations)
+
+Other control: mir-206, let-7a, mir-1970
+
+**miR-1-3p/206-3p** (broadly conserved), **miR-206-5p**(very poorly conserved)
+
+**let-7-5p/miR-98-5p** (broadly conserved), **let-7-3p/miR-98-3p** (very poorly conserved), **let-7a-2-3p** (very poorly conserved)
+
+**mir-1970** (other miRBase annotations)
+
+**miR-206** was shown to enhance LPS-induced inflammation and cause the release of amyloid-β (an essential protein in AD) in microglia [ref](https://www.frontiersin.org/articles/10.3389/fnmol.2019.00125/full)
+
+**Let-7a** is involved in maintaining microglial function in inflammation-mediated injury. During inflammation, Let-7a was shown to inhibit the production of proinflammatory mediators [ref](https://www.frontiersin.org/articles/10.3389/fnmol.2019.00125/full)
+
+**mir-1970** is targeting Il12b
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+load(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_Seurat_with_intergenic_pri_miRNA.obj")
+data9set.SO$cell_type <- data9set.SO@active.ident
+
+
+mir_146_5p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-146-5p.predicted_targets.xlsx")
+
+mir_146a_3p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-146a-3p.predicted_targets.xlsx")
+
+#mir_146b_3p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-146b-3p.predicted_targets.xlsx")
+
+
+MG_DE_AD_Ctrl <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_Ctrl.csv")
+
+MG_DE_AD_ADp40KO <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/DE_csv_files/Cell_type/20200221_Cell_type_DE_by_MAST_MicrogliaAD_ADp40KO.csv")
+
+MG.marker8vs3 <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200109_MG_sub_analysis.MG_marker.csv")
+```
+
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+cumulative_plot <- function(DF, is.target, target, labels){
+  ggplot(DF, aes(x = avg_logFC, color = is.target)) +
+  stat_ecdf() +
+  theme_classic() +
+  ylab("Cumulative fraction") +
+  xlim(-0.5, 0.5) +
+  scale_color_manual(values = c("black", "red"),
+                     breaks = c(F, T),
+                     labels = c(paste0("nontargets (", sum(!DF$is.target), ")"),
+                                paste0(target," targets (", sum(DF$is.target), ")")),
+                     name   = "") +
+  theme(axis.line.y=element_line(size=.5),
+        axis.line.x=element_line(size=.5),
+        axis.text.x=element_text(size=15,  family="Helvetica", color="black"),
+        axis.text.y=element_text(size=15,  family="Helvetica", color="black"),
+        axis.title.x=element_text(size=15, family="Helvetica", color="black"),
+        axis.title.y=element_text(size=15, family="Helvetica", color="black"),
+        legend.text = element_text(size=10, family="Helvetica", color="black"),
+        legend.position = c(0.01, 1),
+        legend.justification = c(0, 1),
+        aspect.ratio=1,
+        plot.title=element_text(size=15, face="bold", family="Helvetica", hjust=0.5)) +
+  annotate("text", x = 0.2, y = 0.5, label = labels, colour = "#003366", face = "bold", size = 4, family="Helvetica")
+}
+```
+
+### 1. mir-146a AD vs WT
+
+mir-146-5p Filter condition: Cumulative weighted context++ score less than -0.2
+
+mir-146a-3p Filter condition: Cumulative weighted context++ score less than -0.3
+
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-146-5p
+#################
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_146_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided")
+c1 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_146_5p", "p-value = 0.2561") + ggtitle("AD vs Ctrl in Microglia mir-146-5p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_146_5p[mir_146_5p$`Cumulative weighted context++ score` < -.19, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided")
+c2 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_146_5p filtered", "p-value = 0.9692") + ggtitle("AD vs Ctrl in Microglia mir-146-5p filtered")
+
+#################
+# 2. mir-146a-3p
+#################
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_146a_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.0002547
+c3 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_146a_3p", "p-value = 0.0002547") + ggtitle("AD vs Ctrl in Microglia mir-146a-3p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_146a_3p[mir_146a_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") 0.1037
+c4 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_146a_3p filtered", "p-value = 0.1037") + ggtitle("AD vs Ctrl in Microglia mir-146a-3p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+```
+
+### 2.  mir-146a AD vs ADp40KO
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-146-5p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_146_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.767
+c1 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir-146-5p", "p-value = 0.767") + ggtitle("AD vs ADp40KO in Microglia mir-146-5p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_146_5p[mir_146_5p$`Cumulative weighted context++ score` < -.19, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.5508
+c2 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir-146-5p filtered", "p-value = 0.5508") + ggtitle("AD vs ADp40KO in Microglia mir-146-5p filtered")
+
+#################
+# 2. mir-146a-3p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_146a_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.002224
+c3 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_146a_3p", "p-value = 0.002224") + ggtitle("AD vs ADp40KO in Microglia mir-146a-3p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_146a_3p[mir_146a_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.2492
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_146a_3p filtered", "p-value = 0.2492") + ggtitle("AD vs ADp40KO in Microglia mir-146a-3p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+
+```
+
+### 3.  mir-146a Cluster 8 vs 3
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-146-5p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_146_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided")0.02178
+c1 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir-146-5p", "p-value = 0.02178") + ggtitle("Cluster 8 vs 3 in Microglia mir-146-5p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_146_5p[mir_146_5p$`Cumulative weighted context++ score` < -.19, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.5685
+c2 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir-146-5p filtered", "p-value = 0.5685") + ggtitle("Cluster 8 vs 3 in Microglia mir-146-5p filtered")
+
+#################
+# 2. mir-146a-3p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_146a_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.2707
+c3 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_146a_3p", "p-value = 0.2707") + ggtitle("Cluster 8 vs 3 in Microglia mir-146a-3p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_146a_3p[mir_146a_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.4797
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_146a_3p filtered", "p-value = 0.4797") + ggtitle("Cluster 8 vs 3 in Microglia mir-146a-3p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+
+
+```
+
+### 4. pri-mir-146a feature plots
+
+```{r warning=FALSE, message=FALSE, fig.width= 15, fig.height=5}
+data9set_MG.SO <- subset(data9set.SO, subset = seurat_clusters %in% c(3,8))
+
+data9set_MG_Ctrl.SO <- subset(data9set_MG.SO, subset = sample %in% "Ctrl")
+data9set_MG_AD.SO <- subset(data9set_MG.SO, subset = sample %in% "AD")
+data9set_MG_ADp40KO.SO <- subset(data9set_MG.SO, subset = sample %in% "ADp40KO")
+
+data9set_3.SO <- subset(data9set.SO, subset = seurat_clusters %in% c(3))
+data9set_8.SO <- subset(data9set.SO, subset = seurat_clusters %in% c(8))
+
+
+f1 <- FeaturePlot(data9set_MG_Ctrl.SO, features = "mir-146a", order = TRUE, pt.size = 1) + xlim(c(-7, 7)) + ylim(c(18,28)) + ggtitle("pri-mir-146a (WT)")
+f2 <- FeaturePlot(data9set_MG_AD.SO, features = "mir-146a", order = TRUE, pt.size = 1) + xlim(c(-7, 7)) + ylim(c(18,28)) + ggtitle("pri-mir-146a (AD)")
+f3 <- FeaturePlot(data9set_MG_ADp40KO.SO, features = "mir-146a", order = TRUE, pt.size = 1) + xlim(c(-7, 7)) + ylim(c(18,28)) + ggtitle("pri-mir-146a (ADp40KO)")
+
+grid.arrange(f1, f2, f3, ncol = 3)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+# extract UMI counts and calculate average per each gene
+MG_Ctrl_count.df <- data.frame(GetAssayData(data9set_MG_Ctrl.SO, slot = "counts"))
+MG_AD_count.df <- data.frame(GetAssayData(data9set_MG_AD.SO, slot = "counts"))
+MG_ADp40KO_count.df <- data.frame(GetAssayData(data9set_MG_ADp40KO.SO, slot = "counts"))
+MG_3_count.df <- data.frame(GetAssayData(data9set_3.SO, slot = "counts"))
+MG_8_count.df <- data.frame(GetAssayData(data9set_8.SO, slot = "counts"))
+
+
+MG_Ctrl_count_cpm.df <- apply(MG_Ctrl_count.df, 2, function(x) (x/sum(x)) * 1000000)
+MG_AD_count_cpm.df <- apply(MG_AD_count.df, 2, function(x) (x/sum(x)) * 1000000)
+MG_ADp40KO_count_cpm.df <- apply(MG_ADp40KO_count.df, 2, function(x) (x/sum(x)) * 1000000)
+MG_3_count_cpm.df <- apply(MG_3_count.df, 2, function(x) (x/sum(x)) * 1000000)
+MG_8_count_cpm.df <- apply(MG_8_count.df, 2, function(x) (x/sum(x)) * 1000000)
+
+
+MG_Ctrl_count_cpm.df <- data.frame(Matrix::rowMeans(MG_Ctrl_count_cpm.df))
+MG_AD_count_cpm.df <- data.frame(Matrix::rowMeans(MG_AD_count_cpm.df))
+MG_ADp40KO_count_cpm.df <- data.frame(Matrix::rowMeans(MG_ADp40KO_count_cpm.df))
+MG_3_count_cpm.df <- data.frame(Matrix::rowMeans(MG_3_count_cpm.df))
+MG_8_count_cpm.df <- data.frame(Matrix::rowMeans(MG_8_count_cpm.df))
+
+
+
+MG_count_cpm.df <- cbind(MG_Ctrl_count_cpm.df, MG_AD_count_cpm.df,MG_ADp40KO_count_cpm.df, MG_3_count_cpm.df, MG_8_count_cpm.df)
+MG_count_cpm.df <- as.data.frame(MG_count_cpm.df)
+MG_count_cpm.df$gene <- rownames(MG_count_cpm.df)
+# Remove Ttr
+MG_count_cpm.df <- MG_count_cpm.df[MG_count_cpm.df$gene != "Ttr", ]
+MG_count_cpm.df$gene <- NULL
+
+# remove genes where all zero in samples
+MG_count_cpm.df <- MG_count_cpm.df[apply(MG_count_cpm.df == 0, 1, sum) != 5, ]
+colnames(MG_count_cpm.df) <- c("WT", "AD", "ADp40KO", "Cluster3", "Cluster8")
+# add pseudocount 0.001 and logarithm 
+MG_count_cpm.df <- log(MG_count_cpm.df + 1)
+MG_count_cpm.df$gene <- rownames(MG_count_cpm.df)
+
+ggplot(MG_count_cpm.df, aes(x = WT, y = AD)) + geom_point(size = 1, color = "#666666", alpha = 0.2) +
+   geom_point(data = MG_count_cpm.df[MG_count_cpm.df$gene %in% "mir-146a", ], aes(x = WT, y = AD), size = 2, color = "red") + xlim(c(0,9)) + ylim(c(0,9)) +
+  ggtitle("WT vs AD in Microglia") +
+  theme_classic() +
+  xlab("log (average CPM + 1) WT") +
+  ylab("log (average CPM + 1) AD") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.25) + 
+  annotate("text", x = 5.5, y = 4.2, label = "pri-mir-146a", size = 4.5)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+ggplot(MG_count_cpm.df, aes(x = AD, y = ADp40KO)) + geom_point(size = 1, color = "#666666", alpha = 0.2) +
+   geom_point(data = MG_count_cpm.df[MG_count_cpm.df$gene %in% "mir-146a", ], aes(x = AD, y = ADp40KO), size = 2, color = "red") + xlim(c(0,9)) + ylim(c(0,9)) + 
+  ggtitle("AD vs ADp40KO in Microglia") +
+  theme_classic() +
+  xlab("log (average CPM + 1) AD") +
+  ylab("log (average CPM + 1) ADp40KO") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.25) + 
+  annotate("text", x = 4.2, y = 5.8, label = "pri-mir-146a", size = 4.5)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+ggplot(MG_count_cpm.df, aes(x = Cluster3, y = Cluster8)) + geom_point(size = 1, color = "#666666", alpha = 0.2) +
+   geom_point(data = MG_count_cpm.df[MG_count_cpm.df$gene %in% "mir-146a", ], aes(x = Cluster3, y = Cluster8), size = 2, color = "red") + xlim(c(0,9)) + ylim(c(0,9)) + 
+  ggtitle("Cluster3 vs Cluster8 in Microglia") +
+  theme_classic() +
+  xlab("log (average CPM + 1) Cluster3") +
+  ylab("log (average CPM + 1) Cluster8") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12, color = "black")) +
+  geom_abline(slope = 1, color="red", linetype="dashed", size=.25) + 
+  annotate("text", x = 4.2, y = 5.8, label = "pri-mir-146a", size = 4.5)
+```
+
+
+### 5. mir-206
+
+miR-1-3p/206-3p (broadly conserved), miR-206-5p(very poorly conserved)
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+mir_206_3p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-1-3p_206-3p.predicted_targets.xlsx")
+mir_206_5p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-206-5p.predicted_targets.xlsx")
+
+
+```
+
+both filter Cumulative weighted context++ score` < -.3 
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-206-3p
+#################
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_206_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.2163
+c1 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_206-3p", "p-value = 0.2163") + ggtitle("AD vs Ctrl in Microglia mir_206-3p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_206_3p[mir_206_3p$`Cumulative weighted context++ score` < -.3, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.009183
+c2 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_206-3p filtered", "p-value = 0.009183") + ggtitle("AD vs Ctrl in Microglia mir_206-3p filtered")
+
+#################
+# 2. mir-206-5p
+#################
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_206_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.02463
+c3 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir-206-5p", "p-value = 0.02463") + ggtitle("AD vs Ctrl in Microglia mir-206-5p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_206_5p[mir_206_5p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.628
+c4 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir-206-5p filtered", "p-value = 0.628") + ggtitle("AD vs Ctrl in Microglia mir-206-5p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-206-3p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_206_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.008269
+c1 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_206-3p", "p-value = 0.008269") + ggtitle("AD vs ADp40KO in Microglia mir_206-3p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_206_3p[mir_206_3p$`Cumulative weighted context++ score` < -.3, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.94
+c2 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_206-3p filtered", "p-value = 0.94") + ggtitle("AD vs ADp40KO in Microglia mir_206-3p filtered")
+
+#################
+# 2. mir-206-5p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_206_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.006348
+c3 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_206_5p", "p-value = 0.006348") + ggtitle("AD vs ADp40KO in Microglia mir_206_5p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_206_5p[mir_206_5p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.5615
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_206_5p filtered", "p-value = 0.5615") + ggtitle("AD vs ADp40KO in Microglia mir_206_5p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+#################
+# 1. mir-206-3p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_206_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided")#0.2663
+c1 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_206_3p", "p-value = 0.2663") + ggtitle("Cluster 8 vs 3 in Microglia mir_206_3p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_206_3p[mir_206_3p$`Cumulative weighted context++ score` < -.3, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.7879
+c2 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_206_3p filtered", "p-value = 0.7879") + ggtitle("Cluster 8 vs 3 in Microglia mir_206_3p filtered")
+
+#################
+# 2. mir-206-5p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_206_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.8873
+c3 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_206_5p", "p-value = 0.8873") + ggtitle("Cluster 8 vs 3 in Microglia mir_206_5p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_206_5p[mir_206_5p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.3428
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_206_5p filtered", "p-value = 0.3428") + ggtitle("Cluster 8 vs 3 in Microglia mir_206_5p filtered")
+grid.arrange(c1, c2, c3, c4, ncol = 2)
+```
+
+### 6. let-7a
+
+let-7-5p/miR-98-5p (broadly conserved), let-7-3p/miR-98-3p (very poorly conserved), let-7a-2-3p (very poorly conserved)
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+let_7_5p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__let-7-5p_miR-98-5p.predicted_targets.xlsx")
+let_7_3p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__let-7-3p_miR-98-3p.predicted_targets.xlsx")
+let_7a_2_3p <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__let-7a-2-3p.predicted_targets.xlsx")
+
+```
+
+let_7_5p: filter Cumulative weighted context++ score` < -.5 
+
+let_7_3p: filter Cumulative weighted context++ score` < -.3 
+
+let_7a_2_3p: filter Cumulative weighted context++ score` < -.4 
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=15}
+#################
+# 1. let_7_5p
+#################
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.3167
+c1 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7_5p", "p-value = 0.3167") + ggtitle("AD vs Ctrl in Microglia let_7_5p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7_5p[let_7_5p$`Cumulative weighted context++ score` < -.5, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.4581
+c2 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7_5p filtered", "p-value = 0.4581") + ggtitle("AD vs Ctrl in Microglia let_7_5p filtered")
+
+#################
+# 2. let-7-3p
+#################
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #5.93e-06
+c3 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7_3p", "p-value = 5.93e-06") + ggtitle("AD vs Ctrl in Microglia let_7_3p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7_3p[let_7_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.7751
+c4 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7_3p filtered", "p-value = 0.7751") + ggtitle("AD vs Ctrl in Microglia let_7_3p filtered")
+
+#################
+# 3. let_7a_2_3p
+#################
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7a_2_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.01047
+c5 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7a_2_3p", "p-value = 0.01047") + ggtitle("AD vs Ctrl in Microglia let_7a_2_3p")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% let_7a_2_3p[let_7a_2_3p$`Cumulative weighted context++ score` < -.4,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.009217
+c6 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"let_7a_2_3p filtered", "p-value = 0.009217") + ggtitle("AD vs Ctrl in Microglia let_7a_2_3p filtered")
+
+grid.arrange(c1, c2, c3, c4, c5, c6, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=15}
+#################
+# 1. let_7_5p
+#################
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.8359
+c1 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7_5p", "p-value = 0.8359") + ggtitle("AD vs ADp40KO in Microglia let_7_5p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7_5p[let_7_5p$`Cumulative weighted context++ score` < -.5, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.8822
+c2 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7_5p filtered", "p-value = 0.8822") + ggtitle("AD vs ADp40KO in Microglia let_7_5p filtered")
+
+#################
+# 2. let-7-3p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.001065
+c3 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7_3p", "p-value = 0.001065") + ggtitle("AD vs ADp40KO in Microglia let_7_3p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7_3p[let_7_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.7597
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7_3p filtered", "p-value = 0.7597") + ggtitle("AD vs ADp40KO in Microglia let_7_3p filtered")
+
+#################
+# 3. let_7a_2_3p
+#################
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7a_2_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.002325
+c5 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7a_2_3p", "p-value = 0.002325") + ggtitle("AD vs ADp40KO in Microglia let_7a_2_3p")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% let_7a_2_3p[let_7a_2_3p$`Cumulative weighted context++ score` < -.4,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.3017
+c6 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"let_7a_2_3p filtered", "p-value = 0.3017") + ggtitle("AD vs ADp40KO in Microglia let_7a_2_3p filtered")
+
+grid.arrange(c1, c2, c3, c4, c5, c6, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=15}
+#################
+# 1. let_7_5p
+#################
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7_5p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.1216
+c1 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7_5p", "p-value = 0.1216") + ggtitle("Cluster 8 vs 3 in Microglia let_7_5p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7_5p[let_7_5p$`Cumulative weighted context++ score` < -.5, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.77
+c2 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7_5p filtered", "p-value = 0.77") + ggtitle("Cluster 8 vs 3 in Microglia let_7_5p filtered")
+
+#################
+# 2. let-7-3p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.006998
+c3 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7_3p", "p-value = 0.006998") + ggtitle("Cluster 8 vs 3 in Microglia let_7_3p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7_3p[let_7_3p$`Cumulative weighted context++ score` < -.3,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.9665
+c4 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7_3p filtered", "p-value = 0.9665") + ggtitle("Cluster 8 vs 3 in Microglia let_7_3p filtered")
+
+#################
+# 3. let_7a_2_3p
+#################
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7a_2_3p$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.2467
+c5 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7a_2_3p", "p-value = 0.2467") + ggtitle("Cluster 8 vs 3 in Microglia let_7a_2_3p")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% let_7a_2_3p[let_7a_2_3p$`Cumulative weighted context++ score` < -.4,]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.02784
+c6 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"let_7a_2_3p filtered", "p-value = 0.02784") + ggtitle("Cluster 8 vs 3 in Microglia let_7a_2_3p filtered")
+
+grid.arrange(c1, c2, c3, c4, c5, c6, ncol = 2)
+```
+
+### 7. mir-1970
+
+```{r warning=FALSE, message=FALSE, fig.width= 5.5, fig.height=5}
+mir_1970 <- read_xlsx("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/Targetscan/TargetScan7.2__miR-1970.predicted_targets.xlsx")
+
+```
+
+filter Cumulative weighted context++ score` < -.4
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=15}
+#################
+# 1. AD vs Ctrl
+#################
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_1970$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.4299
+c1 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_1970", "p-value = 0.4299") + ggtitle("AD vs Ctrl in Microglia mir_1970")
+
+MG_DE_AD_Ctrl$is.target <- MG_DE_AD_Ctrl$X %in% mir_1970[mir_1970$`Cumulative weighted context++ score` < -.4, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_Ctrl, alt = "two.sided") #0.7691
+c2 <- cumulative_plot(MG_DE_AD_Ctrl, is.target = is.target,"mir_1970 filtered", "p-value = 0.7691") + ggtitle("AD vs Ctrl in Microglia mir_1970 filtered")
+
+###################
+# 2. AD vs ADp40KO
+###################
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_1970$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #3.381e-05
+c3 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_1970", "p-value = 3.381e-05") + ggtitle("AD vs ADp40KO in Microglia mir_1970")
+
+MG_DE_AD_ADp40KO$is.target <- MG_DE_AD_ADp40KO$X %in% mir_1970[mir_1970$`Cumulative weighted context++ score` < -.4, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG_DE_AD_ADp40KO, alt = "two.sided") #0.04052
+c4 <- cumulative_plot(MG_DE_AD_ADp40KO, is.target = is.target,"mir_1970 filtered", "p-value = 0.04052") + ggtitle("AD vs ADp40KO in Microglia mir_1970 filtered")
+
+###################
+# 3. Cluster 8 vs 3
+###################
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_1970$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.5368
+c5 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_1970", "p-value = 0.5368") + ggtitle("Cluster 8 vs 3 in Microglia mir_1970")
+
+MG.marker8vs3$is.target <- MG.marker8vs3$X %in% mir_1970[mir_1970$`Cumulative weighted context++ score` < -.4, ]$`Target gene`
+#wilcox.test(avg_logFC ~ is.target, data = MG.marker8vs3, alt = "two.sided") #0.4462
+c6 <- cumulative_plot(MG.marker8vs3, is.target = is.target,"mir_1970 filtered", "p-value = 0.4462") + ggtitle("Cluster 8 vs 3 in Microglia mir_1970 filtered")
+
+grid.arrange(c1, c2, c3, c4, c5, c6, ncol = 2)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 11, fig.height=10}
+sessionInfo()
+```

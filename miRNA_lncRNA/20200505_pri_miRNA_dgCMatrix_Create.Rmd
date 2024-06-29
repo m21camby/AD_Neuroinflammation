@@ -1,0 +1,438 @@
+---
+title: "pri_miRNAs dgCMatrix create"
+author: "Skim"
+date: '2020 5 5 '
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+This Report is overview of pri-miRNA in AD snRNA-seq data. 
+
+I used annotation of microRNA primary transcript from Chang et al., Genome Res. 2015 [ref](https://genome.cshlp.org/content/early/2015/08/07/gr.193607.115.abstract) To summarize, a computational pipeline was developed that produces highly accurate pri-miRNA assemblies from both human and mouse cell lines, as confirmed by extensive validation. I modified GTF assemblies pri-miRNA from 378 miRNAs. I checked with pre-miRNAs and all of them are within the pri-miRNAs coordinates. Overall, 56% of pri-miRNAs were in protein coding region. From there pri-miRNAs from 337 miRNAs were detected in our data.   
+
+```{r warning=FALSE, message=FALSE}
+.libPaths(c("/home/skim/R/usr_lib", .libPaths()))
+library(Seurat)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+library(DT)
+library(biomaRt)
+library(dplyr)
+library(viridis)
+library(tidyr)
+#library(remotes)
+#devtools::install_github("AllenInstitute/scrattch.io", lib.loc="/data/rajewsky/shared_libs/R/")
+#library(rhdf5)
+```
+
+```{r pri_miRNA_matrix, warning=FALSE, message=FALSE}
+# #####################
+# # load SP064_022_pri
+# ######################
+# SP064_022_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_022_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# SP064_022_pri_sub <- SP064_022_pri[,colnames(SP064_022_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_023_pri
+# ######################
+# SP064_023_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_023_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_023_pri) <- paste0(substr(colnames(SP064_023_pri), 1,17),2)
+# 
+# SP064_023_pri_sub <- SP064_023_pri[,colnames(SP064_023_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_024_pri
+# ######################
+# SP064_024_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_024_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_024_pri) <- paste0(substr(colnames(SP064_024_pri), 1,17),3)
+# 
+# SP064_024_pri_sub <- SP064_024_pri[,colnames(SP064_024_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_025_pri
+# ######################
+# SP064_025_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_025_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_025_pri) <- paste0(substr(colnames(SP064_025_pri), 1,17),4)
+# 
+# SP064_025_pri_sub <- SP064_025_pri[,colnames(SP064_025_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_026_pri
+# ######################
+# SP064_026_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_026_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_026_pri) <- paste0(substr(colnames(SP064_026_pri), 1,17),5)
+# 
+# SP064_026_pri_sub <- SP064_026_pri[,colnames(SP064_026_pri) %in% colnames(SP064_all)]
+# 
+# 
+# ######################
+# # load SP064_027_pri
+# ######################
+# SP064_027_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_027_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_027_pri) <- paste0(substr(colnames(SP064_027_pri), 1,17),6)
+# 
+# SP064_027_pri_sub <- SP064_027_pri[,colnames(SP064_027_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_028_pri
+# ######################
+# SP064_028_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_028_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_028_pri) <- paste0(substr(colnames(SP064_028_pri), 1,17),7)
+# 
+# SP064_028_pri_sub <- SP064_028_pri[,colnames(SP064_028_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_029_pri
+# ######################
+# SP064_029_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_029_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_029_pri) <- paste0(substr(colnames(SP064_029_pri), 1,17),8)
+# 
+# SP064_029_pri_sub <- SP064_029_pri[,colnames(SP064_029_pri) %in% colnames(SP064_all)]
+# 
+# ######################
+# # load SP064_030_pri
+# ######################
+# SP064_030_pri <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_030_whole_pri_miRNA/outs/raw_feature_bc_matrix/")
+# 
+# colnames(SP064_030_pri) <- paste0(substr(colnames(SP064_030_pri), 1,17),9)
+# 
+# SP064_030_pri_sub <- SP064_030_pri[,colnames(SP064_030_pri) %in% colnames(SP064_all)]
+# 
+# ####################
+# # Merge pri-miRNA & 
+# ####################
+# 
+# SP064_pri_sub <- cbind(SP064_022_pri_sub, SP064_023_pri_sub, SP064_024_pri_sub, SP064_025_pri_sub, SP064_026_pri_sub, SP064_027_pri_sub,SP064_028_pri_sub, SP064_029_pri_sub, SP064_030_pri_sub)
+# 
+# SP064_pri_sub.matrix <- as.matrix(SP064_pri_sub)
+# 
+# write.table(SP064_pri_sub.matrix, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.txt")
+```
+
+
+
+```{r warning=FALSE, message=FALSE}
+load(file="/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/R_Scripts/20200210_figures_for_meeting_report_cleaned_Seurat_object_res0.8.Robj")
+
+# load mRNA data
+#SP064_all <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All_025_3p/outs/filtered_feature_bc_matrix/")
+
+# load pri-miRNA data
+SP064_pri_sub.matrix <- read.table("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.txt", check.names = FALSE)
+
+SP064_pri_sub.matrix <- as.matrix(SP064_pri_sub.matrix)
+SP064_pri_sub.dgCMatrix <- as(SP064_pri_sub.matrix, "dgCMatrix")
+#SP064_all_merge <- rbind(SP064_all, SP064_pri_sub.dgCMatrix)
+
+# subset by original file
+SP064_pri_sub.dgCMatrix <- SP064_pri_sub.dgCMatrix[,Cells(data9set_cleaned.SO)]
+
+```
+
+From 378 pri-miRNAs, 339 pri-miRNAs was detected (at least 1 UMIs in total)
+
+```{r warning=FALSE, message=FALSE}
+#length(rownames(SP064_pri_sub.dgCMatrix))
+
+SP064_pri_sub_total <- as.data.frame(Matrix::rowSums(SP064_pri_sub.dgCMatrix))
+colnames(SP064_pri_sub_total) <- "total_UMIs"
+
+#str(SP064_pri_sub_total[SP064_pri_sub_total$total_UMIs > 0, ])
+```
+
+#### 1. Biotypes of reconstructed pri-miRNA assemblies
+
+```{r warning=FALSE, message=FALSE}
+host_biotype <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/miRNA_gtf_whole_pri_miRNA_pre_miRNA/Extract_miRNA_host_gene_biotypes.csv", row.names = 1)
+
+SP064_pri_sub.miRNA <- rownames(SP064_pri_sub.matrix) %>% as.data.frame
+
+#unique(SP064_pri_sub.miRNA$.[SP064_pri_sub.miRNA$. %in% host_biotype$miRNA_ID])
+
+
+no_host_gene <- data.frame(miRNA_ID = SP064_pri_sub.miRNA$.[!SP064_pri_sub.miRNA$. %in% host_biotype$miRNA_ID],
+                           host_gene = "no_host_gene",
+                           biotype = "intergenic")
+
+host_biotype_final <- rbind(host_biotype, no_host_gene)
+
+# save host_biotype_final
+#write.csv(host_biotype_final, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_host_biotype_final.csv")
+
+host_biotype_unique_final <- host_biotype_final[,c(1:3)]
+
+
+host_biotype_unique_final <- host_biotype_unique_final[!duplicated(host_biotype_unique_final$miRNA_ID), ]
+
+
+host_biotype_final.df <- as.data.frame(table(host_biotype_unique_final$biotype))
+
+host_biotype_final.df$percent <- round(host_biotype_final.df$Freq / sum(host_biotype_final.df$Freq), 3)
+
+ggplot(host_biotype_final.df, aes(x = 2, y= percent, fill = factor(percent, levels = c(0.563, 0.254, 0.183)))) +
+  geom_bar(width = 1, stat = "identity") +
+  ggtitle("Biotypes from 378 reconstructed pri-miRNAs ") +
+  coord_polar(theta = "y", start=0) +
+  theme_void() + theme(legend.text = element_text(size = 12), legend.title = element_blank()) +
+  scale_fill_manual(values=c("#CC0000", "#FFCC66", "#99CC00"),
+                    labels = c("Protein coding: 56.3%", "intergenic: 25.4%", "lncRNAs: 18.3%"))
+```
+
+#### 2. Biotypes of detected pri-miRNA in AD snRNA-seq data
+
+378 miRNAs was detected in here and 337 miRNAs were more than 1 counts
+
+```{r warning=FALSE, message=FALSE}
+SP064_pri_sub.sum <- Matrix::rowSums(SP064_pri_sub.dgCMatrix) %>% as.data.frame
+colnames(SP064_pri_sub.sum) <- "counts"
+
+SP064_pri_sub.sum$miRNA_ID <- rownames(SP064_pri_sub.sum)
+
+SP064_pri_sub.sum <- SP064_pri_sub.sum[SP064_pri_sub.sum$counts >0, ] %>% as.data.frame
+
+SP064_pri_sub.sum <- left_join(SP064_pri_sub.sum, host_biotype_unique_final, by = "miRNA_ID")
+
+
+SP064_pri_sub.sum.df <- as.data.frame(table(SP064_pri_sub.sum$biotype))
+
+SP064_pri_sub.sum.df$percent <- round(SP064_pri_sub.sum.df$Freq / sum(SP064_pri_sub.sum.df$Freq), 3)
+
+#saveRDS(SP064_pri_sub.sum.df, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.sum.rda")
+SP064_pri_sub.sum.df <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.sum.rda")
+
+ggplot(SP064_pri_sub.sum.df, aes(x = 2, y= percent, fill = factor(percent, levels = c(0.567, 0.246, 0.187)))) +
+  geom_bar(width = 1, stat = "identity") +
+  ggtitle("Biotypes from 337 pri-miRNAs expressed in snRNA-seq") +
+  coord_polar(theta = "y", start=0) +
+  theme_void() + theme(legend.text = element_text(size = 12), legend.title = element_blank()) +
+  scale_fill_manual(values=c("#CC0000", "#FFCC66", "#99CC00"),
+                    labels = c("Protein coding: 56.7%", "intergenic: 24.6%", "lncRNAs: 18.7%"))
+
+```
+
+#### 3. Biotypes of nUMI counts of pri-miRNA in AD snRNA-seq data
+
+```{r warning=FALSE, message=FALSE, fig.width= 5, fig.height=5}
+SP064_pri_sub.sum.df2 <- SP064_pri_sub.sum %>% group_by(biotype) %>% summarise(all = sum(counts))
+
+SP064_pri_sub.sum.df2$percent <- round(SP064_pri_sub.sum.df2$all / sum(SP064_pri_sub.sum.df2$all), 3)
+
+SP064_pri_sub.sum.df2$biotype <- factor(SP064_pri_sub.sum.df2$biotype, levels = c("intergenic", "protein_coding", "lncRNA"))
+
+# saveRDS(SP064_pri_sub.sum.df2, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.sum_2nd.rda")
+SP064_pri_sub.sum.df2 <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub.sum_2nd.rda")
+
+ggplot(SP064_pri_sub.sum.df2, aes(fill=biotype, y=percent, x="gene_biotype")) + 
+    geom_bar(position="fill", stat="identity") + 
+  theme_classic() + 
+  geom_text(aes(y=0.45, label="lncRNA: 69.2%"), vjust=1.6, color="white", size=5) + 
+  geom_text(aes(y=0.90, label="protein coding:"), vjust=1.6, color="white", size=5) + 
+  geom_text(aes(y=0.81, label="26.6%"), vjust=1.6, color="white", size=5) + 
+  scale_y_continuous(expand = c(0,0), limits = c(0,1.2), breaks = c(0,1)) +
+  theme(axis.text.x = element_blank(), 
+        axis.text.y = element_text(size = 15, color = "black"),
+        axis.title = element_blank(), 
+        axis.line = element_blank(),
+        axis.ticks = element_blank(),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12)) + 
+  annotate(geom="text", x=1, y=1.08, label="intergenic: 4.2%", color="black", size = 5) + 
+  scale_fill_manual(values=c("#FFCC66", "#CC0000", "#99CC00")) +
+  geom_segment(aes(x = 1, y = 0.999, xend = 1, yend = 1.05),color='black',size=0.5) 
+```
+
+#### 4. Top 10 expressed pri-miRNA and its host gene
+
+High number of lncRNAs due to Meg3 which is highly expressed in hippocampus
+
+```{r warning=FALSE, message=FALSE}
+SP064_pri_sub.sum_top10 <- SP064_pri_sub.sum[rev(order(SP064_pri_sub.sum$counts))[1:10], ]
+
+SP064_pri_sub.sum_top10 <- left_join(SP064_pri_sub.sum_top10, host_biotype_unique_final, by = "miRNA_ID")
+
+SP064_pri_sub.sum_top10$miRNA_ID <- factor(SP064_pri_sub.sum_top10$miRNA_ID, levels = SP064_pri_sub.sum_top10$miRNA_ID)
+
+ggplot(SP064_pri_sub.sum_top10, aes(x = host_gene.x, y = counts)) + geom_bar(stat="identity") + facet_grid(.~ miRNA_ID, space = 'free_x', scales = 'free_x', switch = 'x') + 
+  ggtitle("Top 10 expressed pri-miRNAs in AD snRNA-seq") + 
+  scale_y_continuous(expand = c(0,0)) + 
+  theme_classic() + ylab("total counts") + 
+  theme(panel.spacing = unit(0.01, "lines"), axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, vjust = 0.5), strip.background = element_blank(),
+        axis.line.x = element_blank()) 
+
+
+```
+
+```{r warning=FALSE, message=FALSE}
+SP064_all <- Read10X("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_All_025_3p/outs/filtered_feature_bc_matrix/")
+
+###################################
+# Extract only intergenic pri-miRNA
+###################################
+SP064_pri_sub.intergenic_dgCMatrix <- SP064_pri_sub.dgCMatrix[rownames(SP064_pri_sub.dgCMatrix) %in% SP064_pri_sub.sum[SP064_pri_sub.sum$biotype %in% c("intergenic"), ]$miRNA_ID, ]
+
+SP064_all_sub <- SP064_all[, colnames(SP064_all) %in% Cells(data9set_cleaned.SO)]
+
+SP064_all_sub <- rbind(SP064_all_sub, SP064_pri_sub.intergenic_dgCMatrix)
+
+data9set.SO <- CreateSeuratObject(counts =  SP064_all_sub,  min.cells = 3, min.features = 200, project = "AD_Project")
+
+# ################################
+# # To check Mir-7 only for Cledi
+# ################################
+# # Below code is for checking Mir-7 only for Cledi
+# SP064_pri_sub.intergenic_dgCMatrix <- SP064_pri_sub.dgCMatrix[rownames(SP064_pri_sub.dgCMatrix) %in% SP064_pri_sub.sum$miRNA_ID, ]
+# 
+# SP064_all_sub <- SP064_all[, colnames(SP064_all) %in% Cells(data9set_cleaned.SO)]
+# 
+# SP064_all_sub <- rbind(SP064_all_sub, SP064_pri_sub.intergenic_dgCMatrix)
+# data9set.SO <- CreateSeuratObject(counts =  SP064_all_sub,  min.cells = 3, min.features = 200, project = "AD_Project")
+# rownames(data9set.SO@assays$RNA@counts)[grepl("Mir",rownames(data9set.SO@assays$RNA@counts))]
+# #################################################
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(data9set.SO@meta.data), split="-"), "[[", 2)
+data9set.SO <- AddMetaData(object=data9set.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(data9set.SO@meta.data)))
+
+# calculate MT genes
+data9set.SO[["percent.mt"]] <- PercentageFeatureSet(object = data9set.SO, pattern = "^mt-")
+
+data9set.SO <- subset(x = data9set.SO, subset = nCount_RNA < 30000 & nCount_RNA > 500 & percent.mt < 5) 
+
+data9set.SO <- NormalizeData(object = data9set.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+
+data9set.SO@meta.data <- data9set_cleaned.SO@meta.data
+
+data9set.SO@active.assay <- data9set_cleaned.SO@active.assay
+
+data9set.SO@active.ident <- data9set_cleaned.SO@active.ident
+
+data9set.SO@reductions <- data9set_cleaned.SO@reductions
+
+#save(data9set.SO, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_Seurat_with_intergenic_pri_miRNA.obj")
+```
+
+#### 5. e.g. of interesting candidates
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set.SO, features = "let-7i", pt.size = 0.1) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "mir-146a", pt.size = .8, order = TRUE)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "mir-7a-2", pt.size = .8, order = TRUE)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "let-7i", order = TRUE, pt.size = 1)
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set.SO, features = "mir-1970", pt.size = 0.1) + theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "mir-1970", order = TRUE, pt.size = 1)
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set.SO, features = "mir-384", pt.size = 0.1)+ theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "mir-384", order = TRUE, pt.size = 1)
+```
+
+```{r warning=FALSE, message=FALSE}
+VlnPlot(data9set.SO, features = "mir-804", pt.size = 0.1)+ theme(legend.position = "none")
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height=5}
+FeaturePlot(data9set.SO, features = "mir-804", order = TRUE, pt.size = 1)
+```
+
+```{r warning=FALSE, message=FALSE}
+SP064_pri_sub.SO <- CreateSeuratObject(SP064_pri_sub.dgCMatrix)
+
+#SP064_pri_sub.SO@meta.data
+
+# add gemgroup to meta data
+gemgroup <- sapply(strsplit(rownames(SP064_pri_sub.SO@meta.data), split="-"), "[[", 2)
+
+SP064_pri_sub.SO <- AddMetaData(object=SP064_pri_sub.SO, metadata=data.frame(gemgroup=gemgroup, row.names=rownames(SP064_pri_sub.SO@meta.data)))
+
+SP064_pri_sub.SO@meta.data$sample <- ifelse((SP064_pri_sub.SO$gemgroup == 1 | SP064_pri_sub.SO$gemgroup == 4 | SP064_pri_sub.SO$gemgroup == 7), "Ctrl", ifelse((SP064_pri_sub.SO$gemgroup == 2 | SP064_pri_sub.SO$gemgroup == 5 | SP064_pri_sub.SO$gemgroup == 8), "ADp40KO", "AD"))
+
+```
+
+#### 6. Overview
+
+Detected **11** pri-miRNAs UMI counts per cell. 
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+VlnPlot(SP064_pri_sub.SO, features = c("nCount_RNA"), group.by = "gemgroup", pt.size = 0)
+
+#median(SP064_pri_sub.SO$nCount_RNA)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 6, fig.height= 5}
+#FeatureScatter(SP064_pri_sub.SO, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+#### 7. Interesting pri-miRNAs
+
+Below analysis was done only by pri-miRNAs (normalized by only pri-miRNAs) and interesting DE genes from intergenic pri-miRNAs
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+SP064_pri_sub.SO <- NormalizeData(object = SP064_pri_sub.SO, normalization.method = "LogNormalize", scale.factor = 1e4, verbose = FALSE)
+
+
+#SP064_pri_sub_DE_whole_AD_Ctrl <- FindMarkers(SP064_pri_sub.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+
+#write.csv(SP064_pri_sub_DE_whole_AD_Ctrl, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub_DE_whole_AD_Ctrl.csv")
+SP064_pri_sub_DE_whole_AD_Ctrl <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_SP064_pri_sub_DE_whole_AD_Ctrl.csv")
+SP064_pri_sub_DE_whole_AD_Ctrl[SP064_pri_sub_DE_whole_AD_Ctrl$X %in% SP064_pri_sub.sum[SP064_pri_sub.sum$biotype %in% "intergenic", ]$miRNA_ID, ]
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+# data9set_cleaned_DE_whole_AD_Ctrl <- FindMarkers(data9set_cleaned.SO, ident.1 = "AD", ident.2 = "Ctrl", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+# 
+# data9set_cleaned_DE_whole_AD_Ctrl$gene <- rownames(data9set_cleaned_DE_whole_AD_Ctrl)
+# 
+# data9set_cleaned_DE_whole_AD_ADp40KO <- FindMarkers(data9set_cleaned.SO, ident.1 = "AD", ident.2 = "ADp40KO", group.by = "sample", logfc.threshold = 0.1, min.pct = 0.01)
+# 
+# data9set_cleaned_DE_whole_AD_ADp40KO$gene <- rownames(data9set_cleaned_DE_whole_AD_ADp40KO)
+# 
+# write.csv(data9set_cleaned_DE_whole_AD_Ctrl, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_data9set_cleaned_DE_whole_AD_Ctrl.csv")
+ # data9set_cleaned_DE_whole_AD_Ctrl <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_data9set_cleaned_DE_whole_AD_Ctrl.csv")
+
+# 
+# write.csv(data9set_cleaned_DE_whole_AD_ADp40KO, file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_data9set_cleaned_DE_whole_AD_ADp40KO.csv")
+# 
+# 
+# data9set_cleaned_DE_whole_AD_Ctrl <- read.csv(file = "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/R_Scripts/20200505_pri_miRNA_dgCMatrix_Create_data9set_cleaned_DE_whole_AD_Ctrl.csv", row.names = 1)
+```
+
+```{r warning=FALSE, message=FALSE, fig.width= 8, fig.height= 5}
+sessionInfo()
+
+```
+
+

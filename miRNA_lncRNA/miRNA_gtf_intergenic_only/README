@@ -1,0 +1,57 @@
+
+# This folder is for separating intergenic to other pri-miRNAs.
+# To do this, I first get genes coordinate 
+# And I separate which doesn't intersect with genome coordinate
+
+
+
+####################
+
+# 1. extract only gene coordinates
+cat ../../GRCm38-3.1.0_mrna/genes/genes.gtf |awk '$3 == "gene"' > only_genes.gtf &
+
+# 2. remove miRNA coordinates from gtf file
+cat only_genes.gtf |grep -v mirbase > only_genes_no_miRNA.txt &
+
+# 2-2. extract only protein coding and lncRNA coordinates
+cat only_genes_no_miRNA.txt |grep "protein_coding\|lncRNA" > only_protein_coding_lncRNA_genes.txt
+
+# 2-3. extract only protein coding cooridnated
+cat only_genes_no_miRNA.txt |grep "protein_coding" > only_protein_coding_genes.txt
+
+
+# 3. extract putative intergenic pri_miRNA
+
+# Below code give wrong results (start & end coordinates went wrong)
+# bedtools subtract -a ../personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf -b only_genes_no_miRNA.txt > putative_intergenic_pri_miRNA.txt
+
+# test with protein & lncRNA 
+bedtools subtract -a ../personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf -b only_protein_coding_lncRNA_genes.txt > putative_intergenic_pri_miRNA.txt_2
+
+# test with protein & lncRNA to later remove miRNA in the putative_not_intergenie_pri_miRNA.txt_3
+bedtools intersect -wa -a  ../personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf -b only_protein_coding_lncRNA_genes.txt > putative_not_intergenie_pri_miRNA.txt_3
+
+# remove overlaps with intersect results 
+cat putative_not_intergenie_pri_miRNA.txt_3 |sort -u -k 1,1 -k 4,4 -k 5,5 > putative_not_intergenie_pri_miRNA_unique.txt_3
+
+
+# 4. check if pre-miRNA is in pri-miRNA
+
+
+
+
+# 4-1. remove chr from gff file
+cat mmu_pre_miRNA.gff3 |sed 's/chr//' > mmu_pre_miRNA_chr_removed.gff3
+
+# 4-2. check if pre-miRNA is in pri-miRNA
+bedtools intersect -wa -wb -a putative_intergenic_pri_miRNA.bed -b ../mmu_pre_miRNA.gff3 > combined_putative_intergenic_ri_miRNA_mmu_pre_miRNA.txt
+
+# test with other way round
+bedtools intersect -wa -wb -a mmu_pre_miRNA_chr_removed.gff3 -b putative_intergenic_pri_miRNA.bed  > combined_putative_intergenic_ri_miRNA_mmu_pre_miRNA.txt
+
+# test with putative_intergenic_pri_miRNA.txt_2
+bedtools intersect -wa -wb -a mmu_pre_miRNA_chr_removed.gff3 -b putative_intergenic_pri_miRNA.txt_2  > combined_putative_intergenic_ri_miRNA_mmu_pre_miRNA.txt
+
+
+
+ 

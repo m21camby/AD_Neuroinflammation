@@ -1,0 +1,239 @@
+
+
+###################################
+# 1. pri-miRNA gtf download from below 
+###################################
+
+pri_miRNA_mouse.gtf from 
+
+ref:https://genome.cshlp.org/content/early/2015/08/07/gr.193607.115/suppl/DC1
+
+####################################
+# 2. mmu.gff3 download from miRBase 
+####################################
+
+# extract only premiRNA
+
+cat mmu.gff3 |grep miRNA_primary_transcript > mmu_pre_miRNA.gff3  
+
+ref: http://www.mirbase.org/ftp.shtml
+
+###################################
+# 3. intersect two files
+###################################
+bedtools intersect -wa -wb -a pri_miRNA_mouse.gtf -b mmu_pre_miRNA.gff3 > combined_pri_miRNA_mmu_pre_miRNA.txt
+
+
+###################################
+# 4. extract only gene ID
+################################### 
+cat combined_pri_miRNA_mmu_pre_miRNA.txt |head -10 | cut -f18|sed 's/.*mmu-//'
+mir-133b
+mir-30c-2
+mir-6901
+mir-6903
+mir-6903
+mir-6903
+mir-8114
+mir-199a-2
+mir-214
+mir-6904
+
+###################################
+# 5. extract transcript ID
+################################### 
+cat combined_pri_miRNA_mmu_pre_miRNA.txt |head -10 | cut -f9|sed -n '/transcript_id/,/^$/p'|sed 's/ *";.*//'
+transcript_id "C2C12.618.1
+transcript_id "C2C12.670.1
+transcript_id "C2C12.4222.4
+transcript_id "C2C12.5406.1
+transcript_id "C2C12.5406.2
+transcript_id "C2C12.5406.3
+transcript_id "C2C12.6233.1
+transcript_id "C2C12.6718.1
+transcript_id "C2C12.6718.1
+transcript_id "C2C12.7787.1
+
+##################################
+# 6. create column 9 file
+##################################
+
+# Extract gene id from pri_miRNA
+cat combined_pri_miRNA_mmu_pre_miRNA.txt |cut -f18|sed 's/.*mmu-//' > gene_id.txt
+
+# add double quotes to gene_id
+# below code is wrong one (missing semi-colon)
+# sed 's/\([^,]*\)/"&"/g' gene_id.txt > gene_id_double_quotes.txt
+
+sed 's/\([^,]*\)/"&";/g' gene_id.txt > gene_id_double_quotes.txt
+
+######################################
+# 7. extract transript id from pri_miRNA
+###################################### 
+# below code is wrong one
+#cat combined_pri_miRNA_mmu_pre_miRNA.txt | cut -f9|sed -n '/transcript_id/,/^$/p'|sed 's/ *";.*//' > transcript_id.txt
+
+cat combined_pri_miRNA_mmu_pre_miRNA.txt | cut -f9|sed 's/ *";.*/";/' > transcript_id.txt
+transcript_id "C2C12.618.1";
+transcript_id "C2C12.670.1";
+transcript_id "C2C12.4222.4";
+transcript_id "C2C12.5406.1";
+transcript_id "C2C12.5406.2";
+
+############################
+# 8. create gene_id text file
+############################ 
+grep -o gene_id combined_pri_miRNA_mmu_pre_miRNA.txt > text_gene_id.txt
+
+#################################
+# 9. add gene_name as second column
+################################# 
+awk 'BEGIN{OFS="\t"}{print $0, "gene_name"}' text_gene_id.txt > text_gene_id_2nd.txt 
+
+##########################################################
+# 10. extract second column and create gene_name text file
+##########################################################
+cut -f2 text_gene_id_2nd.txt > text_gene_name.txt
+
+######################################
+# 11. combine and create 9th column file
+######################################
+cat transcript_id.txt |paste -d " " gene_id_double_quotes.txt -|paste -d " " text_gene_id.txt - |paste -d " " - text_gene_name.txt|paste -d " " - gene_id_double_quotes.txt > 9th_column.txt
+gene_id "mir-133b"; transcript_id "C2C12.618.1"; gene_name "mir-133b";
+gene_id "mir-30c-2"; transcript_id "C2C12.670.1"; gene_name "mir-30c-2";
+gene_id "mir-6901"; transcript_id "C2C12.4222.4"; gene_name "mir-6901";
+gene_id "mir-6903"; transcript_id "C2C12.5406.1"; gene_name "mir-6903";
+gene_id "mir-6903"; transcript_id "C2C12.5406.2"; gene_name "mir-6903";
+
+################################
+# 12. subset 1th to 8th columns
+################################
+cat combined_pri_miRNA_mmu_pre_miRNA.txt |cut -f1-8 > combined_pri_miRNA_mmu_pre_miRNA_subset.txt
+
+#######################################
+# 13. create personal pri_miRNA gtf file
+####################################### 
+paste combined_pri_miRNA_mmu_pre_miRNA_subset.txt 9th_column.txt > personalized_pri_miRNA.gtf
+
+###############################
+# 14. remove chr from 1st column
+############################### 
+cat personalized_pri_miRNA.gtf |sed 's/chr//' > personalized_pri_miRNA_chr_removed.gtf
+
+mv personalized_pri_miRNA_chr_removed.gtf miRNA_gtf_whole_pri_miRNA_pre_miRNA/
+
+#########################
+# 15. subset Neuro2a
+######################### 
+cat personalized_pri_miRNA_chr_removed.gtf |grep Neuro2a > personalized_pri_miRNA_chr_removed_Neuro2a.gtf
+
+##################################################
+# 16.  remove duplicated gene (total 312 transcripts)
+################################################## 
+sort -u -k 1,1 -k 4,4 -k 5,5 personalized_pri_miRNA_chr_removed_Neuro2a.gtf > personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+
+# remove duplicate transcript
+# from python search there are list of duplicated transcripts id
+# "Neuro2a.25857.2  ::  2
+# "Neuro2a.89058.1  ::  2
+# "Neuro2a.142724.5  ::  2
+# "Neuro2a.145805.23  ::  2
+# "Neuro2a.145805.16  ::  3
+# "Neuro2a.157807.11  ::  2
+# "Neuro2a.174103.1  ::  2
+
+sed -i '/Neuro2a.25857.2/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.89058.1/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.142724.5/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.145805.23/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.145805.16/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.157807.11/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+sed -i '/Neuro2a.174103.1/d;' personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf
+cat personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf |wc -l
+297
+
+
+
+
+#########################################
+# 10x CellRanger
+#########################################
+
+######################################
+# create for pri_miRNA 10x reference
+######################################
+
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger mkref --genome=GRCm38-3.1.0_pri_mirna \
+	           --nthreads=24 \
+                   --fasta=/data/rajewsky/genomes/GRCm38_98/Mus_musculus.GRCm38.dna.primary_assembly.fa \
+                   --genes=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/personalized_pri_miRNA_chr_removed.gtf
+
+
+/data/rajewsky/shared_bins/cellranger-3.11.0/cellranger mkref --genome=GRCm38-3.1.0_pri_mirna --nthreads=24 --fasta=/data/rajewsky/genomes/GRCm38_98/Mus_musculus.GRCm38.dna.primary_assembly.fa --genes=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/personalized_pri_miRNA_chr_removed_Neuro2a_unique.gtf &
+
+
+
+
+#############################
+# run 10 X count
+#############################
+
+# SP064_023
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_023_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L008 --sample=SP064_023 --transcriptome=GRCm38-3.1.0_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+
+#####################
+let-7i check
+#####################
+samtools view possorted_genome_bam.bam | grep --color=auto let-7 > let-7.txt & 
+(/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/SP064_023_pri_miRNA/outs)
+
+
+############################
+# combine pre-miRNA & pri-miRNA
+
+# first extract pre-miRNA only
+grep pre_miRNA mml.gff > mml_pre_miRNA.gff
+
+
+
+###############################
+# 10X for whole pri-miRNA
+##############################
+
+# Create reference
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger mkref --genome=GRCm38-3.1.0_whole_pri_mirna --nthreads=24  --fasta=/data/rajewsky/genomes/GRCm38_98/Mus_musculus.GRCm38.dna.primary_assembly.fa  --genes=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/miRNA_lncRNA/miRNA_gtf_whole_pri_miRNA_pre_miRNA/personalized_pri_miRNA_chr_removed_unique_remove_duplicated.gtf &
+
+
+
+##############################
+# SP064_023_whole_pri_miRNA
+
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_023_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_023/fastqs/L008 --sample=SP064_023 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_022_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_022_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_022/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_022/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_022/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_022/fastqs/L008 --sample=SP064_022 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_024_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_024_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_024/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_024/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_024/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_024/fastqs/L008 --sample=SP064_024 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_025_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_025_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_025/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_025/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_025/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_025/fastqs/L008 --sample=SP064_025 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_026_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_026_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_026/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_026/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_026/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_026/fastqs/L008 --sample=SP064_026 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_027_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_027_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_027/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_027/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_027/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_027/fastqs/L008 --sample=SP064_027 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_028_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_028_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/fastqs/L008 --sample=SP064_028 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_029_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_029_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_029/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_029/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_029/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_029/fastqs/L008 --sample=SP064_029 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+# SP064_030_whole_pri_miRNA
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=SP064_030_whole_pri_miRNA --fastqs=/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_030/fastqs/L005,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_030/fastqs/L006,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_030/fastqs/L007,/data/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_030/fastqs/L008 --sample=SP064_030 --transcriptome=GRCm38-3.1.0_whole_pri_mirna --chemistry=SC3Pv3 --localcores=24 --localmem=200 &
+
+
+

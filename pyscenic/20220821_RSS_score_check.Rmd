@@ -1,0 +1,219 @@
+---
+title: "pyscenic rss check"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 4
+    toc_float: false
+    code_folding: hide
+---
+
+```{r warning=FALSE, message=FALSE, fig.height=8, fig.width=10}
+.libPaths(c("/data/rajewsky/home/skim/R/usr_lib_Seurat/", "/data/rajewsky/home/skim/R/usr_lib_v4/"))
+#.libPaths()
+unloadNamespace("mgcv")
+unloadNamespace("Matrix")
+
+library(Seurat)
+library(gridExtra)
+library(dplyr)
+library(gridExtra)
+library(readxl)
+library(stringr)
+library(cowplot)
+library(DT)
+library(ggplot2)
+library(ggrepel)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4, fig.width= 12}
+check <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/reg.csv")
+check2 <- readRDS("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/reg_final.rda")
+
+check_TF <- check2[check2$TF %in% "Sox10", ]
+write.csv(check_TF, "/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/reg_final_Sox19.csv")
+
+rss <- read.csv("/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/pyscenic/20220315_pyscenic_preprocessed__rss_cell_type_1st.csv",row.names = 1)
+
+rss_t <- rss %>% t %>% as.data.frame()
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4, fig.width= 12}
+rss_plot <- function(cell_type = "Astrocytes_Ctrl"){
+
+  rss_t <- rss %>% t %>% as.data.frame()
+  rss_sub <- rss_t[, colnames(rss_t) %in% cell_type,drop=FALSE] %>% as.data.frame()
+
+  colnames(rss_sub) <- "cell_type"
+rss_sub$regulon <- rownames(rss_sub)
+rss_sub$regulon <- str_sub(rss_sub$regulon, end=-4)
+
+
+tmp <- rss_sub$regulon[order(rss_sub$cell_type, decreasing = TRUE)]
+rss_sub$regulon <- factor(rss_sub$regulon, levels = tmp)
+rss_sub$number <- factor(rss_sub$regulon) %>% as.numeric()
+rss_sub$top <- ifelse(rss_sub$number < 6, "top", "not")
+
+ggplot(data = rss_sub, aes(y = cell_type, x = number)) + 
+  geom_point(aes(color = top), size = 1.8) + theme_cowplot() +
+  ylab("specificity score") +
+  xlab("Regulons") + 
+  ggtitle(cell_type) + 
+  scale_color_manual(values =c("#003399", "#00CCFF")) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size=12, hjust = 0.5), 
+        plot.margin = ggplot2::margin(0.2, 0.5, 0.2, 0.2, "cm")) + 
+  geom_text_repel(data = rss_sub[rss_sub$top %in% "top", ], aes(label = regulon), x_nudge = 0.5)  
+
+  
+}
+
+rss_check <- function(cell_type = "Astrocytes_Ctrl"){
+
+
+
+  rss_t <- rss %>% t %>% as.data.frame()
+  rss_sub <- rss_t[, colnames(rss_t) %in% cell_type,drop=FALSE] %>% as.data.frame()
+
+  colnames(rss_sub) <- "cell_type"
+  rss_sub$regulon <- rownames(rss_sub)
+  rss_sub$regulon <- str_sub(rss_sub$regulon, end=-4)
+
+
+  tmp <- rss_sub$regulon[order(rss_sub$cell_type, decreasing = TRUE)]
+  rss_sub$regulon <- factor(rss_sub$regulon, levels = tmp)
+  rss_sub$number <- factor(rss_sub$regulon) %>% as.numeric()
+  rss_sub$top <- ifelse(rss_sub$number < 6, "top", "not")
+
+  return(rss_sub)
+
+}
+  
+```
+
+### Astrocytes
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "Astrocytes_Ctrl")
+r2 <- rss_plot(cell_type = "Astrocytes_AD")
+r3 <- rss_plot(cell_type = "Astrocytes_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 2. Microglia
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "Microglia_Ctrl")
+r2 <- rss_plot(cell_type = "Microglia_AD")
+r3 <- rss_plot(cell_type = "Microglia_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 3. MFOL
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "MFOL_Ctrl")
+r2 <- rss_plot(cell_type = "MFOL_AD")
+r3 <- rss_plot(cell_type = "MFOL_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 4. MOL
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "MOL_Ctrl")
+r2 <- rss_plot(cell_type = "MOL_AD")
+r3 <- rss_plot(cell_type = "MOL_ADp40KO")
+
+c1 <- rss_check(cell_type = "MOL_Ctrl")
+c2 <- rss_check(cell_type = "MOL_AD")
+c3 <- rss_check(cell_type = "MOL_ADp40KO")
+
+
+
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 5. NFOL
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "NFOL_Ctrl")
+r2 <- rss_plot(cell_type = "NFOL_AD")
+r3 <- rss_plot(cell_type = "NFOL_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 6. OPC
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "OPC_Ctrl")
+r2 <- rss_plot(cell_type = "OPC_AD")
+r3 <- rss_plot(cell_type = "OPC_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 7. subiculum
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "subiculum_Ctrl")
+r2 <- rss_plot(cell_type = "subiculum_AD")
+r3 <- rss_plot(cell_type = "subiculum_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 8. CA1
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "CA1_Ctrl")
+r2 <- rss_plot(cell_type = "CA1_AD")
+r3 <- rss_plot(cell_type = "CA1_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 9. CA2_3
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "CA2_3_Ctrl")
+r2 <- rss_plot(cell_type = "CA2_3_AD")
+r3 <- rss_plot(cell_type = "CA2_3_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 10. Dentate_Gyrus
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "Dentate_Gyrus_Ctrl")
+r2 <- rss_plot(cell_type = "Dentate_Gyrus_AD")
+r3 <- rss_plot(cell_type = "Dentate_Gyrus_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+### 11. Inhibitory_Neurons
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+r1 <- rss_plot(cell_type = "Inhibitory_Neurons_Ctrl")
+r2 <- rss_plot(cell_type = "Inhibitory_Neurons_AD")
+r3 <- rss_plot(cell_type = "Inhibitory_Neurons_ADp40KO")
+
+grid.arrange(r1, r2, r3, ncol = 3)
+```
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.height= 4.5, fig.width= 9}
+sessionInfo()
+
+```
+
