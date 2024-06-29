@@ -1,0 +1,29 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0007215","glutamate receptor signaling pathway",83,7,0.69,56,5.5e-06,5.5e-06,0.0843373493975904
+"32","BP","GO:0050804","modulation of chemical synaptic transmis...",468,18,3.87,26,1.7e-05,5.6e-08,0.0384615384615385
+"33","BP","GO:2001259","positive regulation of cation channel ac...",66,6,0.55,64,1.7e-05,1.7e-05,0.0909090909090909
+"34","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",42,5,0.35,70,2.4e-05,2.4e-05,0.119047619047619
+"35","BP","GO:0051965","positive regulation of synapse assembly",71,6,0.59,73,2.6e-05,2.6e-05,0.0845070422535211
+"36","BP","GO:0030166","proteoglycan biosynthetic process",48,5,0.4,85,4.6e-05,4.6e-05,0.104166666666667
+"37","BP","GO:0098901","regulation of cardiac muscle cell action...",25,4,0.21,88,4.9e-05,4.9e-05,0.16
+"38","BP","GO:0007156","homophilic cell adhesion via plasma memb...",86,6,0.71,100,7.8e-05,7.8e-05,0.0697674418604651
+"39","BP","GO:0007416","synapse assembly",160,12,1.32,15,0.00012,8.3e-09,0.075
+"40","BP","GO:0032959","inositol trisphosphate biosynthetic proc...",20,3,0.17,137,0.00057,0.00057,0.15
+"41","BP","GO:0045165","cell fate commitment",181,7,1.5,143,0.00077,0.00077,0.0386740331491713
+"42","BP","GO:0048843","negative regulation of axon extension in...",24,3,0.2,147,0.00099,0.00099,0.125
+"43","BP","GO:0016339","calcium-dependent cell-cell adhesion via...",25,3,0.21,153,0.00111,0.00111,0.12
+"44","BP","GO:0035249","synaptic transmission, glutamatergic",95,5,0.79,155,0.00115,0.00115,0.0526315789473684
+"45","BP","GO:0098900","regulation of action potential",52,7,0.43,34,0.00128,2.2e-07,0.134615384615385
+"46","BP","GO:0031644","regulation of neurological system proces...",151,6,1.25,161,0.0016,0.0016,0.0397350993377483
+"48","BP","GO:0048168","regulation of neuronal synaptic plastici...",62,4,0.51,164,0.00172,0.00172,0.0645161290322581
+"49","BP","GO:0043113","receptor clustering",62,4,0.51,165,0.00172,0.00172,0.0645161290322581
+"50","BP","GO:0042391","regulation of membrane potential",396,17,3.28,21,0.00177,2.8e-08,0.0429292929292929
+"51","BP","GO:0048738","cardiac muscle tissue development",211,7,1.75,167,0.00186,0.00186,0.033175355450237
+"52","BP","GO:0001964","startle response",30,3,0.25,168,0.00191,0.00191,0.1
+"53","BP","GO:0044331","cell-cell adhesion mediated by cadherin",30,3,0.25,169,0.00191,0.00191,0.1
+"54","BP","GO:0021537","telencephalon development",214,7,1.77,172,0.00202,0.00202,0.0327102803738318
+"55","BP","GO:0099560","synaptic membrane adhesion",31,3,0.26,175,0.0021,0.0021,0.0967741935483871
+"56","BP","GO:0017156","calcium ion regulated exocytosis",161,6,1.33,177,0.00221,0.00221,0.0372670807453416
+"57","BP","GO:0071805","potassium ion transmembrane transport",163,6,1.35,178,0.00235,0.00235,0.0368098159509202
+"59","BP","GO:0050906","detection of stimulus involved in sensor...",70,4,0.58,183,0.00269,0.00269,0.0571428571428571
+"60","BP","GO:1901385","regulation of voltage-gated calcium chan...",34,3,0.28,184,0.00275,0.00275,0.0882352941176471

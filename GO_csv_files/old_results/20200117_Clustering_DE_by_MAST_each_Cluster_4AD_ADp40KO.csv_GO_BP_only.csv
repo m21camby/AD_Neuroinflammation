@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0099622","cardiac muscle cell membrane repolarizat...",24,2,0.03,4,0.00053,0.00053,0.0833333333333333
+"32","BP","GO:0010107","potassium ion import",40,2,0.06,8,0.00146,0.00146,0.05
+"33","BP","GO:0061337","cardiac conduction",49,2,0.07,17,0.00219,0.00219,0.0408163265306122
+"34","BP","GO:0051965","positive regulation of synapse assembly",73,2,0.1,27,0.0048,0.0048,0.0273972602739726
+"35","BP","GO:0007043","cell-cell junction assembly",94,2,0.13,31,0.00784,0.00784,0.0212765957446809
+"36","BP","GO:0032414","positive regulation of ion transmembrane...",101,2,0.14,35,0.009,0.009,0.0198019801980198
+"37","BP","GO:0017148","negative regulation of translation",117,2,0.17,38,0.01193,0.01193,0.0170940170940171
+"38","BP","GO:1903522","regulation of blood circulation",188,4,0.27,1,0.01385,0.00013,0.0212765957446809
+"39","BP","GO:0034249","negative regulation of cellular amide me...",135,2,0.19,41,0.01565,0.01565,0.0148148148148148
+"40","BP","GO:1901615","organic hydroxy compound metabolic proce...",379,3,0.54,42,0.01601,0.01601,0.0079155672823219
+"41","BP","GO:0043271","negative regulation of ion transport",142,2,0.2,44,0.01722,0.01722,0.0140845070422535
+"42","BP","GO:1904064","positive regulation of cation transmembr...",143,2,0.2,45,0.01745,0.01745,0.013986013986014
+"43","BP","GO:0043409","negative regulation of MAPK cascade",151,2,0.22,46,0.01933,0.01933,0.0132450331125828
+"44","BP","GO:0098742","cell-cell adhesion via plasma-membrane a...",161,2,0.23,49,0.0218,0.0218,0.0124223602484472
+"45","BP","GO:0021953","central nervous system neuron differenti...",167,2,0.24,50,0.02334,0.02334,0.0119760479041916
+"46","BP","GO:0006814","sodium ion transport",169,2,0.24,51,0.02386,0.02386,0.0118343195266272
+"47","BP","GO:0050920","regulation of chemotaxis",177,2,0.25,52,0.026,0.026,0.0112994350282486
+"48","BP","GO:1901617","organic hydroxy compound biosynthetic pr...",181,2,0.26,53,0.0271,0.0271,0.0110497237569061
+"49","BP","GO:0086019","cell-cell signaling involved in cardiac ...",20,1,0.03,55,0.02815,0.02815,0.05
+"50","BP","GO:0007064","mitotic sister chromatid cohesion",20,1,0.03,56,0.02815,0.02815,0.05
+"51","BP","GO:0071467","cellular response to pH",20,1,0.03,57,0.02815,0.02815,0.05
+"52","BP","GO:0010738","regulation of protein kinase A signaling",20,1,0.03,58,0.02815,0.02815,0.05
+"53","BP","GO:1902532","negative regulation of intracellular sig...",473,3,0.67,59,0.0286,0.0286,0.00634249471458774
+"54","BP","GO:0006144","purine nucleobase metabolic process",21,1,0.03,60,0.02954,0.02954,0.0476190476190476
+"55","BP","GO:1902307","positive regulation of sodium ion transm...",21,1,0.03,61,0.02954,0.02954,0.0476190476190476
+"56","BP","GO:0032959","inositol trisphosphate biosynthetic proc...",21,1,0.03,62,0.02954,0.02954,0.0476190476190476
+"57","BP","GO:0010829","negative regulation of glucose transmemb...",21,1,0.03,63,0.02954,0.02954,0.0476190476190476
+"58","BP","GO:0045780","positive regulation of bone resorption",22,1,0.03,65,0.03092,0.03092,0.0454545454545455
+"59","BP","GO:0046852","positive regulation of bone remodeling",22,1,0.03,66,0.03092,0.03092,0.0454545454545455
+"60","BP","GO:0021544","subpallium development",22,1,0.03,67,0.03092,0.03092,0.0454545454545455

@@ -1,0 +1,235 @@
+MGI Gene/Marker ID	Symbol	Name
+MGI:1919595	Amer1	APC membrane recruitment 1
+MGI:1919375	Amer2	APC membrane recruitment 2
+MGI:1345634	Amfr	autocrine motility factor receptor
+MGI:1345634	Amfr	autocrine motility factor receptor
+MGI:2154278	Ankrd6	ankyrin repeat domain 6
+MGI:2154278	Ankrd6	ankyrin repeat domain 6
+MGI:2154278	Ankrd6	ankyrin repeat domain 6
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2
+MGI:88057	Apoe	apolipoprotein E
+MGI:88059	App	amyloid beta (A4) precursor protein
+MGI:1096327	Axin1	axin 1
+MGI:1096327	Axin1	axin 1
+MGI:1270862	Axin2	axin 2
+MGI:1933388	Bicc1	BicC family RNA binding protein 1
+MGI:102709	Cav1	caveolin 1, caveolae protein
+MGI:1920989	Cby1	chibby family member 1, beta catenin antagonist
+MGI:1915589	Ccdc88c	coiled-coil domain containing 88C
+MGI:88354	Cdh1	cadherin 1
+MGI:88355	Cdh2	cadherin 2
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8
+MGI:1934950	Csnk1a1	casein kinase 1, alpha 1
+MGI:1915838	Cthrc1	collagen triple helix repeat containing 1
+MGI:88276	Ctnnb1	catenin (cadherin associated protein), beta 1
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1
+MGI:105100	Ctnnd1	catenin (cadherin associated protein), delta 1
+MGI:1921506	Cyld	CYLD lysine 63 deubiquitinase
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein
+MGI:1916851	Dab2ip	disabled 2 interacting protein
+MGI:1916851	Dab2ip	disabled 2 interacting protein
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3
+MGI:109247	Ddit3	DNA-damage inducible transcript 3
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1
+MGI:1890663	Dkk2	dickkopf WNT signaling pathway inhibitor 2
+MGI:1890663	Dkk2	dickkopf WNT signaling pathway inhibitor 2
+MGI:1354952	Dkk3	dickkopf WNT signaling pathway inhibitor 3
+MGI:1354952	Dkk3	dickkopf WNT signaling pathway inhibitor 3
+MGI:2385299	Dkk4	dickkopf WNT signaling pathway inhibitor 4
+MGI:1354963	Dkkl1	dickkopf-like 1
+MGI:1917683	Draxin	dorsal inhibitory axon guidance protein
+MGI:1917683	Draxin	dorsal inhibitory axon guidance protein
+MGI:95295	Egr1	early growth response 1
+MGI:108117	Emd	emerin
+MGI:108117	Emd	emerin
+MGI:2443583	Fermt1	fermitin family member 1
+MGI:1890077	Foxo1	forkhead box O1
+MGI:1890081	Foxo3	forkhead box O3
+MGI:1914707	Frmd8	FERM domain containing 8
+MGI:892032	Frzb	frizzled-related protein
+MGI:892032	Frzb	frizzled-related protein
+MGI:892032	Frzb	frizzled-related protein
+MGI:1917550	Fuz	fuzzy planar cell polarity protein
+MGI:1196625	Fzd1	frizzled class receptor 1
+MGI:108520	Fzd4	frizzled class receptor 4
+MGI:108474	Fzd6	frizzled class receptor 6
+MGI:1351465	G3bp1	GTPase activating protein (SH3 domain) binding protein 1
+MGI:95727	Gli1	GLI-Kruppel family member GLI1
+MGI:95729	Gli3	GLI-Kruppel family member GLI3
+MGI:104903	Gpc3	glypican 3
+MGI:104903	Gpc3	glypican 3
+MGI:1344337	Grem1	gremlin 1, DAN family BMP antagonist
+MGI:3044668	Gsdma3	gasdermin A3
+MGI:3044668	Gsdma3	gasdermin A3
+MGI:2152453	Gsk3a	glycogen synthase kinase 3 alpha
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:108086	Hdac1	histone deacetylase 1
+MGI:108086	Hdac1	histone deacetylase 1
+MGI:1097691	Hdac2	histone deacetylase 2
+MGI:1335082	Invs	inversin
+MGI:101791	Isl1	ISL1 transcription factor, LIM/homeodomain
+MGI:1925835	Jade1	jade family PHD finger 1
+MGI:1933988	Kremen1	kringle containing transmembrane protein 1
+MGI:1333883	Lats1	large tumor suppressor
+MGI:1354386	Lats2	large tumor suppressor 2
+MGI:1354386	Lats2	large tumor suppressor 2
+MGI:1352502	Limd1	LIM domains containing 1
+MGI:1289247	Lmbr1l	limb region 1 like
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4
+MGI:2385095	Lzts2	leucine zipper, putative tumor suppressor 2
+MGI:2385095	Lzts2	leucine zipper, putative tumor suppressor 2
+MGI:1919140	Mad2l2	MAD2 mitotic arrest deficient-like 2
+MGI:1346865	Mapk14	mitogen-activated protein kinase 14
+MGI:96930	Mcc	mutated in colorectal cancers
+MGI:96930	Mcc	mutated in colorectal cancers
+MGI:96949	Mdk	midkine
+MGI:107785	Mesp1	mesoderm posterior 1
+MGI:1917372	Mllt3	myeloid/lymphoid or mixed-lineage leukemia; translocated to, 3
+MGI:2135954	Nkd1	naked cuticle 1
+MGI:2135954	Nkd1	naked cuticle 1
+MGI:1919543	Nkd2	naked cuticle 2
+MGI:97350	Nkx2-5	NK2 homeobox 5
+MGI:104327	Nog	noggin
+MGI:97363	Notch1	notch 1
+MGI:97363	Notch1	notch 1
+MGI:1924833	Notum	notum palmitoleoyl-protein carboxylesterase
+MGI:1924833	Notum	notum palmitoleoyl-protein carboxylesterase
+MGI:1921275	Nphp3	nephronophthisis 3 (adolescent)
+MGI:2384210	Nphp4	nephronophthisis 4 (juvenile) homolog (human)
+MGI:2384210	Nphp4	nephronophthisis 4 (juvenile) homolog (human)
+MGI:97367	Nppa	natriuretic peptide type A
+MGI:1859615	Otud5	OTU domain containing 5
+MGI:1928753	Pfdn5	prefoldin 5
+MGI:2442104	Ppp2r3a	protein phosphatase 2, regulatory subunit B'', alpha
+MGI:1916034	Prickle1	prickle planar cell polarity protein 1
+MGI:1355296	Prkn	parkin RBR E3 ubiquitin protein ligase
+MGI:1097152	Ptpro	protein tyrosine phosphatase, receptor type, O
+MGI:1097152	Ptpro	protein tyrosine phosphatase, receptor type, O
+MGI:1321151	Ptpru	protein tyrosine phosphatase, receptor type, U
+MGI:104580	Rapgef1	Rap guanine nucleotide exchange factor (GEF) 1
+MGI:2444477	Rbms3	RNA binding motif, single stranded interacting protein
+MGI:1347521	Ror2	receptor tyrosine kinase-like orphan receptor 2
+MGI:1342299	Ruvbl2	RuvB-like protein 2
+MGI:1289172	Scyl2	SCY1-like 2 (S. cerevisiae)
+MGI:1913322	Sdhaf2	succinate dehydrogenase complex assembly factor 2
+MGI:1913322	Sdhaf2	succinate dehydrogenase complex assembly factor 2
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:892010	Sfrp4	secreted frizzled-related protein 4
+MGI:892010	Sfrp4	secreted frizzled-related protein 4
+MGI:892010	Sfrp4	secreted frizzled-related protein 4
+MGI:892010	Sfrp4	secreted frizzled-related protein 4
+MGI:1860298	Sfrp5	secreted frizzled-related sequence protein 5
+MGI:1860298	Sfrp5	secreted frizzled-related sequence protein 5
+MGI:98297	Shh	sonic hedgehog
+MGI:3041225	Shisa3	shisa family member 3
+MGI:2685725	Shisa6	shisa family member 6
+MGI:108062	Siah2	siah E3 ubiquitin protein ligase 2
+MGI:1349482	Slc9a3r1	solute carrier family 9 (sodium/hydrogen exchanger), member 3 regulator 1
+MGI:1096393	Snai2	snail family zinc finger 2
+MGI:1921749	Sost	sclerostin
+MGI:1921749	Sost	sclerostin
+MGI:1921749	Sost	sclerostin
+MGI:1913292	Sostdc1	sclerostin domain containing 1
+MGI:98364	Sox2	SRY (sex determining region Y)-box 2
+MGI:98364	Sox2	SRY (sex determining region Y)-box 2
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9
+MGI:98358	Sox10	SRY (sex determining region Y)-box 10
+MGI:98361	Sox13	SRY (sex determining region Y)-box 13
+MGI:107543	Sox17	SRY (sex determining region Y)-box 17
+MGI:107543	Sox17	SRY (sex determining region Y)-box 17
+MGI:1928487	Stk3	serine/threonine kinase 3
+MGI:1928487	Stk3	serine/threonine kinase 3
+MGI:1929004	Stk4	serine/threonine kinase 4
+MGI:1929004	Stk4	serine/threonine kinase 4
+MGI:1341870	Stk11	serine/threonine kinase 11
+MGI:1341870	Stk11	serine/threonine kinase 11
+MGI:1923615	Tbx18	T-box18
+MGI:1202879	Tcf7l2	transcription factor 7 like 2, T cell specific, HMG box
+MGI:104636	Tle1	transducin-like enhancer of split 1
+MGI:104635	Tle2	transducin-like enhancer of split 2
+MGI:104635	Tle2	transducin-like enhancer of split 2
+MGI:104634	Tle3	transducin-like enhancer of split 3
+MGI:104633	Tle4	transducin-like enhancer of split 4
+MGI:95806	Tle5	TLE family member 5, transcriptional modulator
+MGI:95806	Tle5	TLE family member 5, transcriptional modulator
+MGI:2149593	Tle6	transducin-like enhancer of split 6
+MGI:5439433	Tle7	TLE family member 7
+MGI:2140359	Tmem64	transmembrane protein 64
+MGI:1914270	Tmem88	transmembrane protein 88
+MGI:1914270	Tmem88	transmembrane protein 88
+MGI:2443399	Tmem131l	transmembrane 131 like
+MGI:2443399	Tmem131l	transmembrane 131 like
+MGI:3647046	Tmem170b	transmembrane protein 170B
+MGI:3647046	Tmem170b	transmembrane protein 170B
+MGI:2665790	Tnn	tenascin N
+MGI:1341264	Tpbg	trophoblast glycoprotein
+MGI:3646425	Tpbgl	trophoblast glycoprotein-like
+MGI:1916139	Ubac2	ubiquitin associated domain containing 2
+MGI:1916139	Ubac2	ubiquitin associated domain containing 2
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A
+MGI:98959	Wnt5b	wingless-type MMTV integration site family, member 5B
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11
+MGI:1917649	Wwtr1	WW domain containing transcription regulator 1
+MGI:3039616	Znrf3	zinc and ring finger 3
+MGI:3039616	Znrf3	zinc and ring finger 3
+

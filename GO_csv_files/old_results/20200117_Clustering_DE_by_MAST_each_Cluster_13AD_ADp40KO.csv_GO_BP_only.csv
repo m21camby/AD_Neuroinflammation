@@ -1,0 +1,27 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0007528","neuromuscular junction development",50,3,0.04,4,5.7e-06,5.7e-06,0.06
+"32","BP","GO:0051968","positive regulation of synaptic transmis...",33,2,0.02,12,0.00025,0.00025,0.0606060606060606
+"33","BP","GO:0099173","postsynapse organization",186,3,0.14,13,0.00029,0.00029,0.0161290322580645
+"34","BP","GO:0007626","locomotory behavior",222,3,0.16,14,0.00048,0.00048,0.0135135135135135
+"35","BP","GO:0043954","cellular component maintenance",54,2,0.04,16,0.00068,0.00068,0.037037037037037
+"36","BP","GO:0050807","regulation of synapse organization",253,3,0.18,17,0.00071,0.00071,0.0118577075098814
+"37","BP","GO:0050885","neuromuscular process controlling balanc...",60,2,0.04,19,0.00084,0.00084,0.0333333333333333
+"38","BP","GO:0042490","mechanoreceptor differentiation",77,2,0.06,22,0.00138,0.00138,0.025974025974026
+"39","BP","GO:0070509","calcium ion import",78,2,0.06,23,0.00141,0.00141,0.0256410256410256
+"40","BP","GO:0019226","transmission of nerve impulse",85,2,0.06,24,0.00167,0.00167,0.0235294117647059
+"41","BP","GO:0007156","homophilic cell adhesion via plasma memb...",95,2,0.07,25,0.00209,0.00209,0.0210526315789474
+"42","BP","GO:0060291","long-term synaptic potentiation",100,2,0.07,26,0.00231,0.00231,0.02
+"44","BP","GO:0051592","response to calcium ion",115,2,0.08,29,0.00304,0.00304,0.0173913043478261
+"45","BP","GO:0051928","positive regulation of calcium ion trans...",120,2,0.09,31,0.0033,0.0033,0.0166666666666667
+"46","BP","GO:0007601","visual perception",120,2,0.09,32,0.0033,0.0033,0.0166666666666667
+"48","BP","GO:0001508","action potential",127,2,0.09,36,0.00369,0.00369,0.015748031496063
+"50","BP","GO:0006941","striated muscle contraction",146,2,0.11,41,0.00484,0.00484,0.0136986301369863
+"51","BP","GO:0051606","detection of stimulus",153,2,0.11,43,0.0053,0.0053,0.0130718954248366
+"52","BP","GO:2001257","regulation of cation channel activity",156,2,0.11,44,0.00551,0.00551,0.0128205128205128
+"53","BP","GO:0007612","learning",157,2,0.11,45,0.00558,0.00558,0.0127388535031847
+"54","BP","GO:0031644","regulation of neurological system proces...",163,2,0.12,47,0.006,0.006,0.0122699386503067
+"55","BP","GO:0030534","adult behavior",163,2,0.12,48,0.006,0.006,0.0122699386503067
+"56","BP","GO:0007416","synapse assembly",165,2,0.12,50,0.00614,0.00614,0.0121212121212121
+"58","BP","GO:0035264","multicellular organism growth",180,2,0.13,56,0.00727,0.00727,0.0111111111111111
+"59","BP","GO:0050770","regulation of axonogenesis",190,2,0.14,58,0.00807,0.00807,0.0105263157894737
+"60","BP","GO:0001894","tissue homeostasis",195,2,0.14,59,0.00848,0.00848,0.0102564102564103

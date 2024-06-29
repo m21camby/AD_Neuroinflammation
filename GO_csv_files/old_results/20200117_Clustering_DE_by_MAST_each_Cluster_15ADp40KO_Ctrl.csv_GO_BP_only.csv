@@ -1,0 +1,29 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0007411","axon guidance",204,10,1.16,1,2.3e-07,2.3e-07,0.0490196078431373
+"32","BP","GO:0007156","homophilic cell adhesion via plasma memb...",90,6,0.51,29,1.2e-05,1.2e-05,0.0666666666666667
+"33","BP","GO:0016339","calcium-dependent cell-cell adhesion via...",26,4,0.15,31,1.3e-05,1.3e-05,0.153846153846154
+"34","BP","GO:0021952","central nervous system projection neuron...",27,4,0.15,32,1.5e-05,1.5e-05,0.148148148148148
+"35","BP","GO:0044331","cell-cell adhesion mediated by cadherin",31,4,0.18,36,2.7e-05,2.7e-05,0.129032258064516
+"36","BP","GO:0007626","locomotory behavior",219,8,1.24,38,3.4e-05,3.4e-05,0.0365296803652968
+"37","BP","GO:0050919","negative chemotaxis",43,4,0.24,46,1e-04,1e-04,0.0930232558139535
+"38","BP","GO:0007043","cell-cell junction assembly",92,5,0.52,50,0.00017,0.00017,0.0543478260869565
+"39","BP","GO:0032413","negative regulation of ion transmembrane...",58,4,0.33,56,0.00032,0.00032,0.0689655172413793
+"40","BP","GO:0050771","negative regulation of axonogenesis",66,4,0.37,58,0.00053,0.00053,0.0606060606060606
+"41","BP","GO:0001964","startle response",29,3,0.16,61,0.00058,0.00058,0.103448275862069
+"42","BP","GO:0051965","positive regulation of synapse assembly",71,4,0.4,64,7e-04,7e-04,0.0563380281690141
+"43","BP","GO:0050804","modulation of chemical synaptic transmis...",484,9,2.74,76,0.00166,0.00166,0.0185950413223141
+"44","BP","GO:0007416","synapse assembly",166,8,0.94,22,0.00178,4.5e-06,0.0481927710843374
+"45","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",43,3,0.24,79,0.00184,0.00184,0.0697674418604651
+"47","BP","GO:0030534","adult behavior",162,5,0.92,82,0.00226,0.00226,0.0308641975308642
+"48","BP","GO:0030516","regulation of axon extension",102,4,0.58,86,0.00268,0.00268,0.0392156862745098
+"49","BP","GO:0008038","neuron recognition",49,3,0.28,87,0.00268,0.00268,0.0612244897959184
+"50","BP","GO:0007611","learning or memory",261,6,1.48,90,0.00365,0.00365,0.0229885057471264
+"51","BP","GO:0034332","adherens junction organization",118,4,0.67,96,0.00452,0.00452,0.0338983050847458
+"52","BP","GO:0016358","dendrite development",280,6,1.59,99,0.00513,0.00513,0.0214285714285714
+"53","BP","GO:0014912","negative regulation of smooth muscle cel...",20,2,0.11,102,0.00564,0.00564,0.1
+"54","BP","GO:1904375","regulation of protein localization to ce...",126,4,0.71,103,0.00569,0.00569,0.0317460317460317
+"55","BP","GO:0022029","telencephalon cell migration",66,3,0.37,105,0.00621,0.00621,0.0454545454545455
+"56","BP","GO:0006144","purine nucleobase metabolic process",22,2,0.12,107,0.00681,0.00681,0.0909090909090909
+"57","BP","GO:0021510","spinal cord development",69,3,0.39,108,0.00703,0.00703,0.0434782608695652
+"58","BP","GO:0021953","central nervous system neuron differenti...",167,8,0.95,23,0.00705,4.7e-06,0.0479041916167665
+"59","BP","GO:0061036","positive regulation of cartilage develop...",24,2,0.14,113,0.00807,0.00807,0.0833333333333333

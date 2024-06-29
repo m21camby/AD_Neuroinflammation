@@ -1,0 +1,17 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0019722","calcium-mediated signaling",148,3,0.15,1,0.00037,0.00037,0.0202702702702703
+"32","BP","GO:0010761","fibroblast migration",46,2,0.05,2,0.00091,0.00091,0.0434782608695652
+"34","BP","GO:0009791","post-embryonic development",107,2,0.11,10,0.0048,0.0048,0.0186915887850467
+"35","BP","GO:0010921","regulation of phosphatase activity",108,2,0.11,11,0.00489,0.00489,0.0185185185185185
+"36","BP","GO:0001890","placenta development",117,2,0.12,12,0.00571,0.00571,0.0170940170940171
+"38","BP","GO:0021953","central nervous system neuron differenti...",158,2,0.16,17,0.0102,0.0102,0.0126582278481013
+"39","BP","GO:0001666","response to hypoxia",169,2,0.17,18,0.0116,0.0116,0.0118343195266272
+"41","BP","GO:0036293","response to decreased oxygen levels",173,2,0.17,22,0.01213,0.01213,0.0115606936416185
+"44","BP","GO:0070482","response to oxygen levels",185,2,0.18,25,0.01379,0.01379,0.0108108108108108
+"50","BP","GO:0035493","SNARE complex assembly",20,1,0.02,31,0.01949,0.01949,0.05
+"51","BP","GO:0014808","release of sequestered calcium ion into ...",20,1,0.02,32,0.01949,0.01949,0.05
+"52","BP","GO:0030325","adrenal gland development",20,1,0.02,33,0.01949,0.01949,0.05
+"53","BP","GO:1903514","release of sequestered calcium ion into ...",20,1,0.02,34,0.01949,0.01949,0.05
+"56","BP","GO:0045861","negative regulation of proteolysis",226,2,0.22,37,0.02013,0.02013,0.00884955752212389
+"57","BP","GO:0033198","response to ATP",21,1,0.02,38,0.02046,0.02046,0.0476190476190476
+"59","BP","GO:0070296","sarcoplasmic reticulum calcium ion trans...",23,1,0.02,41,0.02239,0.02239,0.0434782608695652

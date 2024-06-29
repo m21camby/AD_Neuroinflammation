@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0050840","extracellular matrix binding",51,2,0.07,1,0.0024,0.0024,0.0392156862745098
+"2","MF","GO:0004888","transmembrane signaling receptor activit...",800,4,1.14,2,0.0251,0.0251,0.005
+"3","MF","GO:0042802","identical protein binding",1665,6,2.38,3,0.0261,0.0261,0.0036036036036036
+"4","MF","GO:0140103","catalytic activity, acting on a glycopro...",20,1,0.03,4,0.0282,0.0282,0.05
+"5","MF","GO:0034593","phosphatidylinositol bisphosphate phosph...",20,1,0.03,5,0.0282,0.0282,0.05
+"6","MF","GO:0016628","oxidoreductase activity, acting on the C...",22,1,0.03,6,0.031,0.031,0.0454545454545455
+"7","MF","GO:0052866","phosphatidylinositol phosphate phosphata...",24,1,0.03,7,0.0337,0.0337,0.0416666666666667
+"8","MF","GO:0043236","laminin binding",25,1,0.04,8,0.0351,0.0351,0.04
+"9","MF","GO:0005509","calcium ion binding",512,3,0.73,9,0.0352,0.0352,0.005859375
+"10","MF","GO:0050839","cell adhesion molecule binding",211,2,0.3,10,0.0361,0.0361,0.00947867298578199
+"11","MF","GO:0005227","calcium activated cation channel activit...",26,1,0.04,11,0.0365,0.0365,0.0384615384615385
+"12","MF","GO:0008066","glutamate receptor activity",27,1,0.04,12,0.0379,0.0379,0.037037037037037
+"13","MF","GO:0045499","chemorepellent activity",28,1,0.04,13,0.0392,0.0392,0.0357142857142857
+"14","MF","GO:0038023","signaling receptor activity",945,4,1.35,14,0.0427,0.0427,0.00423280423280423
+"15","MF","GO:0035091","phosphatidylinositol binding",234,2,0.33,15,0.0435,0.0435,0.00854700854700855
+"16","MF","GO:0043394","proteoglycan binding",32,1,0.05,16,0.0447,0.0447,0.03125
+"17","MF","GO:0051393","alpha-actinin binding",32,1,0.05,17,0.0447,0.0447,0.03125
+"18","MF","GO:0030695","GTPase regulator activity",241,2,0.34,18,0.0459,0.0459,0.00829875518672199
+"19","MF","GO:0016791","phosphatase activity",243,2,0.35,19,0.0466,0.0466,0.00823045267489712
+"20","MF","GO:0071949","FAD binding",34,1,0.05,20,0.0475,0.0475,0.0294117647058824
+"21","MF","GO:0060089","molecular transducer activity",991,4,1.41,21,0.0494,0.0494,0.00403632694248234
+"22","MF","GO:0051539","4 iron, 4 sulfur cluster binding",38,1,0.05,22,0.0529,0.0529,0.0263157894736842
+"23","MF","GO:0004857","enzyme inhibitor activity",271,2,0.39,23,0.0566,0.0566,0.00738007380073801
+"24","MF","GO:0042805","actinin binding",41,1,0.06,24,0.057,0.057,0.024390243902439
+"25","MF","GO:0050661","NADP binding",41,1,0.06,25,0.057,0.057,0.024390243902439
+"26","MF","GO:0008289","lipid binding",622,3,0.89,26,0.0571,0.0571,0.00482315112540193
+"27","MF","GO:0016790","thiolester hydrolase activity",42,1,0.06,27,0.0583,0.0583,0.0238095238095238
+"28","MF","GO:0060589","nucleoside-triphosphatase regulator acti...",279,2,0.4,28,0.0595,0.0595,0.00716845878136201
+"29","MF","GO:0004869","cysteine-type endopeptidase inhibitor ac...",44,1,0.06,29,0.061,0.061,0.0227272727272727
+"30","MF","GO:0022839","ion gated channel activity",287,2,0.41,30,0.0626,0.0626,0.00696864111498258
+"31","BP","GO:0003177","pulmonary valve development",21,3,0.03,5,3.8e-06,3.8e-06,0.142857142857143
+"32","BP","GO:0003176","aortic valve development",22,3,0.03,7,4.3e-06,4.3e-06,0.136363636363636
+"33","BP","GO:0007156","homophilic cell adhesion via plasma memb...",93,4,0.14,12,1e-05,1e-05,0.043010752688172
+"34","BP","GO:0021884","forebrain neuron development",32,3,0.05,14,1.4e-05,1.4e-05,0.09375
+"35","BP","GO:0021772","olfactory bulb development",33,3,0.05,15,1.5e-05,1.5e-05,0.0909090909090909
+"36","BP","GO:0060412","ventricular septum morphogenesis",40,3,0.06,18,2.7e-05,2.7e-05,0.075
+"37","BP","GO:0003179","heart valve morphogenesis",43,3,0.06,19,3.4e-05,3.4e-05,0.0697674418604651
+"38","BP","GO:0050919","negative chemotaxis",44,3,0.07,20,3.7e-05,3.7e-05,0.0681818181818182
+"39","BP","GO:0050922","negative regulation of chemotaxis",52,3,0.08,26,6.1e-05,6.1e-05,0.0576923076923077
+"40","BP","GO:0030336","negative regulation of cell migration",237,4,0.35,37,0.00038,0.00038,0.0168776371308017
+"41","BP","GO:0003272","endocardial cushion formation",22,2,0.03,39,0.00048,0.00048,0.0909090909090909
+"42","BP","GO:0060914","heart formation",22,2,0.03,40,0.00048,0.00048,0.0909090909090909
+"43","BP","GO:0010092","specification of animal organ identity",25,2,0.04,42,0.00062,0.00062,0.08
+"44","BP","GO:0003148","outflow tract septum morphogenesis",27,2,0.04,44,0.00072,0.00072,0.0740740740740741
+"45","BP","GO:0006929","substrate-dependent cell migration",28,2,0.04,49,0.00078,0.00078,0.0714285714285714
+"46","BP","GO:0031128","developmental induction",29,2,0.04,51,0.00084,0.00084,0.0689655172413793
+"47","BP","GO:0003156","regulation of animal organ formation",30,2,0.04,53,9e-04,9e-04,0.0666666666666667
+"48","BP","GO:2000826","regulation of heart morphogenesis",32,2,0.05,56,0.00102,0.00102,0.0625
+"49","BP","GO:0070098","chemokine-mediated signaling pathway",34,2,0.05,57,0.00115,0.00115,0.0588235294117647
+"50","BP","GO:0060603","mammary gland duct morphogenesis",34,2,0.05,58,0.00115,0.00115,0.0588235294117647
+"51","BP","GO:0045747","positive regulation of Notch signaling p...",35,2,0.05,59,0.00122,0.00122,0.0571428571428571
+"52","BP","GO:0010975","regulation of neuron projection developm...",563,8,0.84,1,0.00153,9.2e-07,0.0142095914742451
+"53","BP","GO:0001960","negative regulation of cytokine-mediated...",40,2,0.06,62,0.00159,0.00159,0.05
+"54","BP","GO:0060042","retina morphogenesis in camera-type eye",48,2,0.07,71,0.00228,0.00228,0.0416666666666667
+"55","BP","GO:0002042","cell migration involved in sprouting ang...",48,2,0.07,72,0.00228,0.00228,0.0416666666666667
+"56","BP","GO:0003407","neural retina development",49,2,0.07,75,0.00238,0.00238,0.0408163265306122
+"57","BP","GO:0008038","neuron recognition",49,2,0.07,76,0.00238,0.00238,0.0408163265306122
+"58","BP","GO:0021795","cerebral cortex cell migration",52,2,0.08,80,0.00268,0.00268,0.0384615384615385
+"59","BP","GO:0035904","aorta development",53,2,0.08,81,0.00278,0.00278,0.0377358490566038
+"60","BP","GO:0007411","axon guidance",205,3,0.3,85,0.00334,0.00334,0.0146341463414634
+"61","CC","GO:0030673","axolemma",21,3,0.03,1,3.6e-06,3.6e-06,0.142857142857143
+"62","CC","GO:0031225","anchored component of membrane",140,3,0.2,5,0.0011,0.00107,0.0214285714285714
+"63","CC","GO:0036477","somatodendritic compartment",964,6,1.41,7,0.0022,0.00216,0.00622406639004149
+"64","CC","GO:0031594","neuromuscular junction",87,2,0.13,14,0.0071,0.00709,0.0229885057471264
+"65","CC","GO:0043025","neuronal cell body",663,4,0.97,18,0.0146,0.01465,0.00603318250377074
+"66","CC","GO:0030425","dendrite",670,4,0.98,19,0.0152,0.01517,0.00597014925373134
+"67","CC","GO:0097447","dendritic tree",673,4,0.98,20,0.0154,0.0154,0.00594353640416048
+"68","CC","GO:0031224","intrinsic component of membrane",4144,13,6.05,8,0.0182,0.00225,0.00313706563706564
+"69","CC","GO:0009986","cell surface",726,4,1.06,24,0.0198,0.01982,0.00550964187327824
+"70","CC","GO:0044297","cell body",745,4,1.09,26,0.0216,0.02158,0.00536912751677852
+"71","CC","GO:0043005","neuron projection",1382,8,2.02,4,0.0258,0.00053,0.00578871201157742
+"72","CC","GO:0043197","dendritic spine",185,2,0.27,27,0.0296,0.02956,0.0108108108108108
+"73","CC","GO:0044309","neuron spine",190,2,0.28,28,0.031,0.03104,0.0105263157894737
+"74","CC","GO:0032809","neuronal cell body membrane",32,1,0.05,30,0.0457,0.04572,0.03125
+"75","CC","GO:0016021","integral component of membrane",4013,10,5.86,31,0.0471,0.04709,0.0024919013207077
+"76","CC","GO:0098688","parallel fiber to Purkinje cell synapse",33,1,0.05,32,0.0471,0.04711,0.0303030303030303
+"77","CC","GO:0044298","cell body membrane",34,1,0.05,33,0.0485,0.04851,0.0294117647058824
+"78","CC","GO:0032590","dendrite membrane",44,1,0.06,34,0.0623,0.06234,0.0227272727272727
+"79","CC","GO:0044304","main axon",81,4,0.12,2,0.074,5.4e-06,0.0493827160493827
+"80","CC","GO:0008328","ionotropic glutamate receptor complex",54,1,0.08,36,0.076,0.07598,0.0185185185185185
+"81","CC","GO:0098878","neurotransmitter receptor complex",55,1,0.08,37,0.0773,0.07733,0.0181818181818182
+"82","CC","GO:0046658","anchored component of plasma membrane",56,1,0.08,38,0.0787,0.07869,0.0178571428571429
+"83","CC","GO:0120038","plasma membrane bounded cell projection ...",1421,7,2.07,11,0.0982,0.0033,0.00492610837438424
+"84","CC","GO:0044463","cell projection part",1421,7,2.07,12,0.0982,0.0033,0.00492610837438424
+"85","CC","GO:0099061","integral component of postsynaptic densi...",71,1,0.1,40,0.0987,0.09873,0.0140845070422535
+"86","CC","GO:0016528","sarcoplasm",75,1,0.11,42,0.104,0.10401,0.0133333333333333
+"87","CC","GO:0014069","postsynaptic density",378,2,0.55,43,0.1045,0.10452,0.00529100529100529
+"88","CC","GO:0060076","excitatory synapse",76,1,0.11,44,0.1053,0.10532,0.0131578947368421
+"89","CC","GO:0032279","asymmetric synapse",381,2,0.56,45,0.1059,0.10591,0.005249343832021
+"90","CC","GO:0099146","intrinsic component of postsynaptic dens...",77,1,0.11,46,0.1066,0.10663,0.012987012987013

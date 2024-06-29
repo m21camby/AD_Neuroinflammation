@@ -1,0 +1,26 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0002693","positive regulation of cellular extravas...",21,1,0,1,0.0014,0.0014,0.0476190476190476
+"32","BP","GO:0051894","positive regulation of focal adhesion as...",24,1,0,2,0.0016,0.0016,0.0416666666666667
+"33","BP","GO:0061099","negative regulation of protein tyrosine ...",25,1,0,3,0.0016,0.0016,0.04
+"34","BP","GO:0042462","eye photoreceptor cell development",27,1,0,4,0.0018,0.0018,0.037037037037037
+"35","BP","GO:0051281","positive regulation of release of seques...",30,1,0,6,0.002,0.002,0.0333333333333333
+"36","BP","GO:0050856","regulation of T cell receptor signaling ...",31,1,0,9,0.002,0.002,0.032258064516129
+"37","BP","GO:0070570","regulation of neuron projection regenera...",35,1,0,10,0.0023,0.0023,0.0285714285714286
+"38","BP","GO:0034113","heterotypic cell-cell adhesion",38,1,0,12,0.0025,0.0025,0.0263157894736842
+"39","BP","GO:0003407","neural retina development",43,1,0,14,0.0028,0.0028,0.0232558139534884
+"40","BP","GO:0060042","retina morphogenesis in camera-type eye",45,1,0,15,0.0029,0.0029,0.0222222222222222
+"41","BP","GO:0043113","receptor clustering",62,1,0,25,0.004,0.004,0.0161290322580645
+"42","BP","GO:0050771","negative regulation of axonogenesis",66,1,0,29,0.0043,0.0043,0.0151515151515152
+"43","BP","GO:0007229","integrin-mediated signaling pathway",79,1,0.01,34,0.0051,0.0051,0.0126582278481013
+"44","BP","GO:0050870","positive regulation of T cell activation",142,1,0.01,58,0.0092,0.0092,0.00704225352112676
+"45","BP","GO:0043547","positive regulation of GTPase activity",179,1,0.01,68,0.0117,0.0117,0.00558659217877095
+"46","BP","GO:0046777","protein autophosphorylation",221,1,0.01,81,0.0144,0.0144,0.00452488687782805
+"47","BP","GO:0030336","negative regulation of cell migration",225,1,0.01,85,0.0147,0.0147,0.00444444444444444
+"48","BP","GO:2000146","negative regulation of cell motility",234,1,0.02,88,0.0152,0.0152,0.00427350427350427
+"49","BP","GO:0043087","regulation of GTPase activity",254,1,0.02,96,0.0165,0.0165,0.00393700787401575
+"50","BP","GO:0051271","negative regulation of cellular componen...",268,1,0.02,102,0.0175,0.0175,0.00373134328358209
+"51","BP","GO:0040013","negative regulation of locomotion",280,1,0.02,104,0.0182,0.0182,0.00357142857142857
+"52","BP","GO:0002683","negative regulation of immune system pro...",372,1,0.02,123,0.0242,0.0242,0.00268817204301075
+"53","BP","GO:0071900","regulation of protein serine/threonine k...",373,1,0.02,125,0.0243,0.0243,0.00268096514745308
+"54","BP","GO:0001525","angiogenesis",413,1,0.03,134,0.0269,0.0269,0.00242130750605327
+"55","BP","GO:0051345","positive regulation of hydrolase activit...",431,1,0.03,136,0.0281,0.0281,0.00232018561484919

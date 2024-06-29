@@ -1,0 +1,148 @@
+MGI Gene/Marker ID	Symbol	Name
+MGI:1925810	Adgra2	adhesion G protein-coupled receptor A2
+MGI:1925810	Adgra2	adhesion G protein-coupled receptor A2
+MGI:1925810	Adgra2	adhesion G protein-coupled receptor A2
+MGI:1919595	Amer1	APC membrane recruitment 1
+MGI:1096381	Arntl	aryl hydrocarbon receptor nuclear translocator-like
+MGI:1334448	Aspm	abnormal spindle microtubule assembly
+MGI:1917745	Atp6ap2	ATPase, H+ transporting, lysosomal accessory protein 2
+MGI:1915260	Bambi	BMP and activin membrane-bound inhibitor
+MGI:2448541	Caprin2	caprin family member 2
+MGI:2448541	Caprin2	caprin family member 2
+MGI:102709	Cav1	caveolin 1, caveolae protein
+MGI:2444228	Ccar2	cell cycle activator and apoptosis regulator 2
+MGI:88356	Cdh3	cadherin 3
+MGI:88467	Col1a1	collagen, type I, alpha 1
+MGI:1355272	Csnk1d	casein kinase 1, delta
+MGI:1355272	Csnk1d	casein kinase 1, delta
+MGI:1351660	Csnk1e	casein kinase 1, epsilon
+MGI:1351660	Csnk1e	casein kinase 1, epsilon
+MGI:1351660	Csnk1e	casein kinase 1, epsilon
+MGI:2660884	Csnk1g1	casein kinase 1, gamma 1
+MGI:1920014	Csnk1g2	casein kinase 1, gamma 2
+MGI:1917675	Csnk1g3	casein kinase 1, gamma 3
+MGI:1914431	Ctdnep1	CTD nuclear envelope phosphatase 1
+MGI:91842	D1Pas1	DNA segment, Chr 1, Pasteur Institute 1
+MGI:1923691	Daam2	dishevelled associated activator of morphogenesis 2
+MGI:1923691	Daam2	dishevelled associated activator of morphogenesis 2
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1
+MGI:1203520	Dapk3	death-associated protein kinase 3
+MGI:103064	Ddx3x	DEAD box helicase 3, X-linked
+MGI:2447658	Disc1	disrupted in schizophrenia 1
+MGI:1890663	Dkk2	dickkopf WNT signaling pathway inhibitor 2
+MGI:101926	Dlx5	distal-less homeobox 5
+MGI:1195272	Eda	ectodysplasin-A
+MGI:95290	Egf	epidermal growth factor
+MGI:95294	Egfr	epidermal growth factor receptor
+MGI:1925188	Fam53b	family with sequence similarity 53, member B
+MGI:1925188	Fam53b	family with sequence similarity 53, member B
+MGI:95516	Fgf2	fibroblast growth factor 2
+MGI:104723	Fgf9	fibroblast growth factor 9
+MGI:1099809	Fgf10	fibroblast growth factor 10
+MGI:1099809	Fgf10	fibroblast growth factor 10
+MGI:95523	Fgfr2	fibroblast growth factor receptor 2
+MGI:95523	Fgfr2	fibroblast growth factor receptor 2
+MGI:95524	Fgfr3	fibroblast growth factor receptor 3
+MGI:109450	Frat1	frequently rearranged in advanced T cell lymphomas
+MGI:109450	Frat1	frequently rearranged in advanced T cell lymphomas
+MGI:1313278	Fzd9	frizzled class receptor 9
+MGI:1923675	Gid8	GID complex subunit 8
+MGI:1923675	Gid8	GID complex subunit 8
+MGI:104903	Gpc3	glypican 3
+MGI:104903	Gpc3	glypican 3
+MGI:1194894	Gpc5	glypican 5
+MGI:1927596	Gprc5b	G protein-coupled receptor, family C, group 5, member B
+MGI:1914037	Gskip	GSK3B interacting protein
+MGI:96086	Hhex	hematopoietically expressed homeobox
+MGI:1195267	Ilk	integrin linked kinase
+MGI:106214	Jrk	jerky
+MGI:2147707	Kank1	KN motif and ankyrin repeat domains 1
+MGI:1891468	Lgr4	leucine-rich repeat-containing G protein-coupled receptor 4
+MGI:1891468	Lgr4	leucine-rich repeat-containing G protein-coupled receptor 4
+MGI:1891468	Lgr4	leucine-rich repeat-containing G protein-coupled receptor 4
+MGI:1341817	Lgr5	leucine rich repeat containing G protein coupled receptor 5
+MGI:1341817	Lgr5	leucine rich repeat containing G protein coupled receptor 5
+MGI:1888519	Lmx1a	LIM homeobox transcription factor 1 alpha
+MGI:2142227	Lrrk1	leucine-rich repeat kinase 1
+MGI:1913975	Lrrk2	leucine-rich repeat kinase 2
+MGI:2443848	Lypd6	LY6/PLAUR domain containing 6
+MGI:97312	Nfkb1	nuclear factor of kappa light polypeptide gene enhancer in B cells 1, p105
+MGI:2429770	Nle1	notchless homolog 1
+MGI:1914372	Nrarp	Notch-regulated ankyrin repeat protein
+MGI:1914372	Nrarp	Notch-regulated ankyrin repeat protein
+MGI:1351637	Peg12	paternally expressed 12
+MGI:1351637	Peg12	paternally expressed 12
+MGI:1346036	Pin1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1
+MGI:1346036	Pin1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1
+MGI:3649546	Pin1rt1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1, retrogene 1
+MGI:1916467	Plekha4	pleckstrin homology domain containing, family A (phosphoinositide binding specific) member 4
+MGI:1916467	Plekha4	pleckstrin homology domain containing, family A (phosphoinositide binding specific) member 4
+MGI:99878	Ppm1a	protein phosphatase 1A, magnesium dependent, alpha isoform
+MGI:99878	Ppm1a	protein phosphatase 1A, magnesium dependent, alpha isoform
+MGI:101841	Ppm1b	protein phosphatase 1B, magnesium dependent, beta isoform
+MGI:2142330	Ppm1n	protein phosphatase, Mg2+/Mn2+ dependent, 1N (putative)
+MGI:2442104	Ppp2r3a	protein phosphatase 2, regulatory subunit B'', alpha
+MGI:1930121	Prdm15	PR domain containing 15
+MGI:1918711	Ptk7	PTK7 protein tyrosine kinase 7
+MGI:96522	Rbpj	recombination signal binding protein for immunoglobulin kappa J region
+MGI:1855698	Reck	reversion-inducing-cysteine-rich protein with kazal motifs
+MGI:1915281	Rnf146	ring finger protein 146
+MGI:1913993	Rnf220	ring finger protein 220
+MGI:1347521	Ror2	receptor tyrosine kinase-like orphan receptor 2
+MGI:98105	Rps12	ribosomal protein S12
+MGI:2183426	Rspo1	R-spondin 1
+MGI:2183426	Rspo1	R-spondin 1
+MGI:1922667	Rspo2	R-spondin 2
+MGI:1922667	Rspo2	R-spondin 2
+MGI:1922667	Rspo2	R-spondin 2
+MGI:1922667	Rspo2	R-spondin 2
+MGI:1920030	Rspo3	R-spondin 3
+MGI:1920030	Rspo3	R-spondin 3
+MGI:1928760	Ruvbl1	RuvB-like protein 1
+MGI:1891228	Scel	sciellin
+MGI:107556	Sema5a	sema domain, seven thrombospondin repeats (type 1 and type 1-like), transmembrane domain (TM) and short cytoplasmic domain, (semaphorin) 5A
+MGI:892014	Sfrp1	secreted frizzled-related protein 1
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:108078	Sfrp2	secreted frizzled-related protein 2
+MGI:892010	Sfrp4	secreted frizzled-related protein 4
+MGI:1201674	Smad3	SMAD family member 3
+MGI:98366	Sox4	SRY (sex determining region Y)-box 4
+MGI:98366	Sox4	SRY (sex determining region Y)-box 4
+MGI:98397	Src	Rous sarcoma oncogene
+MGI:1919293	Sulf2	sulfatase 2
+MGI:2441730	Tbl1xr1	transducin (beta)-like 1X-linked receptor 1
+MGI:98725	Tgfb1	transforming growth factor, beta 1
+MGI:98742	Thra	thyroid hormone receptor alpha
+MGI:1913491	Tmem9	transmembrane protein 9
+MGI:1913491	Tmem9	transmembrane protein 9
+MGI:2443133	Tmem198	transmembrane protein 198
+MGI:2443133	Tmem198	transmembrane protein 198
+MGI:1341087	Tnks	tankyrase, TRF1-interacting ankyrin-related ADP-ribose polymerase
+MGI:1341087	Tnks	tankyrase, TRF1-interacting ankyrin-related ADP-ribose polymerase
+MGI:1921743	Tnks2	tankyrase, TRF1-interacting ankyrin-related ADP-ribose polymerase 2
+MGI:1921743	Tnks2	tankyrase, TRF1-interacting ankyrin-related ADP-ribose polymerase 2
+MGI:1915917	Trpm4	transient receptor potential cation channel, subfamily M, member 4
+MGI:1920918	Ttc21b	tetratricopeptide repeat domain 21B
+MGI:102944	Ube2b	ubiquitin-conjugating enzyme E2B
+MGI:1918040	Ubr5	ubiquitin protein ligase E3 component n-recognin 5
+MGI:1934029	Usp8	ubiquitin specific peptidase 8
+MGI:109473	Usp34	ubiquitin specific peptidase 34
+MGI:1922246	Usp47	ubiquitin specific peptidase 47
+MGI:99919	Vcp	valosin containing protein
+MGI:1890467	Vps35	VPS35 retromer complex component
+MGI:1915401	Wls	wntless WNT ligand secretion mediator
+MGI:1915401	Wls	wntless WNT ligand secretion mediator
+MGI:2442092	Wnk1	WNK lysine deficient protein kinase 1
+MGI:1922857	Wnk2	WNK lysine deficient protein kinase 2
+MGI:98956	Wnt3a	wingless-type MMTV integration site family, member 3A
+MGI:98956	Wnt3a	wingless-type MMTV integration site family, member 3A
+MGI:98956	Wnt3a	wingless-type MMTV integration site family, member 3A
+MGI:108061	Wnt10b	wingless-type MMTV integration site family, member 10B
+MGI:107572	Xiap	X-linked inhibitor of apoptosis
+MGI:103262	Yap1	yes-associated protein 1
+MGI:1919364	Zbed3	zinc finger, BED type containing 3
+MGI:1919364	Zbed3	zinc finger, BED type containing 3
+MGI:1344407	Zeb2	zinc finger E-box binding homeobox 2
+

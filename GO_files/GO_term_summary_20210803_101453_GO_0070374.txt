@@ -1,0 +1,321 @@
+MGI Gene/Marker ID	Symbol	Name	Chr	Qualifier	Annotated Term	Context	Proteoform	Evidence	Inferred From	Reference(s)
+MGI:1351646	Abca7	ATP-binding cassette, sub-family A (ABC1), member 7	10		positive regulation of ERK1 and ERK2 cascade			IMP		J:112621 	
+MGI:87859	Abl1	c-abl oncogene 1, non-receptor tyrosine kinase	2		positive regulation of ERK1 and ERK2 cascade			IMP		J:140959 	
+MGI:87860	Abl2	v-abl Abelson murine leukemia viral oncogene 2 (arg, Abelson-related gene)	1		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:99511 	J:140959 	
+MGI:109562	Ackr3	atypical chemokine receptor 3	1		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IGI	MGI:1341264 MGI:95294 	J:200277 	
+MGI:109562	Ackr3	atypical chemokine receptor 3	1		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IGI	MGI:1341264 MGI:98397 	J:200277 	
+MGI:109562	Ackr3	atypical chemokine receptor 3	1		positive regulation of ERK1 and ERK2 cascade			ISO	P25106 	J:164563 	
+MGI:87909	Acta2	actin alpha 2, smooth muscle, aorta	19		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:621676 	J:155856 	
+MGI:1096335	Adam17	a disintegrin and metallopeptidase domain 17	12		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:620404 	J:155856 	
+MGI:105094	Adcyap1	adenylate cyclase activating polypeptide 1	17		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002598721 	J:265628 	
+MGI:105094	Adcyap1	adenylate cyclase activating polypeptide 1	17		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2037 	J:155856 	
+MGI:105094	Adcyap1	adenylate cyclase activating polypeptide 1	17		positive regulation of ERK1 and ERK2 cascade			ISO	P18509 	J:164563 	
+MGI:104773	Adra1a	adrenergic receptor, alpha 1a	14		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2055 	J:155856 	
+MGI:893592	Ager	advanced glycosylation end product-specific receptor	17		positive regulation of ERK1 and ERK2 cascade			ISO	Q15109 	J:164563 	
+MGI:1932576	Akap12	A kinase (PRKA) anchor protein (gravin) 12	10		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:70988 	J:155856 	
+MGI:3645495	Alkal1	ALK and LTK ligand 1	1		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002010604 	J:265628 	
+MGI:3645495	Alkal1	ALK and LTK ligand 1	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q6UXT8 	J:164563 	
+MGI:3697448	Alkal2	ALK and LTK ligand 2	12		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002010604 	J:265628 	
+MGI:3697448	Alkal2	ALK and LTK ligand 2	12		positive regulation of ERK1 and ERK2 cascade			ISO	Q6UX46 	J:164563 	
+MGI:87997	Alox15	arachidonate 15-lipoxygenase	11		positive regulation of ERK1 and ERK2 cascade			ISO	P16050 	J:164563 	
+MGI:108448	Angpt1	angiopoietin 1	15		positive regulation of ERK1 and ERK2 cascade			ISO	Q15389 	J:164563 	
+MGI:88057	Apoe	apolipoprotein E	7		positive regulation of ERK1 and ERK2 cascade			ISO	P02649 	J:164563 	
+MGI:88059	App	amyloid beta (A4) precursor protein	16		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2139 	J:155856 	
+MGI:88059	App	amyloid beta (A4) precursor protein	16		positive regulation of ERK1 and ERK2 cascade			ISO	P05067 	J:164563 	
+MGI:1920417	Arhgap8	Rho GTPase activating protein 8	15		positive regulation of ERK1 and ERK2 cascade			ISO	P85298 	J:164563 	
+MGI:99473	Arrb1	arrestin, beta 1	7		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002623660 	J:265628 	
+MGI:99473	Arrb1	arrestin, beta 1	7		positive regulation of ERK1 and ERK2 cascade			IMP		J:160042 	
+MGI:99473	Arrb1	arrestin, beta 1	7		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2156 	J:155856 	
+MGI:99473	Arrb1	arrestin, beta 1	7		positive regulation of ERK1 and ERK2 cascade			ISO	P49407 	J:164563 	
+MGI:99474	Arrb2	arrestin, beta 2	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002623675 	J:265628 	
+MGI:99474	Arrb2	arrestin, beta 2	11		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2157 	J:155856 	
+MGI:99474	Arrb2	arrestin, beta 2	11		positive regulation of ERK1 and ERK2 cascade			ISO	P32121 	J:164563 	
+MGI:109629	Atp6ap1	ATPase, H+ transporting, lysosomal accessory protein 1	X		positive regulation of ERK1 and ERK2 cascade			IMP		J:211452 	
+MGI:88116	Atp6v0c	ATPase, H+ transporting, lysosomal V0 subunit C	17		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:621394 	J:155856 	
+MGI:88177	Bmp2	bone morphogenetic protein 2	2		positive regulation of ERK1 and ERK2 cascade			ISO	P12643 	J:164563 	
+MGI:88180	Bmp4	bone morphogenetic protein 4	14		positive regulation of ERK1 and ERK2 cascade			IDA		J:142133 	
+MGI:1920480	Bmper	BMP-binding endothelial regulator	9		positive regulation of ERK1 and ERK2 cascade			ISO	Q8N8U9 	J:164563 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade			IDA		J:187371 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in hematopoietic multipotent progenitor cell		IMP	MGI:1857579 	J:117308 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade			IMP	MGI:1857579 	J:131579 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in forebrain		IMP	MGI:3620008 MGI:3622450 	J:107042 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in double-positive, alpha-beta thymocyte|regulates a function/process that happens in CD4-positive, alpha-beta thymocyte		IMP	MGI:3711006 	J:194392 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in fibroblast		IMP		J:91604 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in neuron		IMP		J:196950 	
+MGI:88190	Braf	Braf transforming gene	6		positive regulation of ERK1 and ERK2 cascade			ISO	P15056 	J:164563 	
+MGI:1932136	C1qtnf3	C1q and tumor necrosis factor related protein 3	15		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in liver		IDA		J:167584 	
+MGI:88227	C3	complement component 3	17		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2232 	J:155856 	
+MGI:2442013	C5ar2	complement component 5a receptor 2	7		positive regulation of ERK1 and ERK2 cascade			IEA	IPR027809 	J:72247 	
+MGI:101950	Calcr	calcitonin receptor	6		positive regulation of ERK1 and ERK2 cascade			ISO	P30988 	J:164563 	
+MGI:1341265	Camk2d	calcium/calmodulin-dependent protein kinase II, delta	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2263 	J:155856 	
+MGI:2685628	Card9	caspase recruitment domain family, member 9	2		positive regulation of ERK1 and ERK2 cascade			IMP		J:218677 	
+MGI:1351351	Casr	calcium-sensing receptor	16		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2277 	J:155856 	
+MGI:1923422	Cavin3	caveolae associated 3	7		positive regulation of ERK1 and ERK2 cascade			IMP	MGI:5518819 	J:202374 	
+MGI:98258	Ccl1	chemokine (C-C motif) ligand 1	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:98259	Ccl2	chemokine (C-C motif) ligand 2	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:98260	Ccl3	chemokine (C-C motif) ligand 3	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:98261	Ccl4	chemokine (C-C motif) ligand 4	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:98262	Ccl5	chemokine (C-C motif) ligand 5	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:98263	Ccl6	chemokine (C-C motif) ligand 6	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:99512	Ccl7	chemokine (C-C motif) ligand 7	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:101878	Ccl8	chemokine (C-C motif) ligand 8	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:104533	Ccl9	chemokine (C-C motif) ligand 9	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:103576	Ccl11	chemokine (C-C motif) ligand 11	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:108224	Ccl12	chemokine (C-C motif) ligand 12	11		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1329039	Ccl17	chemokine (C-C motif) ligand 17	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1346316	Ccl19	chemokine (C-C motif) ligand 19	4		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1329031	Ccl20	chemokine (C-C motif) ligand 20	1		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1349183	Ccl21a	chemokine (C-C motif) ligand 21A (serine)	4		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1349183	Ccl21a	chemokine (C-C motif) ligand 21A (serine)	4		positive regulation of ERK1 and ERK2 cascade			ISO	O00585 	J:164563 	
+MGI:1349182	Ccl21b	chemokine (C-C motif) ligand 21B (leucine)	4		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1349182	Ccl21b	chemokine (C-C motif) ligand 21B (leucine)	4		positive regulation of ERK1 and ERK2 cascade			ISO	O00585 	J:164563 	
+MGI:1891386	Ccl21c	chemokine (C-C motif) ligand 21C (leucine)	4		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1891386	Ccl21c	chemokine (C-C motif) ligand 21C (leucine)	4		positive regulation of ERK1 and ERK2 cascade			ISO	O00585 	J:164563 	
+MGI:1306779	Ccl22	chemokine (C-C motif) ligand 22	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1928953	Ccl24	chemokine (C-C motif) ligand 24	5		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:1099448	Ccl25	chemokine (C-C motif) ligand 25	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:3589281	Ccl26	chemokine (C-C motif) ligand 26	5		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:95537	Ccn2	cellular communication network factor 2	10		positive regulation of ERK1 and ERK2 cascade			ISO	P29279 	J:164563 	
+MGI:104618	Ccr1	chemokine (C-C motif) receptor 1	9		positive regulation of ERK1 and ERK2 cascade			ISO	P32246 	J:164563 	
+MGI:104617	Ccr1l1	chemokine (C-C motif) receptor 1-like 1	9		positive regulation of ERK1 and ERK2 cascade			ISO	P32246 	J:164563 	
+MGI:88335	Cd4	CD4 antigen	6		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002605579 	J:265628 	
+MGI:88335	Cd4	CD4 antigen	6		positive regulation of ERK1 and ERK2 cascade			ISO	P01730 	J:164563 	
+MGI:107899	Cd36	CD36 molecule	5		positive regulation of ERK1 and ERK2 cascade			IMP		J:225484 	
+MGI:88338	Cd44	CD44 antigen	2		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002566805 	J:265628 	
+MGI:88338	Cd44	CD44 antigen	2		positive regulation of ERK1 and ERK2 cascade			IMP		J:114878 	
+MGI:88338	Cd44	CD44 antigen	2		positive regulation of ERK1 and ERK2 cascade			ISO	P16070 	J:164563 	
+MGI:96534	Cd74	CD74 antigen (invariant polypeptide of major histocompatibility complex, class II antigen-associated)	18		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002679661 	J:265628 	
+MGI:96534	Cd74	CD74 antigen (invariant polypeptide of major histocompatibility complex, class II antigen-associated)	18		positive regulation of ERK1 and ERK2 cascade			IMP		J:156237 	
+MGI:96534	Cd74	CD74 antigen (invariant polypeptide of major histocompatibility complex, class II antigen-associated)	18		positive regulation of ERK1 and ERK2 cascade			ISO	P04233 	J:164563 	
+MGI:1336166	Cflar	CASP8 and FADD-like apoptosis regulator	1		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:620847 	J:155856 	
+MGI:1340899	Chil1	chitinase-like 1	1		positive regulation of ERK1 and ERK2 cascade			ISO	P36222 	J:164563 	
+MGI:99779	Chrna7	cholinergic receptor, nicotinic, alpha polypeptide 7	7		positive regulation of ERK1 and ERK2 cascade	happens in cingulate cortex,regulates a function/process that happens in neuron projection|happens in dentate gyrus,regulates a function/process that happens in neuron projection		IDA		J:238460 	
+MGI:99779	Chrna7	cholinergic receptor, nicotinic, alpha polypeptide 7	7		positive regulation of ERK1 and ERK2 cascade	uses UniProtKB:P12023,happens at the same time as UBERON:0018241,happens in hippocampal formation		IGI	P05067 	J:157839 	
+MGI:99779	Chrna7	cholinergic receptor, nicotinic, alpha polypeptide 7	7		positive regulation of ERK1 and ERK2 cascade	happens in hippocampal formation,is a part of response to nicotine,uses UniProtKB:P63085		IMP		J:239214 	
+MGI:99779	Chrna7	cholinergic receptor, nicotinic, alpha polypeptide 7	7		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2348 	J:155856 	
+MGI:1344418	Cib1	calcium and integrin binding 1 (calmyrin)	7		positive regulation of ERK1 and ERK2 cascade			IMP		J:141569 	
+MGI:104686	Crkl	v-crk avian sarcoma virus CT10 oncogene homolog-like	16		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002717687 	J:265628 	
+MGI:104686	Crkl	v-crk avian sarcoma virus CT10 oncogene homolog-like	16		positive regulation of ERK1 and ERK2 cascade			IMP	MGI:1931805 	J:105263 	
+MGI:104686	Crkl	v-crk avian sarcoma virus CT10 oncogene homolog-like	16		positive regulation of ERK1 and ERK2 cascade			ISO	P46109 	J:164563 	
+MGI:1339758	Csf1r	colony stimulating factor 1 receptor	18		positive regulation of ERK1 and ERK2 cascade			IMP		J:177179 	
+MGI:1097153	Cx3cl1	chemokine (C-X3-C motif) ligand 1	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+MGI:103556	Cxcl12	chemokine (C-X-C motif) ligand 12	6		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IGI	MGI:1341264 	J:200277 	
+MGI:2387642	Cxcl17	chemokine (C-X-C motif) ligand 17	7		positive regulation of ERK1 and ERK2 cascade			ISO	Q6UXB2 	J:164563 	
+MGI:109563	Cxcr4	chemokine (C-X-C motif) receptor 4	1		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IMP		J:160174 	
+MGI:1917336	Cysltr2	cysteinyl leukotriene receptor 2	14		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:619797 	J:155856 	
+MGI:94869	Dcc	deleted in colorectal carcinoma	18		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2492 	J:155856 	
+MGI:108517	Denn2b	DENN domain containing 2B	7		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002691605 	J:265628 	
+MGI:108517	Denn2b	DENN domain containing 2B	7		positive regulation of ERK1 and ERK2 cascade			ISO	P78524-1 	J:73065 	
+MGI:2443036	Dnajc27	DnaJ heat shock protein family (Hsp40) member C27	12		positive regulation of ERK1 and ERK2 cascade			IDA		J:210622 	
+MGI:94924	Drd2	dopamine receptor D2	9		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2520 	J:155856 	
+MGI:1925064	Dstyk	dual serine/threonine and tyrosine protein kinase	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q6XUX3 	J:164563 	
+MGI:1934928	Dusp15	dual specificity phosphatase-like 15	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1305990 	J:155856 	
+MGI:105923	Ednra	endothelin receptor type A	8		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2535 	J:155856 	
+MGI:95290	Egf	epidermal growth factor	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2542 	J:155856 	
+MGI:95294	Egfr	epidermal growth factor receptor	11		positive regulation of ERK1 and ERK2 cascade			ISO	P00533 	J:164563 	
+MGI:95407	Epo	erythropoietin	5		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2559 	J:155856 	
+MGI:95408	Epor	erythropoietin receptor	9		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2560 	J:155856 	
+MGI:104771	Erbb4	erb-b2 receptor tyrosine kinase 4	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q15303 	J:164563 	
+MGI:1352467	Esr1	estrogen receptor 1 (alpha)	10		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2581 	J:155856 	
+MGI:109392	Esr2	estrogen receptor 2 (beta)	12		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2582 	J:155856 	
+MGI:101802	F2r	coagulation factor II (thrombin) receptor	13		positive regulation of ERK1 and ERK2 cascade			IDA		J:175344 	
+MGI:101910	F2rl1	coagulation factor II (thrombin) receptor-like 1	13		positive regulation of ERK1 and ERK2 cascade			IDA		J:175344 	
+MGI:101910	F2rl1	coagulation factor II (thrombin) receptor-like 1	13		positive regulation of ERK1 and ERK2 cascade			ISO	P55085 	J:164563 	
+MGI:1354695	Fbxw7	F-box and WD-40 domain protein 7	3		positive regulation of ERK1 and ERK2 cascade			ISO	Q969H0 	J:164563 	
+MGI:2385001	Fermt2	fermitin family member 2	14		positive regulation of ERK1 and ERK2 cascade			ISO	Q96AC1 	J:164563 	
+MGI:2147577	Ffar4	free fatty acid receptor 4	19		positive regulation of ERK1 and ERK2 cascade			IMP		J:99416 	
+MGI:1316726	Fga	fibrinogen alpha chain	3		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000441572 	J:265628 	
+MGI:1316726	Fga	fibrinogen alpha chain	3		positive regulation of ERK1 and ERK2 cascade			ISO	P02671 	J:164563 	
+MGI:99501	Fgb	fibrinogen beta chain	3		positive regulation of ERK1 and ERK2 cascade			ISO	P02675 	J:164563 	
+MGI:95515	Fgf1	fibroblast growth factor 1	18		positive regulation of ERK1 and ERK2 cascade			ISO	P05230 	J:164563 	
+MGI:95516	Fgf2	fibroblast growth factor 2	3		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in neuronal stem cell		IDA		J:119299 	
+MGI:95516	Fgf2	fibroblast growth factor 2	3		positive regulation of ERK1 and ERK2 cascade			IDA		J:287039 	
+MGI:95516	Fgf2	fibroblast growth factor 2	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2609 	J:155856 	
+MGI:95516	Fgf2	fibroblast growth factor 2	3		positive regulation of ERK1 and ERK2 cascade			ISO	P09038 	J:164563 	
+MGI:95518	Fgf4	fibroblast growth factor 4	7		positive regulation of ERK1 and ERK2 cascade			ISO	P08620 	J:164563 	
+MGI:99604	Fgf8	fibroblast growth factor 8	19		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:99511 	J:205567 	
+MGI:1099809	Fgf10	fibroblast growth factor 10	13		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002608294 	J:265628 	
+MGI:1099809	Fgf10	fibroblast growth factor 10	13		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in left lung rudiment epithelium|regulates a function/process that happens in right lung rudiment epithelium		IGI	MGI:1345138 MGI:1345139 	J:174194 	
+MGI:1099809	Fgf10	fibroblast growth factor 10	13		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in epithelium of seminal vesicle		IGI	MGI:95523 	J:119935 	
+MGI:1099809	Fgf10	fibroblast growth factor 10	13		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in fibroblast		IMP	MGI:1859647 	J:89611 	
+MGI:1096383	Fgf15	fibroblast growth factor 15	7		positive regulation of ERK1 and ERK2 cascade			ISO	O95750 	J:164563 	
+MGI:1277980	Fgf18	fibroblast growth factor 18	11		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in osteoblast		IDA		J:75070 	
+MGI:1891346	Fgf20	fibroblast growth factor 20	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q9EST9 	J:73065 	
+MGI:1861377	Fgf21	fibroblast growth factor 21	7		positive regulation of ERK1 and ERK2 cascade			ISO	Q9NSA1 	J:164563 	
+MGI:1891427	Fgf23	fibroblast growth factor 23	6		positive regulation of ERK1 and ERK2 cascade			IDA		J:117479 	
+MGI:1919764	Fgfbp3	fibroblast growth factor binding protein 3	19		positive regulation of ERK1 and ERK2 cascade	happens in UBERON:0004167		IMP		J:171305 	
+MGI:95523	Fgfr2	fibroblast growth factor receptor 2	7		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in epithelium of seminal vesicle		IGI	MGI:1099809 	J:119935 	
+MGI:95524	Fgfr3	fibroblast growth factor receptor 3	5		positive regulation of ERK1 and ERK2 cascade			ISO	P22607 	J:164563 	
+MGI:95525	Fgfr4	fibroblast growth factor receptor 4	13		positive regulation of ERK1 and ERK2 cascade			IBA	PTN004704289 	J:265628 	
+MGI:95525	Fgfr4	fibroblast growth factor receptor 4	13		positive regulation of ERK1 and ERK2 cascade			ISO	P22455 	J:164563 	
+MGI:95526	Fgg	fibrinogen gamma chain	3		positive regulation of ERK1 and ERK2 cascade			ISO	P02679 	J:164563 	
+MGI:95561	Flt4	FMS-like tyrosine kinase 4	11		positive regulation of ERK1 and ERK2 cascade			ISO	P35916 	J:164563 	
+MGI:1278319	Fpr2	formyl peptide receptor 2	17		positive regulation of ERK1 and ERK2 cascade			ISO	P25090 	J:164563 	
+MGI:1194495	Fpr3	formyl peptide receptor 3	17		positive regulation of ERK1 and ERK2 cascade			ISO	P25090 	J:164563 	
+MGI:1278318	Fpr-rs3	formyl peptide receptor, related sequence 3	17		positive regulation of ERK1 and ERK2 cascade			ISO	P25090 	J:164563 	
+MGI:1278317	Fpr-rs4	formyl peptide receptor, related sequence 4	17		positive regulation of ERK1 and ERK2 cascade			ISO	P25090 	J:164563 	
+MGI:2448176	Fpr-rs6	formyl peptide receptor, related sequence 6	17		positive regulation of ERK1 and ERK2 cascade			ISO	P25090 	J:164563 	
+MGI:95583	Fshr	follicle stimulating hormone receptor	17		positive regulation of ERK1 and ERK2 cascade			ISO	P23945 	J:164563 	
+MGI:2685790	Garem1	GRB2 associated regulator of MAPK1 subtype 1	18		positive regulation of ERK1 and ERK2 cascade			ISO	Q9H706 	J:164563 	
+MGI:95660	Gas6	growth arrest specific 6	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q14393 	J:73065 	
+MGI:95664	Gata4	GATA binding protein 4	14		positive regulation of ERK1 and ERK2 cascade	happens in cardiac muscle cell		IDA		J:232979 	
+MGI:95674	Gcg	glucagon	2		positive regulation of ERK1 and ERK2 cascade			IDA		J:160042 	
+MGI:1100870	Gcnt2	glucosaminyl (N-acetyl) transferase 2, I-branching enzyme	13		positive regulation of ERK1 and ERK2 cascade			IMP		J:205650 	
+MGI:1100870	Gcnt2	glucosaminyl (N-acetyl) transferase 2, I-branching enzyme	13		positive regulation of ERK1 and ERK2 cascade			ISO	Q8N0V5 	J:164563 	
+MGI:1917770	Glipr2	GLI pathogenesis-related 2	4		positive regulation of ERK1 and ERK2 cascade			ISO	Q9H4G4 	J:164563 	
+MGI:95772	Gnai2	guanine nucleotide binding protein (G protein), alpha inhibiting 2	9		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:620243 	J:155856 	
+MGI:2653863	Gpbar1	G protein-coupled bile acid receptor 1	1		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:631400 	J:155856 	
+MGI:1924104	Gper1	G protein-coupled estrogen receptor 1	5		positive regulation of ERK1 and ERK2 cascade			IDA		J:174852 J:201283 	
+MGI:1924104	Gper1	G protein-coupled estrogen receptor 1	5		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:619845 	J:155856 	
+MGI:1924104	Gper1	G protein-coupled estrogen receptor 1	5		positive regulation of ERK1 and ERK2 cascade			ISO	Q99527 	J:164563 	
+MGI:1934765	Gpnmb	glycoprotein (transmembrane) nmb	6		positive regulation of ERK1 and ERK2 cascade	happens in brain		IC	GO:0001934 	J:215633 	
+MGI:1934765	Gpnmb	glycoprotein (transmembrane) nmb	6		positive regulation of ERK1 and ERK2 cascade	uses UniProtKB:P28862		IDA		J:129206 	
+MGI:2685064	Gpr55	G protein-coupled receptor 55	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q9Y2T6 	J:164563 	
+MGI:2442034	Gpr183	G protein-coupled receptor 183	14		positive regulation of ERK1 and ERK2 cascade			ISO	P32249 	J:164563 	
+MGI:103580	Hand2	heart and neural crest derivatives expressed 2	8		positive regulation of ERK1 and ERK2 cascade			ISO	P61296 	J:164563 	
+MGI:2159682	Havcr2	hepatitis A virus cellular receptor 2	11		positive regulation of ERK1 and ERK2 cascade			IDA		J:127314 	
+MGI:2385650	Hcrtr1	hypocretin (orexin) receptor 1	4		positive regulation of ERK1 and ERK2 cascade			IDA		J:179764 	
+MGI:96113	Hmgb1	high mobility group box 1	5		positive regulation of ERK1 and ERK2 cascade			IDA		J:126243 	
+MGI:96113	Hmgb1	high mobility group box 1	5		positive regulation of ERK1 and ERK2 cascade			ISO	P09429 	J:164563 	
+MGI:96159	Hmgcr	3-hydroxy-3-methylglutaryl-Coenzyme A reductase	13		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2803 	J:155856 	
+MGI:96224	Hras	Harvey rat sarcoma virus oncogene	7		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2827 	J:155856 	
+MGI:96224	Hras	Harvey rat sarcoma virus oncogene	7		positive regulation of ERK1 and ERK2 cascade			ISO	P01112 	J:164563 	
+MGI:109521	Htr2a	5-hydroxytryptamine (serotonin) receptor 2A	14		positive regulation of ERK1 and ERK2 cascade			ISO	P28223 	J:164563 	
+MGI:109323	Htr2b	5-hydroxytryptamine (serotonin) receptor 2B	1		positive regulation of ERK1 and ERK2 cascade			ISO	P41595 	J:164563 	
+MGI:96281	Htr2c	5-hydroxytryptamine (serotonin) receptor 2C	X		positive regulation of ERK1 and ERK2 cascade			ISO	P28335 	J:164563 	
+MGI:96382	Iapp	islet amyloid polypeptide	6		positive regulation of ERK1 and ERK2 cascade			ISO	P10997 	J:164563 	
+MGI:96392	Icam1	intercellular adhesion molecule 1	9		positive regulation of ERK1 and ERK2 cascade			ISO	P05362 	J:164563 	
+MGI:96432	Igf1	insulin-like growth factor 1	10		positive regulation of ERK1 and ERK2 cascade			ISO	P05019 	J:164563 	
+MGI:96542	Il1a	interleukin 1 alpha	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2890 	J:155856 	
+MGI:96543	Il1b	interleukin 1 beta	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2891 	J:155856 	
+MGI:96559	Il6	interleukin 6	5		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:2901 	J:155856 	
+MGI:96573	Ins2	insulin II	7		positive regulation of ERK1 and ERK2 cascade	uses Mapk3,uses Mapk1		IDA		J:79150 	
+MGI:96612	Itgb3	integrin beta 3	11		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:628868 	J:155856 	
+MGI:96646	Jun	jun proto-oncogene	4		positive regulation of ERK1 and ERK2 cascade			IMP	MGI:2673694 	J:216505 	
+MGI:96683	Kdr	kinase insert domain protein receptor	5		positive regulation of ERK1 and ERK2 cascade			ISO	P35968 	J:164563 	
+MGI:96828	Lrp1	low density lipoprotein receptor-related protein 1	10		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1307535 	J:155856 	
+MGI:1346866	Map2k1	mitogen-activated protein kinase kinase 1	9		positive regulation of ERK1 and ERK2 cascade			ISO	Q02750 	J:164563 	
+MGI:1346871	Map2k7	mitogen-activated protein kinase kinase 7	8		positive regulation of ERK1 and ERK2 cascade			ISO	O14733 	J:164563 	
+MGI:1346881	Map3k12	mitogen-activated protein kinase kinase kinase 12	15		positive regulation of ERK1 and ERK2 cascade			ISO	Q12852 	J:164563 	
+MGI:1346859	Mapk3	mitogen-activated protein kinase 3	7		positive regulation of ERK1 and ERK2 cascade			ISO	P27361 	J:164563 	
+MGI:1098644	Mfhas1	malignant fibrous histiocytoma amplified sequence 1	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q9Y4C4 	J:164563 	
+MGI:96982	Mif	macrophage migration inhibitory factor (glycosylation-inhibiting factor)	10		positive regulation of ERK1 and ERK2 cascade			IDA		J:114878 J:157889 	
+MGI:96982	Mif	macrophage migration inhibitory factor (glycosylation-inhibiting factor)	10		positive regulation of ERK1 and ERK2 cascade			ISO	P14174 	J:164563 	
+MGI:97173	Mt3	metallothionein 3	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000591637 	J:265628 	
+MGI:97173	Mt3	metallothionein 3	8		positive regulation of ERK1 and ERK2 cascade	happens at the same time as cellular response to zinc ion		IMP		J:178564 	
+MGI:97173	Mt3	metallothionein 3	8		positive regulation of ERK1 and ERK2 cascade			ISO	P25713 	J:164563 	
+MGI:1915485	Mturn	maturin, neural progenitor differentiation regulator homolog (Xenopus)	6		positive regulation of ERK1 and ERK2 cascade			ISO	Q8N3F0 	J:164563 	
+MGI:2384590	Ndrg4	N-myc downstream regulated gene 4	8		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002592750 	J:265628 	
+MGI:2384590	Ndrg4	N-myc downstream regulated gene 4	8		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:621593 	J:155856 	
+MGI:2384590	Ndrg4	N-myc downstream regulated gene 4	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q9ULP0 	J:164563 	
+MGI:2152211	Necab2	N-terminal EF-hand calcium binding protein 2	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q7Z6G3 	J:164563 	
+MGI:102744	Nelfe	negative elongation factor complex member E, Rdbp	17		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1303325 	J:155856 	
+MGI:97321	Ngf	nerve growth factor	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1598328 	J:155856 	
+MGI:1341839	Nod1	nucleotide-binding oligomerization domain containing 1	6		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage		IDA		J:132126 	
+MGI:2429397	Nod2	nucleotide-binding oligomerization domain containing 2	8		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage		IDA		J:132126 	
+MGI:2429397	Nod2	nucleotide-binding oligomerization domain containing 2	8		positive regulation of ERK1 and ERK2 cascade			IDA		J:170396 	
+MGI:2429397	Nod2	nucleotide-binding oligomerization domain containing 2	8		positive regulation of ERK1 and ERK2 cascade			IMP	MGI:3529594 	J:178691 	
+MGI:97359	Nodal	nodal	10		positive regulation of ERK1 and ERK2 cascade			ISO	Q96S42 	J:164563 	
+MGI:97363	Notch1	notch 1	2		positive regulation of ERK1 and ERK2 cascade			ISO	P46531 	J:164563 	
+MGI:97364	Notch2	notch 2	3		positive regulation of ERK1 and ERK2 cascade			ISO	Q04721 	J:164563 	
+MGI:1354184	Nox4	NADPH oxidase 4	7		positive regulation of ERK1 and ERK2 cascade			IMP		J:172977 	
+MGI:2148811	Npnt	nephronectin	3		positive regulation of ERK1 and ERK2 cascade	happens at the same time as osteoblast differentiation		IDA		J:155528 	
+MGI:2441738	Npsr1	neuropeptide S receptor 1	9		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1564154 	J:155856 	
+MGI:108077	Nptn	neuroplastin	9		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:620296 	J:155856 	
+MGI:97374	Npy	neuropeptide Y	6		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3197 	J:155856 	
+MGI:108082	Npy5r	neuropeptide Y receptor Y5	8		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3199 	J:155856 	
+MGI:104513	Nqo2	N-ribosyldihydronicotinamide quinone reductase 2	13		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1303320 	J:155856 	
+MGI:96083	Nrg1	neuregulin 1	8		positive regulation of ERK1 and ERK2 cascade			ISO	Q02297 	J:164563 	
+MGI:106206	Nrp1	neuropilin 1	8		positive regulation of ERK1 and ERK2 cascade	happens in endothelial cell of artery,is a part of vascular endothelial growth factor signaling pathway|happens in heart,is a part of vascular endothelial growth factor signaling pathway		IMP		J:197143 	
+MGI:1096391	Nrxn1	neurexin I	17		positive regulation of ERK1 and ERK2 cascade			ISO	P58400 	J:164563 	
+MGI:97383	Ntrk1	neurotrophic tyrosine kinase, receptor, type 1	3	NOT	positive regulation of ERK1 and ERK2 cascade			IBA	PTN002400475 	J:265628 	
+MGI:97384	Ntrk2	neurotrophic tyrosine kinase, receptor, type 2	13	NOT	positive regulation of ERK1 and ERK2 cascade			IBA	PTN002400475 	J:265628 	
+MGI:97385	Ntrk3	neurotrophic tyrosine kinase, receptor, type 3	7	NOT	positive regulation of ERK1 and ERK2 cascade			IBA	PTN002400475 	J:265628 	
+MGI:108018	Ntsr2	neurotensin receptor 2	12		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:70962 	J:155856 	
+MGI:3030354	Olfr520	olfactory receptor 520	7		positive regulation of ERK1 and ERK2 cascade			ISO	A6NND4 	J:164563 	
+MGI:3030355	Olfr521	olfactory receptor 521	7		positive regulation of ERK1 and ERK2 cascade			ISO	A6NND4 	J:164563 	
+MGI:97441	Oprm1	opioid receptor, mu 1	10		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3234 	J:155856 	
+MGI:105049	P2ry1	purinergic receptor P2Y, G-protein coupled 1	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3242 	J:155856 	
+MGI:2673874	P2ry6	pyrimidinergic receptor P2Y, G-protein coupled, 6	7		positive regulation of ERK1 and ERK2 cascade			ISO	Q15077 	J:164563 	
+MGI:1277116	Pde8a	phosphodiesterase 8A	7		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002602939 	J:265628 	
+MGI:1277116	Pde8a	phosphodiesterase 8A	7		positive regulation of ERK1 and ERK2 cascade			IMP		J:195529 	
+MGI:1277116	Pde8a	phosphodiesterase 8A	7		positive regulation of ERK1 and ERK2 cascade			ISO	O60658 	J:164563 	
+MGI:97527	Pdgfa	platelet derived growth factor, alpha	5		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000180420 	J:265628 	
+MGI:97527	Pdgfa	platelet derived growth factor, alpha	5		positive regulation of ERK1 and ERK2 cascade			ISO	P04085 	J:164563 	
+MGI:97528	Pdgfb	platelet derived growth factor, B polypeptide	15		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000180420 	J:265628 	
+MGI:97528	Pdgfb	platelet derived growth factor, B polypeptide	15		positive regulation of ERK1 and ERK2 cascade			ISO	P01127 	J:164563 	
+MGI:1859631	Pdgfc	platelet-derived growth factor, C polypeptide	3		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000180420 	J:265628 	
+MGI:1919035	Pdgfd	platelet-derived growth factor, D polypeptide	9		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000180420 	J:265628 	
+MGI:97530	Pdgfra	platelet derived growth factor receptor, alpha polypeptide	5		positive regulation of ERK1 and ERK2 cascade			ISO	P16234 	J:164563 	
+MGI:97531	Pdgfrb	platelet derived growth factor receptor, beta polypeptide	18		positive regulation of ERK1 and ERK2 cascade			IDA		J:172977 	
+MGI:97531	Pdgfrb	platelet derived growth factor receptor, beta polypeptide	18		positive regulation of ERK1 and ERK2 cascade			IMP		J:86542 	
+MGI:97531	Pdgfrb	platelet derived growth factor receptor, beta polypeptide	18		positive regulation of ERK1 and ERK2 cascade			ISO	P09619 	J:164563 	
+MGI:97572	Phb	prohibitin	11		positive regulation of ERK1 and ERK2 cascade			ISO	P35232 	J:164563 	
+MGI:102520	Phb2	prohibitin 2	6		positive regulation of ERK1 and ERK2 cascade			ISO	Q99623 	J:164563 	
+MGI:101899	Pla2g5	phospholipase A2, group V	4		positive regulation of ERK1 and ERK2 cascade			ISO	P39877 	J:164563 	
+MGI:97595	Prkca	protein kinase C, alpha	11		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3395 	J:155856 	
+MGI:97602	Prkcz	protein kinase C, zeta	4		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3399 	J:155856 	
+MGI:97602	Prkcz	protein kinase C, zeta	4		positive regulation of ERK1 and ERK2 cascade			ISO	Q05513 	J:164563 	
+MGI:2141917	Prkd2	protein kinase D2	7		positive regulation of ERK1 and ERK2 cascade			IDA		J:180465 	
+MGI:1913379	Prxl2c	peroxiredoxin like 2C	13		positive regulation of ERK1 and ERK2 cascade			ISO	Q7RTV5 	J:164563 	
+MGI:109583	Pten	phosphatase and tensin homolog	19		positive regulation of ERK1 and ERK2 cascade			IMP		J:216935 	
+MGI:104908	Ptk2b	PTK2 protein tyrosine kinase 2 beta	14		positive regulation of ERK1 and ERK2 cascade			ISO	Q14289 	J:164563 	
+MGI:99511	Ptpn11	protein tyrosine phosphatase, non-receptor type 11	5		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:87860 	J:140959 	
+MGI:99511	Ptpn11	protein tyrosine phosphatase, non-receptor type 11	5		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:99604 	J:205567 	
+MGI:99511	Ptpn11	protein tyrosine phosphatase, non-receptor type 11	5		positive regulation of ERK1 and ERK2 cascade			ISO	Q06124 	J:164563 	
+MGI:107170	Ptpn22	protein tyrosine phosphatase, non-receptor type 22 (lymphoid)	3		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000440270 	J:265628 	
+MGI:107170	Ptpn22	protein tyrosine phosphatase, non-receptor type 22 (lymphoid)	3		positive regulation of ERK1 and ERK2 cascade	happens in myeloid dendritic cell,is a part of cellular response to muramyl dipeptide		IMP		J:221551 	
+MGI:107170	Ptpn22	protein tyrosine phosphatase, non-receptor type 22 (lymphoid)	3		positive regulation of ERK1 and ERK2 cascade			ISO	Q9Y2R2 	J:164563 	
+MGI:97810	Ptprc	protein tyrosine phosphatase, receptor type, C	1		positive regulation of ERK1 and ERK2 cascade	happens in T cell,regulates a function/process that happens in T cell,is a part of membrane raft distribution		IGI	P05480 	J:96410 	
+MGI:1931465	Pycard	PYD and CARD domain containing	7		positive regulation of ERK1 and ERK2 cascade			IMP		J:190277 	
+MGI:1931465	Pycard	PYD and CARD domain containing	7		positive regulation of ERK1 and ERK2 cascade			ISO	Q9ULZ3 	J:164563 	
+MGI:1860292	Ramp3	receptor (calcitonin) activity modifying protein 3	11		positive regulation of ERK1 and ERK2 cascade			ISO	O60896 	J:164563 	
+MGI:97852	Rap1a	RAS-related protein 1a	3		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:894315 	J:196950 	
+MGI:97852	Rap1a	RAS-related protein 1a	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1359694 	J:155856 	
+MGI:894315	Rap1b	RAS related protein 1b	10		positive regulation of ERK1 and ERK2 cascade			IGI	MGI:97852 	J:196950 	
+MGI:104580	Rapgef1	Rap guanine nucleotide exchange factor (GEF) 1	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:619793 	J:155856 	
+MGI:2659071	Rapgef2	Rap guanine nucleotide exchange factor (GEF) 2	3		positive regulation of ERK1 and ERK2 cascade			IDA		J:201420 	
+MGI:2659071	Rapgef2	Rap guanine nucleotide exchange factor (GEF) 2	3		positive regulation of ERK1 and ERK2 cascade			IMP		J:198912 	
+MGI:2659071	Rapgef2	Rap guanine nucleotide exchange factor (GEF) 2	3		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:1306434 	J:155856 	
+MGI:2659071	Rapgef2	Rap guanine nucleotide exchange factor (GEF) 2	3		positive regulation of ERK1 and ERK2 cascade			ISO	Q9Y4G8 	J:164563 	
+MGI:97856	Rara	retinoic acid receptor, alpha	11		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3534 	J:155856 	
+MGI:1314635	Rasgrp1	RAS guanyl releasing protein 1	2		positive regulation of ERK1 and ERK2 cascade			ISO	O95267 	J:164563 	
+MGI:1891456	Ripk2	receptor (TNFRSF)-interacting serine-threonine kinase 2	4		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage		IDA		J:132126 	
+MGI:1891456	Ripk2	receptor (TNFRSF)-interacting serine-threonine kinase 2	4		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage		IMP	MGI:2660793 	J:75400 	
+MGI:1347520	Ror1	receptor tyrosine kinase-like orphan receptor 1	4	NOT	positive regulation of ERK1 and ERK2 cascade			IBA	PTN002400475 	J:265628 	
+MGI:1347521	Ror2	receptor tyrosine kinase-like orphan receptor 2	13	NOT	positive regulation of ERK1 and ERK2 cascade			IBA	PTN002400475 	J:265628 	
+MGI:3610314	Scimp	SLP adaptor and CSK interacting membrane protein	11		positive regulation of ERK1 and ERK2 cascade			IMP		J:178776 	
+MGI:3610314	Scimp	SLP adaptor and CSK interacting membrane protein	11		positive regulation of ERK1 and ERK2 cascade			ISO	Q6UWF3 	J:164563 	
+MGI:1306826	Sema7a	sema domain, immunoglobulin domain (Ig), and GPI membrane anchor, (semaphorin) 7A	9		positive regulation of ERK1 and ERK2 cascade			IBA	PTN002592905 	J:265628 	
+MGI:1306826	Sema7a	sema domain, immunoglobulin domain (Ig), and GPI membrane anchor, (semaphorin) 7A	9		positive regulation of ERK1 and ERK2 cascade			IDA		J:121431 	
+MGI:1306826	Sema7a	sema domain, immunoglobulin domain (Ig), and GPI membrane anchor, (semaphorin) 7A	9		positive regulation of ERK1 and ERK2 cascade			ISO	O75326 	J:164563 	
+MGI:107173	Serpinf2	serine (or cysteine) peptidase inhibitor, clade F, member 2	11		positive regulation of ERK1 and ERK2 cascade			ISO	P08697 	J:164563 	
+MGI:98296	Shc1	src homology 2 domain-containing transforming protein C1	3		positive regulation of ERK1 and ERK2 cascade			ISO	P29353 	J:164563 	
+MGI:1351314	Slamf1	signaling lymphocytic activation molecule family member 1	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q13291 	J:164563 	
+MGI:2685058	Slc30a10	solute carrier family 30, member 10	1		positive regulation of ERK1 and ERK2 cascade			ISO	Q6XR72 	J:164563 	
+MGI:1345138	Spry2	sprouty RTK signaling antagonist 2	14		positive regulation of ERK1 and ERK2 cascade			ISO	O43597 	J:164563 	
+MGI:98397	Src	Rous sarcoma oncogene	2		positive regulation of ERK1 and ERK2 cascade			IMP		J:114878 	
+MGI:98397	Src	Rous sarcoma oncogene	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:620795 	J:155856 	
+MGI:105372	Sstr4	somatostatin receptor 4	2		positive regulation of ERK1 and ERK2 cascade			ISO	RGD:3764 	J:155856 	
+MGI:98664	Tek	TEK receptor tyrosine kinase	4		positive regulation of ERK1 and ERK2 cascade			ISO	Q02763 	J:164563 	
+MGI:1306805	Tff2	trefoil factor 2 (spasmolytic protein 1)	17		positive regulation of ERK1 and ERK2 cascade			IGI	P61072 	J:147597 	
+MGI:98725	Tgfb1	transforming growth factor, beta 1	7		positive regulation of ERK1 and ERK2 cascade			ISO	P01137 	J:164563 	
+MGI:101875	Thpo	thrombopoietin	16		positive regulation of ERK1 and ERK2 cascade			IBA	PTN001316512 	J:265628 	
+MGI:101875	Thpo	thrombopoietin	16		positive regulation of ERK1 and ERK2 cascade			IDA		J:181770 	
+MGI:2152213	Tirap	toll-interleukin 1 receptor (TIR) domain-containing adaptor protein	9		positive regulation of ERK1 and ERK2 cascade			ISO	P58753 	J:164563 	
+MGI:1346060	Tlr2	toll-like receptor 2	3		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage,happens in macrophage		IMP	MGI:2674036 	J:178691 	
+MGI:96824	Tlr4	toll-like receptor 4	4		positive regulation of ERK1 and ERK2 cascade	regulates a function/process that happens in macrophage		IDA		J:132126 	
+MGI:2685363	Tnfaip8l3	tumor necrosis factor, alpha-induced protein 8-like 3	9		positive regulation of ERK1 and ERK2 cascade			IDA		J:217197 	
+MGI:1314891	Tnfrsf11a	tumor necrosis factor receptor superfamily, member 11a, NFKB activator	1		positive regulation of ERK1 and ERK2 cascade via TNFSF11-mediated signaling			ISO	Q9Y6Q6 	J:164563 	
+MGI:1100089	Tnfsf11	tumor necrosis factor (ligand) superfamily, member 11	14		positive regulation of ERK1 and ERK2 cascade via TNFSF11-mediated signaling			ISO	O14788 	J:164563 	
+MGI:1341264	Tpbg	trophoblast glycoprotein	9		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IGI	MGI:103556 	J:200277 	
+MGI:1341264	Tpbg	trophoblast glycoprotein	9		positive regulation of ERK1 and ERK2 cascade	happens in fibroblast		IGI	MGI:109563 	J:160174 	
+MGI:1913150	Trem2	triggering receptor expressed on myeloid cells 2	17		positive regulation of ERK1 and ERK2 cascade			IBA	PTN001724592 	J:265628 	
+MGI:1913150	Trem2	triggering receptor expressed on myeloid cells 2	17		positive regulation of ERK1 and ERK2 cascade			IMP		J:273509 	
+MGI:1913150	Trem2	triggering receptor expressed on myeloid cells 2	17		positive regulation of ERK1 and ERK2 cascade			ISO	Q9NZC2 	J:164563 	
+MGI:1926945	Trpv4	transient receptor potential cation channel, subfamily V, member 4	5		positive regulation of ERK1 and ERK2 cascade	happens in fat cell,happens at the same time as cellular response to calcium ion		IMP		J:188264 	
+MGI:103178	Vegfa	vascular endothelial growth factor A	17		positive regulation of ERK1 and ERK2 cascade	happens in neuroendocrine cell,happens at the same time as vascular endothelial growth factor signaling pathway	UniProtKB:Q00731-2	IDA		J:175836 	
+MGI:103178	Vegfa	vascular endothelial growth factor A	17		positive regulation of ERK1 and ERK2 cascade			ISO	P15692 	J:164563 	
+MGI:106199	Vegfb	vascular endothelial growth factor B	19		positive regulation of ERK1 and ERK2 cascade			ISO	P49765 	J:164563 	
+MGI:104593	Xcl1	chemokine (C motif) ligand 1	1		positive regulation of ERK1 and ERK2 cascade			IBA	PTN000245709 	J:265628 	
+

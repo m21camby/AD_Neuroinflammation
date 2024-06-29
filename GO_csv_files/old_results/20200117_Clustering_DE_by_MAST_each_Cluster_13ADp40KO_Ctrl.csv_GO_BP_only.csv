@@ -1,0 +1,25 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0003407","neural retina development",49,2,0.03,1,0.00039,0.00039,0.0408163265306122
+"32","BP","GO:0060042","retina morphogenesis in camera-type eye",49,2,0.03,2,0.00039,0.00039,0.0408163265306122
+"33","BP","GO:0010977","negative regulation of neuron projection...",167,2,0.1,6,0.00444,0.00444,0.0119760479041916
+"35","BP","GO:0048167","regulation of synaptic plasticity",211,2,0.13,11,0.00699,0.00699,0.00947867298578199
+"39","BP","GO:0060219","camera-type eye photoreceptor cell diffe...",20,1,0.01,21,0.01219,0.01219,0.05
+"40","BP","GO:0007205","protein kinase C-activating G protein-co...",20,1,0.01,22,0.01219,0.01219,0.05
+"41","BP","GO:1902932","positive regulation of alcohol biosynthe...",22,1,0.01,23,0.01341,0.01341,0.0454545454545455
+"42","BP","GO:0050858","negative regulation of antigen receptor-...",22,1,0.01,24,0.01341,0.01341,0.0454545454545455
+"43","BP","GO:0006144","purine nucleobase metabolic process",22,1,0.01,25,0.01341,0.01341,0.0454545454545455
+"44","BP","GO:0045940","positive regulation of steroid metabolic...",22,1,0.01,26,0.01341,0.01341,0.0454545454545455
+"45","BP","GO:1904062","regulation of cation transmembrane trans...",308,2,0.19,29,0.01446,0.01446,0.00649350649350649
+"47","BP","GO:0006213","pyrimidine nucleoside metabolic process",24,1,0.01,32,0.01462,0.01462,0.0416666666666667
+"48","BP","GO:1901658","glycosyl compound catabolic process",24,1,0.01,33,0.01462,0.01462,0.0416666666666667
+"50","BP","GO:0051894","positive regulation of focal adhesion as...",25,1,0.02,37,0.01522,0.01522,0.04
+"51","BP","GO:0061099","negative regulation of protein tyrosine ...",25,1,0.02,38,0.01522,0.01522,0.04
+"52","BP","GO:0090181","regulation of cholesterol metabolic proc...",26,1,0.02,40,0.01582,0.01582,0.0384615384615385
+"53","BP","GO:2000311","regulation of AMPA receptor activity",26,1,0.02,41,0.01582,0.01582,0.0384615384615385
+"54","BP","GO:0035767","endothelial cell chemotaxis",27,1,0.02,43,0.01643,0.01643,0.037037037037037
+"55","BP","GO:0010092","specification of animal organ identity",27,1,0.02,44,0.01643,0.01643,0.037037037037037
+"56","BP","GO:0002691","regulation of cellular extravasation",27,1,0.02,45,0.01643,0.01643,0.037037037037037
+"57","BP","GO:0031128","developmental induction",28,1,0.02,47,0.01703,0.01703,0.0357142857142857
+"58","BP","GO:0003401","axis elongation",29,1,0.02,49,0.01764,0.01764,0.0344827586206897
+"59","BP","GO:0003156","regulation of animal organ formation",29,1,0.02,50,0.01764,0.01764,0.0344827586206897
+"60","BP","GO:0060977","coronary vasculature morphogenesis",30,1,0.02,51,0.01824,0.01824,0.0333333333333333

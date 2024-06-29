@@ -1,0 +1,12 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0006144","purine nucleobase metabolic process",20,1,0,1,0.0013,0.0013,0.05
+"32","BP","GO:0001523","retinoid metabolic process",31,1,0,2,0.002,0.002,0.032258064516129
+"33","BP","GO:0034308","primary alcohol metabolic process",46,1,0,6,0.003,0.003,0.0217391304347826
+"34","BP","GO:0034754","cellular hormone metabolic process",73,1,0,8,0.0047,0.0047,0.0136986301369863
+"35","BP","GO:0009914","hormone transport",301,1,0.02,11,0.0193,0.0193,0.00332225913621262
+"46","BP","GO:0009112","nucleobase metabolic process",33,1,0,3,1,0.0021,0.0303030303030303
+"47","BP","GO:0042445","hormone metabolic process",154,1,0.01,9,1,0.0099,0.00649350649350649
+"48","BP","GO:0006066","alcohol metabolic process",263,1,0.02,10,1,0.0169,0.00380228136882129
+"55","BP","GO:0016101","diterpenoid metabolic process",33,1,0,4,1,0.0021,0.0303030303030303
+"57","BP","GO:1901615","organic hydroxy compound metabolic proce...",395,1,0.03,12,1,0.0253,0.00253164556962025
+"60","BP","GO:0006720","isoprenoid metabolic process",55,1,0,7,1,0.0035,0.0181818181818182

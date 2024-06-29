@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0022604","regulation of cell morphogenesis",474,3,0.13,1,0.0029,0.00014,0.00632911392405063
+"32","BP","GO:0050808","synapse organization",404,2,0.11,11,0.0045,0.0045,0.00495049504950495
+"33","BP","GO:0055083","monovalent inorganic anion homeostasis",20,1,0.01,13,0.0055,0.00552,0.05
+"34","BP","GO:0048266","behavioral response to pain",20,1,0.01,14,0.0055,0.00552,0.05
+"35","BP","GO:0007271","synaptic transmission, cholinergic",21,1,0.01,15,0.0058,0.00579,0.0476190476190476
+"36","BP","GO:0007274","neuromuscular synaptic transmission",21,1,0.01,16,0.0058,0.00579,0.0476190476190476
+"37","BP","GO:0021522","spinal cord motor neuron differentiation",21,1,0.01,17,0.0058,0.00579,0.0476190476190476
+"38","BP","GO:0048670","regulation of collateral sprouting",22,1,0.01,18,0.0061,0.00607,0.0454545454545455
+"39","BP","GO:0060004","reflex",22,1,0.01,19,0.0061,0.00607,0.0454545454545455
+"40","BP","GO:0072657","protein localization to membrane",490,2,0.14,20,0.0066,0.00656,0.00408163265306122
+"41","BP","GO:0021697","cerebellar cortex formation",24,1,0.01,21,0.0066,0.00662,0.0416666666666667
+"42","BP","GO:0048103","somatic stem cell division",24,1,0.01,22,0.0066,0.00662,0.0416666666666667
+"43","BP","GO:0098901","regulation of cardiac muscle cell action...",25,1,0.01,25,0.0069,0.00689,0.04
+"44","BP","GO:0007214","gamma-aminobutyric acid signaling pathwa...",26,1,0.01,26,0.0072,0.00717,0.0384615384615385
+"45","BP","GO:0046885","regulation of hormone biosynthetic proce...",26,1,0.01,27,0.0072,0.00717,0.0384615384615385
+"46","BP","GO:0000096","sulfur amino acid metabolic process",27,1,0.01,28,0.0074,0.00744,0.037037037037037
+"47","BP","GO:1904646","cellular response to amyloid-beta",28,1,0.01,29,0.0077,0.00772,0.0357142857142857
+"48","BP","GO:0015695","organic cation transport",28,1,0.01,30,0.0077,0.00772,0.0357142857142857
+"49","BP","GO:0007026","negative regulation of microtubule depol...",30,1,0.01,35,0.0083,0.00827,0.0333333333333333
+"50","BP","GO:0021680","cerebellar Purkinje cell layer developme...",30,1,0.01,36,0.0083,0.00827,0.0333333333333333
+"51","BP","GO:0033238","regulation of cellular amine metabolic p...",33,1,0.01,41,0.0091,0.00909,0.0303030303030303
+"52","BP","GO:1901385","regulation of voltage-gated calcium chan...",33,1,0.01,42,0.0091,0.00909,0.0303030303030303
+"53","BP","GO:0086004","regulation of cardiac muscle cell contra...",36,1,0.01,48,0.0099,0.00992,0.0277777777777778
+"54","BP","GO:0050881","musculoskeletal movement",41,1,0.01,52,0.0113,0.01129,0.024390243902439
+"55","BP","GO:0050879","multicellular organismal movement",41,1,0.01,53,0.0113,0.01129,0.024390243902439
+"56","BP","GO:0007628","adult walking behavior",41,1,0.01,54,0.0113,0.01129,0.024390243902439
+"57","BP","GO:0090659","walking behavior",43,1,0.01,59,0.0118,0.01184,0.0232558139534884
+"58","BP","GO:0021795","cerebral cortex cell migration",52,1,0.01,74,0.0143,0.0143,0.0192307692307692
+"59","BP","GO:0007405","neuroblast proliferation",55,1,0.02,75,0.0151,0.01512,0.0181818181818182
+"60","BP","GO:0050885","neuromuscular process controlling balanc...",57,1,0.02,77,0.0157,0.01567,0.0175438596491228

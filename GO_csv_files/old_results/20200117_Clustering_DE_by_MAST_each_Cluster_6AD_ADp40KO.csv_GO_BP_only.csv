@@ -1,0 +1,30 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0019722","calcium-mediated signaling",150,3,0.11,1,0.00017,0.00017,0.02
+"33","BP","GO:0001764","neuron migration",155,2,0.12,6,0.00591,0.00591,0.0129032258064516
+"34","BP","GO:0014829","vascular smooth muscle contraction",20,1,0.02,10,0.01514,0.01514,0.05
+"35","BP","GO:1903514","release of sequestered calcium ion into ...",20,1,0.02,11,0.01514,0.01514,0.05
+"36","BP","GO:0014808","release of sequestered calcium ion into ...",20,1,0.02,12,0.01514,0.01514,0.05
+"37","BP","GO:0033198","response to ATP",21,1,0.02,13,0.01589,0.01589,0.0476190476190476
+"38","BP","GO:2001224","positive regulation of neuron migration",21,1,0.02,14,0.01589,0.01589,0.0476190476190476
+"39","BP","GO:0140115","export across plasma membrane",21,1,0.02,15,0.01589,0.01589,0.0476190476190476
+"40","BP","GO:0032878","regulation of establishment or maintenan...",24,1,0.02,16,0.01814,0.01814,0.0416666666666667
+"41","BP","GO:0071312","cellular response to alkaloid",24,1,0.02,17,0.01814,0.01814,0.0416666666666667
+"42","BP","GO:0070296","sarcoplasmic reticulum calcium ion trans...",24,1,0.02,18,0.01814,0.01814,0.0416666666666667
+"43","BP","GO:0001523","retinoid metabolic process",25,1,0.02,19,0.01889,0.01889,0.04
+"44","BP","GO:0071108","protein K48-linked deubiquitination",25,1,0.02,20,0.01889,0.01889,0.04
+"45","BP","GO:0002026","regulation of the force of heart contrac...",26,1,0.02,21,0.01964,0.01964,0.0384615384615385
+"46","BP","GO:0086065","cell communication involved in cardiac c...",27,1,0.02,22,0.02039,0.02039,0.037037037037037
+"47","BP","GO:0006929","substrate-dependent cell migration",27,1,0.02,23,0.02039,0.02039,0.037037037037037
+"48","BP","GO:0016101","diterpenoid metabolic process",27,1,0.02,24,0.02039,0.02039,0.037037037037037
+"49","BP","GO:0090075","relaxation of muscle",28,1,0.02,25,0.02114,0.02114,0.0357142857142857
+"50","BP","GO:0071320","cellular response to cAMP",28,1,0.02,26,0.02114,0.02114,0.0357142857142857
+"51","BP","GO:0070536","protein K63-linked deubiquitination",28,1,0.02,27,0.02114,0.02114,0.0357142857142857
+"52","BP","GO:0006721","terpenoid metabolic process",29,1,0.02,28,0.02188,0.02188,0.0344827586206897
+"53","BP","GO:0009112","nucleobase metabolic process",30,1,0.02,29,0.02263,0.02263,0.0333333333333333
+"54","BP","GO:0070884","regulation of calcineurin-NFAT signaling...",31,1,0.02,30,0.02338,0.02338,0.032258064516129
+"55","BP","GO:0055078","sodium ion homeostasis",31,1,0.02,31,0.02338,0.02338,0.032258064516129
+"56","BP","GO:0106056","regulation of calcineurin-mediated signa...",31,1,0.02,32,0.02338,0.02338,0.032258064516129
+"57","BP","GO:0010762","regulation of fibroblast migration",35,1,0.03,33,0.02636,0.02636,0.0285714285714286
+"58","BP","GO:0006979","response to oxidative stress",340,2,0.26,34,0.02643,0.02643,0.00588235294117647
+"59","BP","GO:0010256","endomembrane system organization",344,2,0.26,35,0.02702,0.02702,0.00581395348837209
+"60","BP","GO:0030501","positive regulation of bone mineralizati...",36,1,0.03,36,0.0271,0.0271,0.0277777777777778

@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0030165","PDZ domain binding",111,5,0.24,1,4e-06,4e-06,0.045045045045045
+"2","MF","GO:0008066","glutamate receptor activity",26,3,0.06,2,2.4e-05,2.4e-05,0.115384615384615
+"3","MF","GO:0005245","voltage-gated calcium channel activity",45,2,0.1,9,0.0044,0.00436,0.0444444444444444
+"4","MF","GO:0001540","amyloid-beta binding",52,2,0.11,10,0.0058,0.00578,0.0384615384615385
+"5","MF","GO:0022824","transmitter-gated ion channel activity",53,2,0.12,12,0.006,0.006,0.0377358490566038
+"6","MF","GO:0005516","calmodulin binding",171,3,0.38,14,0.0061,0.00613,0.0175438596491228
+"7","MF","GO:0045296","cadherin binding",54,2,0.12,15,0.0062,0.00622,0.037037037037037
+"8","MF","GO:0001099","basal RNA polymerase II transcription ma...",56,2,0.12,17,0.0067,0.00668,0.0357142857142857
+"9","MF","GO:0016597","amino acid binding",63,2,0.14,21,0.0084,0.00839,0.0317460317460317
+"10","MF","GO:0099106","ion channel regulator activity",95,2,0.21,24,0.0184,0.01835,0.0210526315789474
+"11","MF","GO:0016247","channel regulator activity",119,2,0.26,28,0.0279,0.02794,0.0168067226890756
+"12","MF","GO:0044325","ion channel binding",123,2,0.27,30,0.0297,0.02969,0.016260162601626
+"13","MF","GO:0001085","RNA polymerase II transcription factor b...",128,2,0.28,32,0.0319,0.03195,0.015625
+"14","MF","GO:0004930","G protein-coupled receptor activity",322,3,0.71,33,0.033,0.03303,0.0093167701863354
+"15","MF","GO:0004888","transmembrane signaling receptor activit...",650,7,1.43,4,0.0344,0.00044,0.0107692307692308
+"16","MF","GO:0008092","cytoskeletal protein binding",855,5,1.88,34,0.0371,0.03709,0.00584795321637427
+"17","MF","GO:0030215","semaphorin receptor binding",20,1,0.04,35,0.043,0.043,0.05
+"18","MF","GO:0099095","ligand-gated anion channel activity",20,1,0.04,36,0.043,0.043,0.05
+"19","MF","GO:0050998","nitric-oxide synthase binding",21,1,0.05,37,0.0451,0.04511,0.0476190476190476
+"20","MF","GO:0001091","RNA polymerase II basal transcription fa...",21,1,0.05,38,0.0451,0.04511,0.0476190476190476
+"21","MF","GO:0005539","glycosaminoglycan binding",157,2,0.34,39,0.0463,0.04629,0.0127388535031847
+"22","MF","GO:0008266","poly(U) RNA binding",25,1,0.05,44,0.0535,0.05347,0.04
+"23","MF","GO:0098772","molecular function regulator",1280,6,2.81,46,0.0571,0.05708,0.0046875
+"24","MF","GO:0003712","transcription coregulator activity",403,3,0.88,47,0.0576,0.05761,0.00744416873449132
+"25","MF","GO:0004114","3',5'-cyclic-nucleotide phosphodiesteras...",27,1,0.06,48,0.0576,0.05763,0.037037037037037
+"26","MF","GO:0004683","calmodulin-dependent protein kinase acti...",27,1,0.06,49,0.0576,0.05763,0.037037037037037
+"27","MF","GO:0043425","bHLH transcription factor binding",27,1,0.06,50,0.0576,0.05763,0.037037037037037
+"28","MF","GO:0045499","chemorepellent activity",27,1,0.06,51,0.0576,0.05763,0.037037037037037
+"29","MF","GO:0017080","sodium channel regulator activity",28,1,0.06,53,0.0597,0.0597,0.0357142857142857
+"30","MF","GO:0004112","cyclic-nucleotide phosphodiesterase acti...",28,1,0.06,54,0.0597,0.0597,0.0357142857142857
+"31","BP","GO:2000300","regulation of synaptic vesicle exocytosi...",98,4,0.23,14,8.4e-05,8.4e-05,0.0408163265306122
+"32","BP","GO:0008090","retrograde axonal transport",20,2,0.05,39,0.001,0.00102,0.1
+"33","BP","GO:0035249","synaptic transmission, glutamatergic",96,3,0.23,45,0.0015,0.00152,0.03125
+"34","BP","GO:0098901","regulation of cardiac muscle cell action...",25,2,0.06,47,0.0016,0.0016,0.08
+"35","BP","GO:0014047","glutamate secretion",32,2,0.08,61,0.0026,0.00262,0.0625
+"36","BP","GO:0034332","adherens junction organization",119,3,0.28,62,0.0028,0.00281,0.0252100840336134
+"37","BP","GO:0007600","sensory perception",447,5,1.06,72,0.0039,0.00392,0.0111856823266219
+"38","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",44,2,0.1,77,0.0049,0.0049,0.0454545454545455
+"39","BP","GO:0008089","anterograde axonal transport",45,2,0.11,78,0.0051,0.00512,0.0444444444444444
+"40","BP","GO:0001662","behavioral fear response",48,2,0.11,82,0.0058,0.00581,0.0416666666666667
+"41","BP","GO:0045773","positive regulation of axon extension",49,2,0.12,85,0.006,0.00605,0.0408163265306122
+"42","BP","GO:0021536","diencephalon development",54,2,0.13,96,0.0073,0.00731,0.037037037037037
+"43","BP","GO:0048666","neuron development",1086,9,2.59,35,0.0075,0.00079,0.00828729281767956
+"44","BP","GO:0030334","regulation of cell migration",741,6,1.77,98,0.0075,0.00753,0.00809716599190283
+"45","BP","GO:0007193","adenylate cyclase-inhibiting G protein-c...",55,2,0.13,99,0.0076,0.00757,0.0363636363636364
+"46","BP","GO:0050804","modulation of chemical synaptic transmis...",474,8,1.13,2,0.008,1.2e-05,0.0168776371308017
+"47","BP","GO:0035264","multicellular organism growth",177,3,0.42,104,0.0085,0.0085,0.0169491525423729
+"48","BP","GO:0086003","cardiac muscle cell contraction",59,2,0.14,107,0.0087,0.00867,0.0338983050847458
+"49","BP","GO:0035265","organ growth",180,3,0.43,109,0.0089,0.00889,0.0166666666666667
+"50","BP","GO:0051279","regulation of release of sequestered cal...",60,2,0.14,111,0.009,0.00896,0.0333333333333333
+"51","BP","GO:0043113","receptor clustering",62,2,0.15,114,0.0095,0.00954,0.032258064516129
+"52","BP","GO:0099173","postsynapse organization",185,3,0.44,116,0.0096,0.00958,0.0162162162162162
+"53","BP","GO:0007166","cell surface receptor signaling pathway",1861,10,4.43,117,0.0097,0.0097,0.00537345513164965
+"54","BP","GO:0060997","dendritic spine morphogenesis",68,2,0.16,119,0.0114,0.01139,0.0294117647058824
+"55","BP","GO:0051966","regulation of synaptic transmission, glu...",69,2,0.16,120,0.0117,0.01171,0.0289855072463768
+"56","BP","GO:0051965","positive regulation of synapse assembly",71,2,0.17,124,0.0124,0.01237,0.028169014084507
+"57","BP","GO:0050906","detection of stimulus involved in sensor...",73,2,0.17,128,0.013,0.01304,0.0273972602739726
+"58","BP","GO:0007411","axon guidance",209,3,0.5,129,0.0133,0.01331,0.0143540669856459
+"59","BP","GO:0097485","neuron projection guidance",210,3,0.5,130,0.0135,0.01349,0.0142857142857143
+"60","BP","GO:0050808","synapse organization",412,6,0.98,25,0.0135,0.00039,0.0145631067961165
+"61","CC","GO:0098982","GABA-ergic synapse",101,4,0.22,5,6.2e-05,6.2e-05,0.0396039603960396
+"62","CC","GO:0098978","glutamatergic synapse",494,7,1.06,6,7.1e-05,7.1e-05,0.01417004048583
+"63","CC","GO:0099059","integral component of presynaptic active...",23,2,0.05,18,0.0011,0.0011,0.0869565217391304
+"64","CC","GO:0098948","intrinsic component of postsynaptic spec...",106,3,0.23,20,0.0015,0.0015,0.0283018867924528
+"65","CC","GO:0036477","somatodendritic compartment",945,9,2.03,10,0.0033,0.00012,0.00952380952380952
+"66","CC","GO:0099055","integral component of postsynaptic membr...",160,3,0.34,33,0.0048,0.00483,0.01875
+"67","CC","GO:0008328","ionotropic glutamate receptor complex",54,2,0.12,35,0.006,0.00598,0.037037037037037
+"68","CC","GO:0014704","intercalated disc",56,2,0.12,37,0.0064,0.00642,0.0357142857142857
+"69","CC","GO:0043005","neuron projection",1349,10,2.9,12,0.0066,0.00038,0.00741289844329133
+"70","CC","GO:0043197","dendritic spine",183,3,0.39,38,0.007,0.007,0.0163934426229508
+"71","CC","GO:0030054","cell junction",1000,8,2.15,17,0.0106,0.00102,0.008
+"72","CC","GO:0099146","intrinsic component of postsynaptic dens...",76,2,0.16,41,0.0116,0.01157,0.0263157894736842
+"73","CC","GO:0033267","axon part",415,4,0.89,42,0.0116,0.01161,0.00963855421686747
+"74","CC","GO:0043025","neuronal cell body",649,5,1.4,43,0.0118,0.01184,0.00770416024653313
+"75","CC","GO:0044304","main axon",81,2,0.17,45,0.0131,0.01307,0.0246913580246914
+"76","CC","GO:0031594","neuromuscular junction",87,2,0.19,47,0.015,0.01497,0.0229885057471264
+"77","CC","GO:0098839","postsynaptic density membrane",92,2,0.2,50,0.0166,0.01664,0.0217391304347826
+"78","CC","GO:0044297","cell body",727,5,1.56,51,0.0186,0.01858,0.00687757909215956
+"79","CC","GO:0099060","integral component of postsynaptic speci...",100,2,0.22,52,0.0195,0.01947,0.02
+"80","CC","GO:0005913","cell-cell adherens junction",102,2,0.22,54,0.0202,0.02021,0.0196078431372549
+"81","CC","GO:0048787","presynaptic active zone membrane",43,3,0.09,9,0.0397,0.00011,0.0697674418604651
+"82","CC","GO:0098797","plasma membrane protein complex",445,5,0.96,25,0.044,0.00243,0.0112359550561798
+"83","CC","GO:0019897","extrinsic component of plasma membrane",159,2,0.34,63,0.0457,0.04568,0.0125786163522013
+"84","CC","GO:0043194","axon initial segment",22,1,0.05,64,0.0463,0.04629,0.0454545454545455
+"85","CC","GO:0032279","asymmetric synapse",377,3,0.81,65,0.0466,0.04662,0.00795755968169761
+"86","CC","GO:0043679","axon terminus",163,2,0.35,66,0.0478,0.04777,0.0122699386503067
+"87","CC","GO:0030424","axon",644,4,1.38,67,0.048,0.048,0.0062111801242236
+"88","CC","GO:0099523","presynaptic cytosol",24,1,0.05,68,0.0504,0.05039,0.0416666666666667
+"89","CC","GO:0016342","catenin complex",25,1,0.05,69,0.0524,0.05244,0.04
+"90","CC","GO:0098984","neuron to neuron synapse",400,3,0.86,71,0.0539,0.0539,0.0075

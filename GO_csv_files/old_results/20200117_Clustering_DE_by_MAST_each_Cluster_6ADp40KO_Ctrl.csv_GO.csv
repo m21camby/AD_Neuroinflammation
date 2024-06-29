@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0004857","enzyme inhibitor activity",244,2,0.1,1,0.004,0.004,0.00819672131147541
+"2","MF","GO:0030291","protein serine/threonine kinase inhibito...",27,1,0.01,2,0.011,0.011,0.037037037037037
+"3","MF","GO:0004869","cysteine-type endopeptidase inhibitor ac...",34,1,0.01,3,0.014,0.014,0.0294117647058824
+"4","MF","GO:0004860","protein kinase inhibitor activity",49,1,0.02,4,0.02,0.02,0.0204081632653061
+"5","MF","GO:0019210","kinase inhibitor activity",53,1,0.02,5,0.022,0.022,0.0188679245283019
+"6","MF","GO:0043022","ribosome binding",59,1,0.02,6,0.024,0.024,0.0169491525423729
+"7","MF","GO:0004866","endopeptidase inhibitor activity",93,1,0.04,8,0.038,0.038,0.010752688172043
+"8","MF","GO:0030414","peptidase inhibitor activity",98,1,0.04,9,0.04,0.04,0.0102040816326531
+"9","MF","GO:0061135","endopeptidase regulator activity",101,1,0.04,10,0.041,0.041,0.0099009900990099
+"10","MF","GO:0017124","SH3 domain binding",115,1,0.05,11,0.046,0.046,0.00869565217391304
+"11","MF","GO:0031072","heat shock protein binding",124,1,0.05,12,0.05,0.05,0.00806451612903226
+"12","MF","GO:0061134","peptidase regulator activity",127,1,0.05,13,0.051,0.051,0.0078740157480315
+"13","MF","GO:0043021","ribonucleoprotein complex binding",137,1,0.06,14,0.055,0.055,0.0072992700729927
+"14","MF","GO:0019887","protein kinase regulator activity",137,1,0.06,15,0.055,0.055,0.0072992700729927
+"15","MF","GO:0019207","kinase regulator activity",163,1,0.07,16,0.065,0.065,0.00613496932515337
+"16","MF","GO:0005126","cytokine receptor binding",174,1,0.07,17,0.069,0.069,0.00574712643678161
+"17","MF","GO:0030246","carbohydrate binding",184,1,0.08,18,0.073,0.073,0.00543478260869565
+"18","MF","GO:0005102","signaling receptor binding",1172,2,0.48,19,0.078,0.078,0.00170648464163823
+"19","MF","GO:0050839","cell adhesion molecule binding",197,1,0.08,20,0.078,0.078,0.0050761421319797
+"20","MF","GO:0008017","microtubule binding",214,1,0.09,21,0.085,0.085,0.00467289719626168
+"21","MF","GO:0005515","protein binding",7098,5,2.92,23,0.097,0.097,0.000704423781346858
+"22","MF","GO:0015631","tubulin binding",303,1,0.12,24,0.118,0.118,0.0033003300330033
+"23","MF","GO:0046982","protein heterodimerization activity",457,1,0.19,25,0.174,0.174,0.00218818380743982
+"24","MF","GO:0000981","DNA-binding transcription factor activit...",498,1,0.2,26,0.188,0.188,0.00200803212851406
+"25","MF","GO:0019901","protein kinase binding",652,1,0.27,27,0.24,0.24,0.00153374233128834
+"26","MF","GO:0003700","DNA-binding transcription factor activit...",686,1,0.28,28,0.251,0.251,0.00145772594752187
+"27","MF","GO:0019904","protein domain specific binding",695,1,0.29,29,0.254,0.254,0.00143884892086331
+"28","MF","GO:0019900","kinase binding",721,1,0.3,30,0.262,0.262,0.0013869625520111
+"29","MF","GO:0042803","protein homodimerization activity",773,1,0.32,31,0.279,0.279,0.00129366106080207
+"30","MF","GO:0008092","cytoskeletal protein binding",847,1,0.35,32,0.302,0.302,0.00118063754427391
+"31","BP","GO:1901798","positive regulation of signal transducti...",22,1,0.01,1,0.01,0.01,0.0454545454545455
+"32","BP","GO:0008340","determination of adult lifespan",22,1,0.01,2,0.01,0.01,0.0454545454545455
+"33","BP","GO:0043516","regulation of DNA damage response, signa...",31,1,0.01,3,0.015,0.015,0.032258064516129
+"34","BP","GO:2000816","negative regulation of mitotic sister ch...",32,1,0.02,4,0.015,0.015,0.03125
+"35","BP","GO:0071514","genetic imprinting",32,1,0.02,5,0.015,0.015,0.03125
+"36","BP","GO:1905819","negative regulation of chromosome separa...",33,1,0.02,6,0.016,0.016,0.0303030303030303
+"37","BP","GO:0033048","negative regulation of mitotic sister ch...",34,1,0.02,7,0.016,0.016,0.0294117647058824
+"38","BP","GO:0006956","complement activation",35,1,0.02,8,0.017,0.017,0.0285714285714286
+"39","BP","GO:0033046","negative regulation of sister chromatid ...",36,1,0.02,9,0.017,0.017,0.0277777777777778
+"40","BP","GO:0010259","multicellular organism aging",36,1,0.02,10,0.017,0.017,0.0277777777777778
+"41","BP","GO:0051985","negative regulation of chromosome segreg...",38,1,0.02,11,0.018,0.018,0.0263157894736842
+"42","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",40,1,0.02,12,0.019,0.019,0.025
+"43","BP","GO:0090311","regulation of protein deacetylation",43,1,0.02,13,0.02,0.02,0.0232558139534884
+"44","BP","GO:0072376","protein activation cascade",43,1,0.02,14,0.02,0.02,0.0232558139534884
+"45","BP","GO:0010799","regulation of peptidyl-threonine phospho...",43,1,0.02,15,0.02,0.02,0.0232558139534884
+"46","BP","GO:0045839","negative regulation of mitotic nuclear d...",45,1,0.02,16,0.021,0.021,0.0222222222222222
+"47","BP","GO:0045143","homologous chromosome segregation",46,1,0.02,17,0.022,0.022,0.0217391304347826
+"48","BP","GO:0007062","sister chromatid cohesion",47,1,0.02,18,0.022,0.022,0.0212765957446809
+"49","BP","GO:0010965","regulation of mitotic sister chromatid s...",48,1,0.02,19,0.023,0.023,0.0208333333333333
+"50","BP","GO:0048286","lung alveolus development",49,1,0.02,20,0.023,0.023,0.0204081632653061
+"51","BP","GO:0051784","negative regulation of nuclear division",50,1,0.02,21,0.024,0.024,0.02
+"52","BP","GO:0051306","mitotic sister chromatid separation",52,1,0.02,22,0.025,0.025,0.0192307692307692
+"53","BP","GO:1905818","regulation of chromosome separation",53,1,0.03,23,0.025,0.025,0.0188679245283019
+"54","BP","GO:0043407","negative regulation of MAP kinase activi...",56,1,0.03,24,0.026,0.026,0.0178571428571429
+"55","BP","GO:0030330","DNA damage response, signal transduction...",57,1,0.03,25,0.027,0.027,0.0175438596491228
+"56","BP","GO:0033047","regulation of mitotic sister chromatid s...",58,1,0.03,26,0.027,0.027,0.0172413793103448
+"57","BP","GO:0006305","DNA alkylation",58,1,0.03,27,0.027,0.027,0.0172413793103448
+"58","BP","GO:0006306","DNA methylation",58,1,0.03,28,0.027,0.027,0.0172413793103448
+"59","BP","GO:0007405","neuroblast proliferation",59,1,0.03,29,0.028,0.028,0.0169491525423729
+"60","BP","GO:1903047","mitotic cell cycle process",575,2,0.27,30,0.028,0.028,0.00347826086956522
+"61","CC","GO:0099243","extrinsic component of synaptic membrane",23,1,0.01,1,0.0092,0.0092,0.0434782608695652
+"62","CC","GO:0097431","mitotic spindle pole",27,1,0.01,2,0.0108,0.0108,0.037037037037037
+"63","CC","GO:0051233","spindle midzone",31,1,0.01,3,0.0124,0.0124,0.032258064516129
+"64","CC","GO:0030425","dendrite",644,2,0.26,4,0.0249,0.0249,0.0031055900621118
+"65","CC","GO:0097447","dendritic tree",647,2,0.26,5,0.0251,0.0251,0.00309119010819165
+"66","CC","GO:0072686","mitotic spindle",98,1,0.04,6,0.0388,0.0388,0.0102040816326531
+"67","CC","GO:0000922","spindle pole",113,1,0.05,7,0.0446,0.0446,0.00884955752212389
+"68","CC","GO:0036477","somatodendritic compartment",917,2,0.37,8,0.0481,0.0481,0.00218102508178844
+"69","CC","GO:0043197","dendritic spine",179,1,0.07,10,0.0699,0.0699,0.00558659217877095
+"70","CC","GO:0044309","neuron spine",184,1,0.07,11,0.0718,0.0718,0.00543478260869565
+"71","CC","GO:0043005","neuron projection",1311,2,0.53,13,0.0914,0.0914,0.0015255530129672
+"72","CC","GO:0120038","plasma membrane bounded cell projection ...",1344,2,0.54,14,0.0955,0.0955,0.00148809523809524
+"73","CC","GO:0044463","cell projection part",1344,2,0.54,15,0.0955,0.0955,0.00148809523809524
+"74","CC","GO:0005819","spindle",250,1,0.1,16,0.0965,0.0965,0.004
+"75","CC","GO:0045211","postsynaptic membrane",335,1,0.13,18,0.1275,0.1275,0.00298507462686567
+"76","CC","GO:0005874","microtubule",377,1,0.15,19,0.1425,0.1425,0.0026525198938992
+"77","CC","GO:0097458","neuron part",1710,2,0.69,20,0.1444,0.1444,0.00116959064327485
+"78","CC","GO:0005911","cell-cell junction",389,1,0.16,21,0.1468,0.1468,0.0025706940874036
+"79","CC","GO:0120025","plasma membrane bounded cell projection",1919,2,0.77,23,0.1748,0.1748,0.00104220948410631
+"80","CC","GO:0098978","glutamatergic synapse",485,1,0.2,24,0.1801,0.1801,0.00206185567010309
+"81","CC","GO:0099513","polymeric cytoskeletal fiber",545,1,0.22,25,0.2003,0.2003,0.0018348623853211
+"82","CC","GO:0042995","cell projection",2090,2,0.84,26,0.2008,0.2008,0.000956937799043062
+"83","CC","GO:0030424","axon",628,1,0.25,27,0.2277,0.2277,0.00159235668789809
+"84","CC","GO:0043025","neuronal cell body",629,1,0.25,28,0.228,0.228,0.00158982511923688
+"85","CC","GO:0098794","postsynapse",674,1,0.27,29,0.2425,0.2425,0.00148367952522255
+"86","CC","GO:0044297","cell body",705,1,0.28,30,0.2523,0.2523,0.00141843971631206
+"87","CC","GO:0099512","supramolecular fiber",712,1,0.29,31,0.2546,0.2546,0.00140449438202247
+"88","CC","GO:0099080","supramolecular complex",717,1,0.29,32,0.2561,0.2561,0.00139470013947001
+"89","CC","GO:0099081","supramolecular polymer",717,1,0.29,33,0.2561,0.2561,0.00139470013947001
+"90","CC","GO:0044444","cytoplasmic part",6980,4,2.81,34,0.2864,0.2864,0.000573065902578797

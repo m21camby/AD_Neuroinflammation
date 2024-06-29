@@ -1,0 +1,133 @@
+MGI Gene/Marker ID	Symbol	Name
+MGI:2685419	Ajap1	adherens junction associated protein 1
+MGI:2685419	Ajap1	adherens junction associated protein 1
+MGI:1919595	Amer1	APC membrane recruitment 1
+MGI:1919595	Amer1	APC membrane recruitment 1
+MGI:1919375	Amer2	APC membrane recruitment 2
+MGI:3026939	Amer3	APC membrane recruitment 3
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:88039	Apc	APC, WNT signaling pathway regulator
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2
+MGI:88064	Ar	androgen receptor
+MGI:1344416	Ash2l	ASH2 like histone lysine methyltransferase complex subunit
+MGI:1096327	Axin1	axin 1
+MGI:1096327	Axin1	axin 1
+MGI:1096327	Axin1	axin 1
+MGI:1096327	Axin1	axin 1
+MGI:1270862	Axin2	axin 2
+MGI:1924828	Bcl9	B cell CLL/lymphoma 9
+MGI:1924828	Bcl9	B cell CLL/lymphoma 9
+MGI:1933114	Bcl9l	B cell CLL/lymphoma 9-like
+MGI:1933114	Bcl9l	B cell CLL/lymphoma 9-like
+MGI:1933114	Bcl9l	B cell CLL/lymphoma 9-like
+MGI:1338871	Btrc	beta-transducin repeat containing protein
+MGI:1338871	Btrc	beta-transducin repeat containing protein
+MGI:1914738	Calcoco1	calcium binding and coiled coil domain 1
+MGI:1920989	Cby1	chibby family member 1, beta catenin antagonist
+MGI:1330281	Cd2ap	CD2-associated protein
+MGI:88354	Cdh1	cadherin 1
+MGI:88354	Cdh1	cadherin 1
+MGI:88354	Cdh1	cadherin 1
+MGI:88354	Cdh1	cadherin 1
+MGI:88354	Cdh1	cadherin 1
+MGI:88355	Cdh2	cadherin 2
+MGI:88355	Cdh2	cadherin 2
+MGI:105057	Cdh5	cadherin 5
+MGI:1928330	Cdh24	cadherin-like 24
+MGI:2685856	Cdh26	cadherin-like 26
+MGI:1919290	Cdhr5	cadherin-related family member 5
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8
+MGI:88543	Csnk2a1	casein kinase 2, alpha 1 polypeptide
+MGI:88274	Ctnna1	catenin (cadherin associated protein), alpha 1
+MGI:88274	Ctnna1	catenin (cadherin associated protein), alpha 1
+MGI:88274	Ctnna1	catenin (cadherin associated protein), alpha 1
+MGI:88275	Ctnna2	catenin (cadherin associated protein), alpha 2
+MGI:2661445	Ctnna3	catenin (cadherin associated protein), alpha 3
+MGI:2661445	Ctnna3	catenin (cadherin associated protein), alpha 3
+MGI:88276	Ctnnb1	catenin (cadherin associated protein), beta 1
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1
+MGI:105100	Ctnnd1	catenin (cadherin associated protein), delta 1
+MGI:1195966	Ctnnd2	catenin (cadherin associated protein), delta 2
+MGI:1201679	Cxadr	coxsackie virus and adenovirus receptor
+MGI:1201679	Cxadr	coxsackie virus and adenovirus receptor
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1
+MGI:1920347	Dact2	dishevelled-binding antagonist of beta-catenin 2
+MGI:1918478	Dlg5	discs large MAGUK scaffold protein 5
+MGI:94941	Dvl1	dishevelled segment polarity protein 1
+MGI:108100	Dvl3	dishevelled segment polarity protein 3
+MGI:1276116	Ep300	E1A binding protein p300
+MGI:1352467	Esr1	estrogen receptor 1 (alpha)
+MGI:1890077	Foxo1	forkhead box O1
+MGI:1890081	Foxo3	forkhead box O3
+MGI:1891915	Foxo4	forkhead box O4
+MGI:95713	Gja1	gap junction protein, alpha 1
+MGI:95717	Gja6	gap junction protein, alpha 6
+MGI:95729	Gli3	GLI-Kruppel family member GLI3
+MGI:95821	Grin2b	glutamate receptor, ionotropic, NMDA2B (epsilon 2)
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta
+MGI:1333752	Hdac6	histone deacetylase 6
+MGI:2147707	Kank1	KN motif and ankyrin repeat domains 1
+MGI:2448492	Kdm6b	KDM1 lysine (K)-specific demethylase 6B
+MGI:1342287	Klf4	Kruppel-like factor 4 (gut)
+MGI:96770	Lef1	lymphoid enhancer binding factor 1
+MGI:1916401	Lzic	leucine zipper and CTNNBIP1 domain containing
+MGI:1926212	Med12	mediator complex subunit 12
+MGI:2139916	Med12l	mediator complex subunit 12-like
+MGI:96969	Met	met proto-oncogene
+MGI:97307	Nf2	neurofibromin 2
+MGI:97361	Nos2	nitric oxide synthase 2, inducible
+MGI:97362	Nos3	nitric oxide synthase 3, endothelial cell
+MGI:107423	Numb	NUMB endocytic adaptor protein
+MGI:1346036	Pin1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1
+MGI:1346036	Pin1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1
+MGI:3649546	Pin1rt1	peptidyl-prolyl cis/trans isomerase, NIMA-interacting 1, retrogene 1
+MGI:1355296	Prkn	parkin RBR E3 ubiquitin protein ligase
+MGI:1316652	Prmt2	protein arginine N-methyltransferase 2
+MGI:109330	Prop1	paired like homeodomain factor 1
+MGI:1202717	Psen1	presenilin 1
+MGI:1202717	Psen1	presenilin 1
+MGI:104574	Ptprj	protein tyrosine phosphatase, receptor type, J
+MGI:103310	Ptprk	protein tyrosine phosphatase, receptor type, K
+MGI:1321152	Ptprt	protein tyrosine phosphatase, receptor type, T
+MGI:1321152	Ptprt	protein tyrosine phosphatase, receptor type, T
+MGI:1321151	Ptpru	protein tyrosine phosphatase, receptor type, U
+MGI:1321151	Ptpru	protein tyrosine phosphatase, receptor type, U
+MGI:108295	Pxn	paxillin
+MGI:104661	Rora	RAR-related orphan receptor alpha
+MGI:1342299	Ruvbl2	RuvB-like protein 2
+MGI:1889585	Sall1	spalt like transcription factor 1
+MGI:2446244	Setd1a	SET domain containing 1A
+MGI:107194	Shroom2	shroom family member 2
+MGI:103575	Skp1	S-phase kinase-associated protein 1
+MGI:1349482	Slc9a3r1	solute carrier family 9 (sodium/hydrogen exchanger), member 3 regulator 1
+MGI:1890662	Slc9a3r2	solute carrier family 9 (sodium/hydrogen exchanger), member 3 regulator 2
+MGI:1201674	Smad3	SMAD family member 3
+MGI:1100518	Smad7	SMAD family member 7
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9
+MGI:107543	Sox17	SRY (sex determining region Y)-box 17
+MGI:1341157	Sox30	SRY (sex determining region Y)-box 30
+MGI:1921642	Specc1l	sperm antigen with calponin homology and coiled-coil domains 1-like
+MGI:1345643	Sufu	SUFU negative regulator of hedgehog signaling
+MGI:1923531	Tax1bp3	Tax1 (human T cell leukemia virus type I) binding protein 3
+MGI:1336172	Tbl1x	transducin (beta)-like 1 X-linked
+MGI:2441730	Tbl1xr1	transducin (beta)-like 1X-linked receptor 1
+MGI:98506	Tcf4	transcription factor 4
+MGI:98507	Tcf7	transcription factor 7, T cell specific
+MGI:1202876	Tcf7l1	transcription factor 7 like 1 (T cell specific, HMG box)
+MGI:1202879	Tcf7l2	transcription factor 7 like 2, T cell specific, HMG box
+MGI:1202879	Tcf7l2	transcription factor 7 like 2, T cell specific, HMG box
+MGI:1202879	Tcf7l2	transcription factor 7 like 2, T cell specific, HMG box
+MGI:98759	Tjp1	tight junction protein 1
+MGI:109525	Trpc4	transient receptor potential cation channel, subfamily C, member 4
+MGI:3649276	Vinac1	vinculin/alpha-catenin family member 1
+

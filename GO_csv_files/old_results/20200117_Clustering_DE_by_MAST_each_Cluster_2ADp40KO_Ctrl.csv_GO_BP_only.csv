@@ -1,0 +1,30 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0002693","positive regulation of cellular extravas...",20,1,0.01,1,0.0062,0.0062,0.05
+"32","BP","GO:0050858","negative regulation of antigen receptor-...",23,1,0.01,2,0.0071,0.0071,0.0434782608695652
+"33","BP","GO:0061099","negative regulation of protein tyrosine ...",25,1,0.01,3,0.0077,0.0077,0.04
+"34","BP","GO:0051894","positive regulation of focal adhesion as...",25,1,0.01,4,0.0077,0.0077,0.04
+"35","BP","GO:0015012","heparan sulfate proteoglycan biosyntheti...",27,1,0.01,5,0.0083,0.0083,0.037037037037037
+"36","BP","GO:0090162","establishment of epithelial cell polarit...",29,1,0.01,7,0.0089,0.0089,0.0344827586206897
+"37","BP","GO:0042462","eye photoreceptor cell development",32,1,0.01,9,0.0098,0.0098,0.03125
+"38","BP","GO:0051281","positive regulation of release of seques...",34,1,0.01,12,0.0104,0.0104,0.0294117647058824
+"39","BP","GO:0070570","regulation of neuron projection regenera...",35,1,0.01,13,0.0108,0.0108,0.0285714285714286
+"40","BP","GO:0050856","regulation of T cell receptor signaling ...",37,1,0.01,14,0.0114,0.0114,0.027027027027027
+"41","BP","GO:0034113","heterotypic cell-cell adhesion",40,1,0.01,15,0.0123,0.0123,0.025
+"42","BP","GO:0003407","neural retina development",46,1,0.01,17,0.0141,0.0141,0.0217391304347826
+"43","BP","GO:0060042","retina morphogenesis in camera-type eye",47,1,0.01,18,0.0144,0.0144,0.0212765957446809
+"44","BP","GO:0010524","positive regulation of calcium ion trans...",50,1,0.02,20,0.0153,0.0153,0.02
+"45","BP","GO:0031102","neuron projection regeneration",56,1,0.02,26,0.0172,0.0172,0.0178571428571429
+"46","BP","GO:0033692","cellular polysaccharide biosynthetic pro...",56,1,0.02,27,0.0172,0.0172,0.0178571428571429
+"47","BP","GO:0043113","receptor clustering",63,1,0.02,30,0.0193,0.0193,0.0158730158730159
+"48","BP","GO:0000271","polysaccharide biosynthetic process",64,1,0.02,33,0.0196,0.0196,0.015625
+"49","BP","GO:0034637","cellular carbohydrate biosynthetic proce...",64,1,0.02,34,0.0196,0.0196,0.015625
+"50","BP","GO:0050771","negative regulation of axonogenesis",66,1,0.02,35,0.0202,0.0202,0.0151515151515152
+"51","BP","GO:0051279","regulation of release of sequestered cal...",68,1,0.02,36,0.0208,0.0208,0.0147058823529412
+"52","BP","GO:1904427","positive regulation of calcium ion trans...",69,1,0.02,37,0.0211,0.0211,0.0144927536231884
+"53","BP","GO:0007229","integrin-mediated signaling pathway",82,1,0.03,43,0.025,0.025,0.0121951219512195
+"54","BP","GO:0010522","regulation of calcium ion transport into...",89,1,0.03,46,0.0272,0.0272,0.0112359550561798
+"55","BP","GO:0044264","cellular polysaccharide metabolic proces...",89,1,0.03,47,0.0272,0.0272,0.0112359550561798
+"57","BP","GO:0010771","negative regulation of cell morphogenesi...",95,1,0.03,49,0.029,0.029,0.0105263157894737
+"58","BP","GO:0005976","polysaccharide metabolic process",100,1,0.03,50,0.0305,0.0305,0.01
+"59","BP","GO:0051209","release of sequestered calcium ion into ...",103,1,0.03,51,0.0314,0.0314,0.00970873786407767
+"60","BP","GO:0048593","camera-type eye morphogenesis",104,1,0.03,52,0.0317,0.0317,0.00961538461538462

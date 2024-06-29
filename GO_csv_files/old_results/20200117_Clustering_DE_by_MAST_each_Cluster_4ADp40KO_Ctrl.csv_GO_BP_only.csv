@@ -1,0 +1,24 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0006882","cellular zinc ion homeostasis",20,3,0.05,4,1.3e-05,1.3e-05,0.15
+"32","BP","GO:0007263","nitric oxide mediated signal transductio...",22,3,0.05,7,1.7e-05,1.7e-05,0.136363636363636
+"33","BP","GO:0032835","glomerulus development",50,3,0.12,18,0.00021,0.00021,0.06
+"34","BP","GO:0043536","positive regulation of blood vessel endo...",51,3,0.12,20,0.00022,0.00022,0.0588235294117647
+"35","BP","GO:0007605","sensory perception of sound",131,4,0.3,21,0.00023,0.00023,0.0305343511450382
+"36","BP","GO:0071276","cellular response to cadmium ion",20,2,0.05,29,0.00096,0.00096,0.1
+"37","BP","GO:0046688","response to copper ion",21,2,0.05,31,0.00106,0.00106,0.0952380952380952
+"38","BP","GO:0051209","release of sequestered calcium ion into ...",95,3,0.22,34,0.00136,0.00136,0.0315789473684211
+"40","BP","GO:0010043","response to zinc ion",28,2,0.06,47,0.00189,0.00189,0.0714285714285714
+"41","BP","GO:0098754","detoxification",37,2,0.09,67,0.00329,0.00329,0.0540540540540541
+"42","BP","GO:0050918","positive chemotaxis",38,2,0.09,69,0.00347,0.00347,0.0526315789473684
+"43","BP","GO:0050974","detection of mechanical stimulus involve...",39,2,0.09,70,0.00365,0.00365,0.0512820512820513
+"44","BP","GO:0048015","phosphatidylinositol-mediated signaling",135,3,0.31,71,0.00369,0.00369,0.0222222222222222
+"46","BP","GO:0048010","vascular endothelial growth factor recep...",43,2,0.1,83,0.00442,0.00442,0.0465116279069767
+"48","BP","GO:0021587","cerebellum morphogenesis",48,2,0.11,88,0.00548,0.00548,0.0416666666666667
+"51","BP","GO:0051216","cartilage development",165,3,0.38,97,0.00645,0.00645,0.0181818181818182
+"52","BP","GO:0007416","synapse assembly",167,3,0.39,98,0.00667,0.00667,0.0179640718562874
+"53","BP","GO:0003018","vascular process in circulatory system",171,3,0.4,101,0.00712,0.00712,0.0175438596491228
+"55","BP","GO:0042306","regulation of protein import into nucleu...",57,2,0.13,104,0.00766,0.00766,0.0350877192982456
+"56","BP","GO:0031102","neuron projection regeneration",57,2,0.13,105,0.00766,0.00766,0.0350877192982456
+"57","BP","GO:0045785","positive regulation of cell adhesion",355,4,0.82,109,0.0088,0.0088,0.0112676056338028
+"58","BP","GO:0034329","cell junction assembly",192,3,0.44,113,0.00977,0.00977,0.015625
+"59","BP","GO:0051279","regulation of release of sequestered cal...",66,2,0.15,115,0.01016,0.01016,0.0303030303030303

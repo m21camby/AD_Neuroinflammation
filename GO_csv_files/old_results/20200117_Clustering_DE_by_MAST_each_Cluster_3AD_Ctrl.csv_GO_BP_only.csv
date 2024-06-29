@@ -1,0 +1,23 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0008340","determination of adult lifespan",23,2,0.03,1,3e-04,3e-04,0.0869565217391304
+"32","BP","GO:0090049","regulation of cell migration involved in...",32,2,0.04,4,0.00059,0.00059,0.0625
+"33","BP","GO:1903672","positive regulation of sprouting angioge...",34,2,0.04,6,0.00066,0.00066,0.0588235294117647
+"34","BP","GO:0043536","positive regulation of blood vessel endo...",49,2,0.06,17,0.00138,0.00138,0.0408163265306122
+"35","BP","GO:0050771","negative regulation of axonogenesis",65,2,0.07,31,0.00241,0.00241,0.0307692307692308
+"37","BP","GO:0030048","actin filament-based movement",96,2,0.11,48,0.00518,0.00518,0.0208333333333333
+"38","BP","GO:0050709","negative regulation of protein secretion",130,2,0.15,56,0.00932,0.00932,0.0153846153846154
+"41","BP","GO:0007519","skeletal muscle tissue development",147,2,0.17,63,0.01179,0.01179,0.0136054421768707
+"42","BP","GO:0060538","skeletal muscle organ development",153,2,0.17,64,0.01273,0.01273,0.0130718954248366
+"43","BP","GO:0001764","neuron migration",154,2,0.17,65,0.01288,0.01288,0.012987012987013
+"44","BP","GO:0032869","cellular response to insulin stimulus",160,2,0.18,67,0.01386,0.01386,0.0125
+"46","BP","GO:0006814","sodium ion transport",170,2,0.19,70,0.01554,0.01554,0.0117647058823529
+"47","BP","GO:0030308","negative regulation of cell growth",172,2,0.2,72,0.01589,0.01589,0.0116279069767442
+"48","BP","GO:0001894","tissue homeostasis",174,2,0.2,73,0.01624,0.01624,0.0114942528735632
+"49","BP","GO:0030324","lung development",176,2,0.2,74,0.0166,0.0166,0.0113636363636364
+"50","BP","GO:0030323","respiratory tube development",179,2,0.2,76,0.01714,0.01714,0.0111731843575419
+"52","BP","GO:0008361","regulation of cell size",183,2,0.21,81,0.01787,0.01787,0.0109289617486339
+"53","BP","GO:0032868","response to insulin",188,2,0.21,85,0.0188,0.0188,0.0106382978723404
+"54","BP","GO:0002449","lymphocyte mediated immunity",192,2,0.22,86,0.01955,0.01955,0.0104166666666667
+"57","BP","GO:0060541","respiratory system development",201,2,0.23,93,0.02131,0.02131,0.00995024875621891
+"59","BP","GO:0007411","axon guidance",204,2,0.23,94,0.02191,0.02191,0.00980392156862745
+"60","BP","GO:0097485","neuron projection guidance",205,2,0.23,95,0.02211,0.02211,0.00975609756097561

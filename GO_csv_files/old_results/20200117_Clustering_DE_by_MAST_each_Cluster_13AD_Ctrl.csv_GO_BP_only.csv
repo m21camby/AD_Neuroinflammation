@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0071900","regulation of protein serine/threonine k...",386,2,0.12,2,0.0053,0.0053,0.00518134715025907
+"32","BP","GO:0060219","camera-type eye photoreceptor cell diffe...",20,1,0.01,4,0.0061,0.0061,0.05
+"33","BP","GO:0010893","positive regulation of steroid biosynthe...",20,1,0.01,5,0.0061,0.0061,0.05
+"34","BP","GO:2001026","regulation of endothelial cell chemotaxi...",21,1,0.01,6,0.0064,0.0064,0.0476190476190476
+"35","BP","GO:0050858","negative regulation of antigen receptor-...",22,1,0.01,7,0.0067,0.0067,0.0454545454545455
+"36","BP","GO:0006144","purine nucleobase metabolic process",22,1,0.01,8,0.0067,0.0067,0.0454545454545455
+"37","BP","GO:0001525","angiogenesis",442,2,0.14,9,0.0069,0.0069,0.00452488687782805
+"38","BP","GO:1902932","positive regulation of alcohol biosynthe...",23,1,0.01,10,0.007,0.007,0.0434782608695652
+"39","BP","GO:0010092","specification of animal organ identity",25,1,0.01,11,0.0076,0.0076,0.04
+"40","BP","GO:0051894","positive regulation of focal adhesion as...",25,1,0.01,12,0.0076,0.0076,0.04
+"41","BP","GO:0030335","positive regulation of cell migration",465,2,0.14,14,0.0076,0.0076,0.0043010752688172
+"42","BP","GO:0003156","regulation of animal organ formation",26,1,0.01,15,0.0079,0.0079,0.0384615384615385
+"43","BP","GO:0031128","developmental induction",27,1,0.01,17,0.0082,0.0082,0.037037037037037
+"44","BP","GO:0061099","negative regulation of protein tyrosine ...",27,1,0.01,18,0.0082,0.0082,0.037037037037037
+"45","BP","GO:0002691","regulation of cellular extravasation",27,1,0.01,19,0.0082,0.0082,0.037037037037037
+"46","BP","GO:0090181","regulation of cholesterol metabolic proc...",28,1,0.01,20,0.0085,0.0085,0.0357142857142857
+"47","BP","GO:0060977","coronary vasculature morphogenesis",30,1,0.01,24,0.0091,0.0091,0.0333333333333333
+"48","BP","GO:0042462","eye photoreceptor cell development",31,1,0.01,25,0.0094,0.0094,0.032258064516129
+"49","BP","GO:0003401","axis elongation",31,1,0.01,26,0.0094,0.0094,0.032258064516129
+"50","BP","GO:0001523","retinoid metabolic process",32,1,0.01,29,0.0098,0.0098,0.03125
+"51","BP","GO:0051281","positive regulation of release of seques...",33,1,0.01,31,0.0101,0.0101,0.0303030303030303
+"52","BP","GO:0070570","regulation of neuron projection regenera...",35,1,0.01,33,0.0107,0.0107,0.0285714285714286
+"53","BP","GO:0050856","regulation of T cell receptor signaling ...",37,1,0.01,35,0.0113,0.0113,0.027027027027027
+"54","BP","GO:1903672","positive regulation of sprouting angioge...",38,1,0.01,36,0.0116,0.0116,0.0263157894736842
+"55","BP","GO:0034113","heterotypic cell-cell adhesion",40,1,0.01,38,0.0122,0.0122,0.025
+"56","BP","GO:0006695","cholesterol biosynthetic process",42,1,0.01,40,0.0128,0.0128,0.0238095238095238
+"57","BP","GO:1902653","secondary alcohol biosynthetic process",43,1,0.01,42,0.0131,0.0131,0.0232558139534884
+"58","BP","GO:0034308","primary alcohol metabolic process",47,1,0.01,46,0.0143,0.0143,0.0212765957446809
+"59","BP","GO:0016126","sterol biosynthetic process",47,1,0.01,47,0.0143,0.0143,0.0212765957446809
+"60","BP","GO:0010524","positive regulation of calcium ion trans...",49,1,0.01,50,0.0149,0.0149,0.0204081632653061

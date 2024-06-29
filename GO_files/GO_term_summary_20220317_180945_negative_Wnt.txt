@@ -1,0 +1,235 @@
+MGI Gene/Marker ID	Symbol	Name	Chr	Qualifier	Annotated Term	Context	Proteoform	Evidence	Inferred From	Reference(s)
+MGI:1919595	Amer1	APC membrane recruitment 1	X		negative regulation of canonical Wnt signaling pathway			ISO	Q5JTC6 	J:164563 	
+MGI:1919375	Amer2	APC membrane recruitment 2	14		negative regulation of canonical Wnt signaling pathway			ISO	Q8N7J2 	J:164563 	
+MGI:1345634	Amfr	autocrine motility factor receptor	8		negative regulation of canonical Wnt signaling pathway			IMP		J:274568 	
+MGI:1345634	Amfr	autocrine motility factor receptor	8		negative regulation of canonical Wnt signaling pathway			ISO	Q9UKV5 	J:164563 	
+MGI:2154278	Ankrd6	ankyrin repeat domain 6	4		negative regulation of canonical Wnt signaling pathway			IBA	PTN001197580 	J:265628 	
+MGI:2154278	Ankrd6	ankyrin repeat domain 6	4		negative regulation of canonical Wnt signaling pathway			IDA		J:151614 	
+MGI:2154278	Ankrd6	ankyrin repeat domain 6	4		negative regulation of canonical Wnt signaling pathway			IGI	P42568 	J:151614 	
+MGI:88039	Apc	APC, WNT signaling pathway regulator	18		negative regulation of canonical Wnt signaling pathway			IBA	PTN000288612 	J:265628 	
+MGI:88039	Apc	APC, WNT signaling pathway regulator	18		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in head mesenchyme derived from neural crest,regulates a function/process that happens in migratory cranial neural crest cell|regulates a function/process that happens in trunk mesenchyme derived from neural crest,regulates a function/process that happens in migratory trunk neural crest cell		IMP	MGI:1857966 	J:73707 	
+MGI:88039	Apc	APC, WNT signaling pathway regulator	18		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in intestine epithelium		IMP	MGI:1857966 	J:90759 	
+MGI:88039	Apc	APC, WNT signaling pathway regulator	18		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in liver,regulates a function/process that happens in hepatocyte		IMP	MGI:3521822 	J:94721 	
+MGI:88039	Apc	APC, WNT signaling pathway regulator	18		negative regulation of canonical Wnt signaling pathway			ISO	P25054 	J:73065 	
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2	10		negative regulation of canonical Wnt signaling pathway			IBA	PTN000288612 	J:265628 	
+MGI:1346052	Apc2	APC regulator of WNT signaling pathway 2	10		negative regulation of canonical Wnt signaling pathway			ISO	O95996 	J:164563 	
+MGI:88057	Apoe	apolipoprotein E	7		negative regulation of canonical Wnt signaling pathway			ISO	P02649 	J:164563 	
+MGI:88059	App	amyloid beta (A4) precursor protein	16		negative regulation of canonical Wnt signaling pathway			ISO	P05067 	J:164563 	
+MGI:1096327	Axin1	axin 1	17		negative regulation of canonical Wnt signaling pathway			IDA		J:96879 J:147293 	
+MGI:1096327	Axin1	axin 1	17		negative regulation of canonical Wnt signaling pathway			ISO	O15169 	J:164563 	
+MGI:1270862	Axin2	axin 2	11		negative regulation of canonical Wnt signaling pathway			ISO	Q9Y2T1 	J:164563 	
+MGI:1933388	Bicc1	BicC family RNA binding protein 1	10		negative regulation of canonical Wnt signaling pathway			ISO	Q9H694 	J:164563 	
+MGI:102709	Cav1	caveolin 1, caveolae protein	6		negative regulation of canonical Wnt signaling pathway			IDA		J:163148 	
+MGI:1920989	Cby1	chibby family member 1, beta catenin antagonist	15		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in nasopharynx epithelium		IMP	MGI:3714454 	J:147413 	
+MGI:1915589	Ccdc88c	coiled-coil domain containing 88C	12		negative regulation of canonical Wnt signaling pathway			ISO	Q9P219 	J:164563 	
+MGI:88354	Cdh1	cadherin 1	8		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in intestine epithelium,regulates a function/process that happens in intestinal epithelial cell		IMP		J:190582 	
+MGI:88355	Cdh2	cadherin 2	18		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1278315 MGI:98956 	J:145745 	
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8	14		negative regulation of canonical Wnt signaling pathway			IBA	PTN002898830 	J:265628 	
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8	14		negative regulation of canonical Wnt signaling pathway			ISO	RGD:620696 	J:155856 	
+MGI:1915022	Chd8	chromodomain helicase DNA binding protein 8	14		negative regulation of canonical Wnt signaling pathway			ISO	Q9HCK8 	J:164563 J:183665 	
+MGI:1934950	Csnk1a1	casein kinase 1, alpha 1	18		negative regulation of canonical Wnt signaling pathway			IBA	PTN000936058 	J:265628 	
+MGI:1915838	Cthrc1	collagen triple helix repeat containing 1	15		negative regulation of canonical Wnt signaling pathway			IDA		J:140886 	
+MGI:88276	Ctnnb1	catenin (cadherin associated protein), beta 1	9		negative regulation of canonical Wnt signaling pathway			IDA		J:74520 	
+MGI:1915756	Ctnnbip1	catenin beta interacting protein 1	4		negative regulation of canonical Wnt signaling pathway			IDA		J:74520 	
+MGI:105100	Ctnnd1	catenin (cadherin associated protein), delta 1	2		negative regulation of canonical Wnt signaling pathway			ISO	O60716 	J:164563 	
+MGI:1921506	Cyld	CYLD lysine 63 deubiquitinase	8		negative regulation of canonical Wnt signaling pathway			ISO	Q9NQC7 	J:164563 	
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein	15		negative regulation of canonical Wnt signaling pathway			IBA	PTN002599544 	J:265628 	
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein	15		negative regulation of canonical Wnt signaling pathway			ISO	RGD:621007 	J:155856 	
+MGI:109175	Dab2	disabled 2, mitogen-responsive phosphoprotein	15		negative regulation of canonical Wnt signaling pathway			ISO	P98082 	J:164563 	
+MGI:1916851	Dab2ip	disabled 2 interacting protein	2		negative regulation of canonical Wnt signaling pathway			IMP		J:157597 	
+MGI:1916851	Dab2ip	disabled 2 interacting protein	2		negative regulation of canonical Wnt signaling pathway			ISO	Q5VWQ8 	J:164563 	
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1	12		negative regulation of canonical Wnt signaling pathway			IBA	PTN000408463 	J:265628 	
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1	12		negative regulation of canonical Wnt signaling pathway			IMP		J:146933 	
+MGI:1891740	Dact1	dishevelled-binding antagonist of beta-catenin 1	12		negative regulation of canonical Wnt signaling pathway			ISO	Q9NYF0 	J:164563 	
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN000408463 	J:265628 	
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3	7		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in small intestine,happens in small intestine		IMP	MGI:5515616 	J:199623 	
+MGI:3654828	Dact3	dishevelled-binding antagonist of beta-catenin 3	7		negative regulation of canonical Wnt signaling pathway			ISO	Q96B18 	J:164563 	
+MGI:109247	Ddit3	DNA-damage inducible transcript 3	10		negative regulation of canonical Wnt signaling pathway			IDA		J:163135 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			IBA	PTN001383489 	J:265628 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway	is a part of regulation of synapse organization		IDA		J:225337 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			IDA		J:117476 J:120067 J:124891 J:160170 J:228115 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			IGI	MGI:2442252 	J:160170 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in head paraxial mesenchyme		IGI	MGI:108078 MGI:892014 	J:135313 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98953 	J:91019 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in embryo		IGI	MGI:98955 	J:134688 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			IGI	O00755 P02649 	J:239208 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in primitive streak		IMP	MGI:2387760 	J:134688 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway			ISO	O94907 	J:73065 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		negative regulation of canonical Wnt signaling pathway involved in cardiac muscle cell fate commitment			ISO	O94907 	J:164563 	
+MGI:1329040	Dkk1	dickkopf WNT signaling pathway inhibitor 1	19		positive regulation of heart induction by negative regulation of canonical Wnt signaling pathway			IDA		J:145669 	
+MGI:1890663	Dkk2	dickkopf WNT signaling pathway inhibitor 2	3		negative regulation of canonical Wnt signaling pathway			IBA	PTN001383489 	J:265628 	
+MGI:1890663	Dkk2	dickkopf WNT signaling pathway inhibitor 2	3		negative regulation of canonical Wnt signaling pathway			ISO	Q9UBU2 	J:164563 	
+MGI:1354952	Dkk3	dickkopf WNT signaling pathway inhibitor 3	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN001383489 	J:265628 	
+MGI:1354952	Dkk3	dickkopf WNT signaling pathway inhibitor 3	7		negative regulation of canonical Wnt signaling pathway			ISO	Q9UBP4 	J:164563 	
+MGI:2385299	Dkk4	dickkopf WNT signaling pathway inhibitor 4	8		negative regulation of canonical Wnt signaling pathway			IBA	PTN001383489 	J:265628 	
+MGI:1354963	Dkkl1	dickkopf-like 1	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN001383489 	J:265628 	
+MGI:1917683	Draxin	dorsal inhibitory axon guidance protein	4		negative regulation of canonical Wnt signaling pathway			IBA	PTN002006942 	J:265628 	
+MGI:1917683	Draxin	dorsal inhibitory axon guidance protein	4		negative regulation of canonical Wnt signaling pathway			IDA		J:154861 	
+MGI:95295	Egr1	early growth response 1	18		negative regulation of canonical Wnt signaling pathway			IMP		J:164712 	
+MGI:108117	Emd	emerin	X		negative regulation of canonical Wnt signaling pathway			IBA	PTN001032280 	J:265628 	
+MGI:108117	Emd	emerin	X		negative regulation of canonical Wnt signaling pathway			ISO	P50402 	J:164563 	
+MGI:2443583	Fermt1	fermitin family member 1	2		negative regulation of canonical Wnt signaling pathway			IMP		J:210448 	
+MGI:1890077	Foxo1	forkhead box O1	3		negative regulation of canonical Wnt signaling pathway	happens in neuroblast (sensu Vertebrata),regulates a function/process that happens in neuroblast (sensu Vertebrata)		IGI	MGI:1890081 MGI:98956 	J:154024 	
+MGI:1890081	Foxo3	forkhead box O3	10		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neuroblast (sensu Vertebrata),happens in neuroblast (sensu Vertebrata)		IGI	MGI:1890077 MGI:98956 	J:154024 	
+MGI:1914707	Frmd8	FERM domain containing 8	19		negative regulation of canonical Wnt signaling pathway			IBA	PTN000998750 	J:265628 	
+MGI:892032	Frzb	frizzled-related protein	2		negative regulation of canonical Wnt signaling pathway			IBA	PTN000885362 	J:265628 	
+MGI:892032	Frzb	frizzled-related protein	2		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98956 	J:156721 	
+MGI:892032	Frzb	frizzled-related protein	2		negative regulation of canonical Wnt signaling pathway			ISO	Q92765 	J:164563 	
+MGI:1917550	Fuz	fuzzy planar cell polarity protein	7		negative regulation of canonical Wnt signaling pathway			IMP		J:177881 	
+MGI:1196625	Fzd1	frizzled class receptor 1	5		negative regulation of canonical Wnt signaling pathway	regulates a function/process that has the participant Ctnnb1		IDA		J:88480 	
+MGI:108520	Fzd4	frizzled class receptor 4	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN002259328 	J:265628 	
+MGI:108474	Fzd6	frizzled class receptor 6	15		negative regulation of canonical Wnt signaling pathway			ISO	O60353 	J:164563 	
+MGI:1351465	G3bp1	GTPase activating protein (SH3 domain) binding protein 1	11		negative regulation of canonical Wnt signaling pathway			IMP		J:183055 	
+MGI:95727	Gli1	GLI-Kruppel family member GLI1	10		negative regulation of canonical Wnt signaling pathway			ISO	P08151 	J:164563 	
+MGI:95729	Gli3	GLI-Kruppel family member GLI3	13		negative regulation of canonical Wnt signaling pathway			ISO	P10071 	J:164563 	
+MGI:104903	Gpc3	glypican 3	X		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in embryo		IMP	MGI:2159356 	J:96157 	
+MGI:104903	Gpc3	glypican 3	X		negative regulation of canonical Wnt signaling pathway			ISO	P13265 	J:73065 	
+MGI:1344337	Grem1	gremlin 1, DAN family BMP antagonist	2		negative regulation of canonical Wnt signaling pathway			ISO	O60565 	J:164563 	
+MGI:3044668	Gsdma3	gasdermin A3	11		negative regulation of canonical Wnt signaling pathway	happens in hair follicle		IDA		J:225546 	
+MGI:3044668	Gsdma3	gasdermin A3	11		negative regulation of canonical Wnt signaling pathway	happens in hair follicle		IMP	MGI:4849547 	J:225546 	
+MGI:2152453	Gsk3a	glycogen synthase kinase 3 alpha	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN001173193 	J:265628 	
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta	16		negative regulation of canonical Wnt signaling pathway			IBA	PTN001173193 	J:265628 	
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta	16		negative regulation of canonical Wnt signaling pathway	is a part of regulation of apoptotic process		IMP		J:163141 	
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta	16		negative regulation of canonical Wnt signaling pathway			ISO	P49841 	J:164563 	
+MGI:1861437	Gsk3b	glycogen synthase kinase 3 beta	16		negative regulation of canonical Wnt signaling pathway involved in osteoblast differentiation			ISO	P49841 	J:164563 	
+MGI:108086	Hdac1	histone deacetylase 1	4		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1097691 	J:152576 	
+MGI:108086	Hdac1	histone deacetylase 1	4		negative regulation of canonical Wnt signaling pathway			ISO	Q13547 	J:164563 	
+MGI:1097691	Hdac2	histone deacetylase 2	10		negative regulation of canonical Wnt signaling pathway			IGI	MGI:108086 	J:152576 	
+MGI:1335082	Invs	inversin	4		negative regulation of canonical Wnt signaling pathway			ISO	Q9Y283 	J:164563 	
+MGI:101791	Isl1	ISL1 transcription factor, LIM/homeodomain	13		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in embryo,regulates a function/process that happens in cardioblast		IGI	MGI:88276 	J:158135 	
+MGI:1925835	Jade1	jade family PHD finger 1	3		negative regulation of canonical Wnt signaling pathway			ISO	Q6IE81 	J:164563 	
+MGI:1933988	Kremen1	kringle containing transmembrane protein 1	11		negative regulation of canonical Wnt signaling pathway			IMP		J:240374 	
+MGI:1333883	Lats1	large tumor suppressor	10		negative regulation of canonical Wnt signaling pathway			ISO	O95835 	J:164563 	
+MGI:1354386	Lats2	large tumor suppressor 2	14		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in heart,regulates a function/process that happens in cardiac muscle cell		IGI	MGI:88276 	J:170963 	
+MGI:1354386	Lats2	large tumor suppressor 2	14		negative regulation of canonical Wnt signaling pathway			ISO	Q9NRM7 	J:164563 	
+MGI:1352502	Limd1	LIM domains containing 1	9		negative regulation of canonical Wnt signaling pathway			IMP		J:138996 	
+MGI:1289247	Lmbr1l	limb region 1 like	15		negative regulation of canonical Wnt signaling pathway			IMP		J:274568 	
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4	2		negative regulation of canonical Wnt signaling pathway			IBA	PTN007783447 	J:265628 	
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4	2		negative regulation of canonical Wnt signaling pathway			IDA		J:160170 	
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4	2		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1329040 	J:160170 	
+MGI:2442252	Lrp4	low density lipoprotein receptor-related protein 4	2		negative regulation of canonical Wnt signaling pathway			ISO	O75096 	J:164563 	
+MGI:2385095	Lzts2	leucine zipper, putative tumor suppressor 2	19		negative regulation of canonical Wnt signaling pathway			IBA	PTN002713652 	J:265628 	
+MGI:2385095	Lzts2	leucine zipper, putative tumor suppressor 2	19		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1270862 	J:196012 	
+MGI:1919140	Mad2l2	MAD2 mitotic arrest deficient-like 2	4		negative regulation of canonical Wnt signaling pathway			ISO	Q9UI95 	J:164563 	
+MGI:1346865	Mapk14	mitogen-activated protein kinase 14	17		negative regulation of canonical Wnt signaling pathway			IMP		J:196353 	
+MGI:96930	Mcc	mutated in colorectal cancers	18		negative regulation of canonical Wnt signaling pathway			IBA	PTN000598071 	J:265628 	
+MGI:96930	Mcc	mutated in colorectal cancers	18		negative regulation of canonical Wnt signaling pathway			ISO	P23508 	J:164563 	
+MGI:96949	Mdk	midkine	2		negative regulation of canonical Wnt signaling pathway			IMP		J:172537 	
+MGI:107785	Mesp1	mesoderm posterior 1	7		positive regulation of heart induction by negative regulation of canonical Wnt signaling pathway			IDA		J:145669 	
+MGI:1917372	Mllt3	myeloid/lymphoid or mixed-lineage leukemia; translocated to, 3	4		negative regulation of canonical Wnt signaling pathway			ISO	P42568 	J:73065 	
+MGI:2135954	Nkd1	naked cuticle 1	8		negative regulation of canonical Wnt signaling pathway			IDA		J:69580 J:187580 	
+MGI:2135954	Nkd1	naked cuticle 1	8		negative regulation of canonical Wnt signaling pathway			ISO	Q969G9 	J:164563 	
+MGI:1919543	Nkd2	naked cuticle 2	13		negative regulation of canonical Wnt signaling pathway			ISO	Q969F2 	J:164563 	
+MGI:97350	Nkx2-5	NK2 homeobox 5	17		negative regulation of canonical Wnt signaling pathway			IDA		J:149314 	
+MGI:104327	Nog	noggin	11		negative regulation of canonical Wnt signaling pathway			ISO	Q13253 	J:164563 	
+MGI:97363	Notch1	notch 1	2		negative regulation of canonical Wnt signaling pathway			IMP	MGI:3044585 	J:218237 	
+MGI:97363	Notch1	notch 1	2		negative regulation of canonical Wnt signaling pathway			IMP		J:158135 	
+MGI:1924833	Notum	notum palmitoleoyl-protein carboxylesterase	11		negative regulation of canonical Wnt signaling pathway			IBA	PTN001090191 	J:265628 	
+MGI:1924833	Notum	notum palmitoleoyl-protein carboxylesterase	11		negative regulation of canonical Wnt signaling pathway			IDA		J:274615 	
+MGI:1921275	Nphp3	nephronophthisis 3 (adolescent)	9		negative regulation of canonical Wnt signaling pathway			ISO	Q7Z494 	J:164563 	
+MGI:2384210	Nphp4	nephronophthisis 4 (juvenile) homolog (human)	4		negative regulation of canonical Wnt signaling pathway			IBA	PTN001287074 	J:265628 	
+MGI:2384210	Nphp4	nephronophthisis 4 (juvenile) homolog (human)	4		negative regulation of canonical Wnt signaling pathway			ISO	O75161 	J:164563 	
+MGI:97367	Nppa	natriuretic peptide type A	4		negative regulation of canonical Wnt signaling pathway			ISO	P01160 	J:164563 	
+MGI:1859615	Otud5	OTU domain containing 5	X		negative regulation of canonical Wnt signaling pathway			ISO	Q96G74 	J:164563 	
+MGI:1928753	Pfdn5	prefoldin 5	15		negative regulation of canonical Wnt signaling pathway			ISO	Q99471 	J:164563 	
+MGI:2442104	Ppp2r3a	protein phosphatase 2, regulatory subunit B'', alpha	9		negative regulation of canonical Wnt signaling pathway			ISO	Q06190 	J:164563 	
+MGI:1916034	Prickle1	prickle planar cell polarity protein 1	15		negative regulation of canonical Wnt signaling pathway			ISO	Q96MT3 	J:164563 	
+MGI:1355296	Prkn	parkin RBR E3 ubiquitin protein ligase	17		negative regulation of canonical Wnt signaling pathway			ISO	O60260 	J:164563 	
+MGI:1097152	Ptpro	protein tyrosine phosphatase, receptor type, O	6		negative regulation of canonical Wnt signaling pathway			IBA	PTN002931512 	J:265628 	
+MGI:1097152	Ptpro	protein tyrosine phosphatase, receptor type, O	6		negative regulation of canonical Wnt signaling pathway			IDA		J:164374 	
+MGI:1321151	Ptpru	protein tyrosine phosphatase, receptor type, U	4		negative regulation of canonical Wnt signaling pathway			ISO	Q92729 	J:164563 	
+MGI:104580	Rapgef1	Rap guanine nucleotide exchange factor (GEF) 1	2		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neuronal stem cell,has the participant Gsk3b		IGI	MGI:95516 	J:119299 	
+MGI:2444477	Rbms3	RNA binding motif, single stranded interacting protein	9		negative regulation of canonical Wnt signaling pathway			ISO	Q6XE24 	J:164563 	
+MGI:1347521	Ror2	receptor tyrosine kinase-like orphan receptor 2	13		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98958 	J:107727 	
+MGI:1342299	Ruvbl2	RuvB-like protein 2	7		negative regulation of canonical Wnt signaling pathway			ISO	Q9Y230 	J:164563 	
+MGI:1289172	Scyl2	SCY1-like 2 (S. cerevisiae)	10		negative regulation of canonical Wnt signaling pathway			ISO	Q6P3W7 	J:164563 	
+MGI:1913322	Sdhaf2	succinate dehydrogenase complex assembly factor 2	19		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in epithelial cell of lung,happens in epithelial cell of lung,has the participant Gsk3b		IMP		J:203932 	
+MGI:1913322	Sdhaf2	succinate dehydrogenase complex assembly factor 2	19		negative regulation of canonical Wnt signaling pathway			ISO	Q9NX18 	J:73065 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway			IBA	PTN002259328 	J:265628 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway			IDA		J:164862 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neural tube		IGI	MGI:108078 	J:157031 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in head paraxial mesenchyme		IGI	MGI:108078 MGI:1329040 	J:135313 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway	happens in neuroblast (sensu Vertebrata),regulates a function/process that happens in neuroblast (sensu Vertebrata)		IGI	MGI:108078 MGI:98956 	J:154024 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98956 	J:121773 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway			ISO	RGD:621074 	J:155856 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway			ISO	Q8N474 	J:164563 	
+MGI:892014	Sfrp1	secreted frizzled-related protein 1	8		negative regulation of canonical Wnt signaling pathway involved in controlling type B pancreatic cell proliferation			ISO	Q8N474 	J:164563 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway			IBA	PTN002259328 	J:265628 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway			IDA		J:124891 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in head paraxial mesenchyme		IGI	MGI:1329040 MGI:892014 	J:135313 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neural tube		IGI	MGI:892014 	J:157031 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neuroblast (sensu Vertebrata),happens in neuroblast (sensu Vertebrata)		IGI	MGI:892014 MGI:98956 	J:154024 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98956 	J:121773 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway			ISO	RGD:735163 	J:155856 	
+MGI:108078	Sfrp2	secreted frizzled-related protein 2	3		negative regulation of canonical Wnt signaling pathway			ISO	Q96HF1 	J:164563 	
+MGI:892010	Sfrp4	secreted frizzled-related protein 4	13		negative regulation of canonical Wnt signaling pathway			IBA	PTN000885362 	J:265628 	
+MGI:892010	Sfrp4	secreted frizzled-related protein 4	13		negative regulation of canonical Wnt signaling pathway			IMP		J:234467 	
+MGI:892010	Sfrp4	secreted frizzled-related protein 4	13		negative regulation of canonical Wnt signaling pathway			ISO	RGD:621075 	J:155856 	
+MGI:892010	Sfrp4	secreted frizzled-related protein 4	13		negative regulation of canonical Wnt signaling pathway			ISO	Q6FHJ7 	J:164563 	
+MGI:1860298	Sfrp5	secreted frizzled-related sequence protein 5	19		negative regulation of canonical Wnt signaling pathway			IBA	PTN002259328 	J:265628 	
+MGI:1860298	Sfrp5	secreted frizzled-related sequence protein 5	19		negative regulation of canonical Wnt signaling pathway			ISO	Q5T4F7 	J:164563 	
+MGI:98297	Shh	sonic hedgehog	5		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in fungiform papillae		IMP		J:119729 	
+MGI:3041225	Shisa3	shisa family member 3	5		negative regulation of canonical Wnt signaling pathway	happens in osteoblast		IDA		J:294316 	
+MGI:2685725	Shisa6	shisa family member 6	11		negative regulation of canonical Wnt signaling pathway			IMP		J:257319 	
+MGI:108062	Siah2	siah E3 ubiquitin protein ligase 2	3		negative regulation of canonical Wnt signaling pathway			ISO	O43255 	J:73065 	
+MGI:1349482	Slc9a3r1	solute carrier family 9 (sodium/hydrogen exchanger), member 3 regulator 1	11		negative regulation of canonical Wnt signaling pathway			ISO	O14745 	J:164563 	
+MGI:1096393	Snai2	snail family zinc finger 2	16		negative regulation of canonical Wnt signaling pathway			ISO	O43623 	J:164563 	
+MGI:1921749	Sost	sclerostin	11		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in limb		IGI	MGI:1298218 	J:161416 	
+MGI:1921749	Sost	sclerostin	11		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in neuroblast (sensu Vertebrata),happens in neuroblast (sensu Vertebrata)		IGI	MGI:98956 	J:154024 	
+MGI:1921749	Sost	sclerostin	11		negative regulation of canonical Wnt signaling pathway			ISO	Q9BQB4 	J:164563 	
+MGI:1913292	Sostdc1	sclerostin domain containing 1	12		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in mammary gland		IMP	MGI:3604658 	J:183911 	
+MGI:98364	Sox2	SRY (sex determining region Y)-box 2	3		negative regulation of canonical Wnt signaling pathway			IDA		J:129040 	
+MGI:98364	Sox2	SRY (sex determining region Y)-box 2	3		negative regulation of canonical Wnt signaling pathway			ISO	P48431 	J:164563 	
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9	11		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in limb,regulates a function/process that happens in mesenchymal stem cell		IDA		J:147223 	
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9	11		negative regulation of canonical Wnt signaling pathway			IDA		J:129040 J:144453 	
+MGI:98371	Sox9	SRY (sex determining region Y)-box 9	11		negative regulation of canonical Wnt signaling pathway			IMP		J:90567 	
+MGI:98358	Sox10	SRY (sex determining region Y)-box 10	15		negative regulation of canonical Wnt signaling pathway			IDA		J:129040 	
+MGI:98361	Sox13	SRY (sex determining region Y)-box 13	1		negative regulation of canonical Wnt signaling pathway			ISO	Q9UN79 	J:164563 	
+MGI:107543	Sox17	SRY (sex determining region Y)-box 17	1		negative regulation of canonical Wnt signaling pathway	negatively regulates negative regulation of cell population proliferation		IMP		J:129040 	
+MGI:107543	Sox17	SRY (sex determining region Y)-box 17	1		negative regulation of canonical Wnt signaling pathway			ISO	Q9H6I2 	J:164563 	
+MGI:1928487	Stk3	serine/threonine kinase 3	15		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in liver,regulates a function/process that happens in hepatocyte		IGI	MGI:1929004 	J:156541 	
+MGI:1928487	Stk3	serine/threonine kinase 3	15		negative regulation of canonical Wnt signaling pathway			ISO	Q13188 	J:164563 	
+MGI:1929004	Stk4	serine/threonine kinase 4	2		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in liver,regulates a function/process that happens in hepatocyte		IGI	MGI:1928487 	J:156541 	
+MGI:1929004	Stk4	serine/threonine kinase 4	2		negative regulation of canonical Wnt signaling pathway			ISO	Q13043 	J:164563 	
+MGI:1341870	Stk11	serine/threonine kinase 11	10		negative regulation of canonical Wnt signaling pathway			ISO	Q15831 	J:164563 	
+MGI:1341870	Stk11	serine/threonine kinase 11	10		negative regulation of canonical Wnt signaling pathway			ISS	Q15831 	J:263479 	
+MGI:1923615	Tbx18	T-box18	9		negative regulation of canonical Wnt signaling pathway involved in neural plate anterior/posterior pattern formation			IDA		J:124772 	
+MGI:1202879	Tcf7l2	transcription factor 7 like 2, T cell specific, HMG box	19		negative regulation of canonical Wnt signaling pathway			ISO	Q9NQB0 	J:164563 	
+MGI:104636	Tle1	transducin-like enhancer of split 1	4		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:104635	Tle2	transducin-like enhancer of split 2	10		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:104635	Tle2	transducin-like enhancer of split 2	10		negative regulation of canonical Wnt signaling pathway			ISO	Q04725 	J:164563 	
+MGI:104634	Tle3	transducin-like enhancer of split 3	9		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:104633	Tle4	transducin-like enhancer of split 4	19		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:95806	Tle5	TLE family member 5, transcriptional modulator	10		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:95806	Tle5	TLE family member 5, transcriptional modulator	10		negative regulation of canonical Wnt signaling pathway			ISO	Q08117 	J:164563 	
+MGI:2149593	Tle6	transducin-like enhancer of split 6	10		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:5439433	Tle7	TLE family member 7	8		negative regulation of canonical Wnt signaling pathway			IBA	PTN000850324 	J:265628 	
+MGI:2140359	Tmem64	transmembrane protein 64	4		negative regulation of canonical Wnt signaling pathway			IMP		J:221949 	
+MGI:1914270	Tmem88	transmembrane protein 88	11		negative regulation of canonical Wnt signaling pathway			IBA	PTN002007899 	J:265628 	
+MGI:1914270	Tmem88	transmembrane protein 88	11		negative regulation of canonical Wnt signaling pathway			ISO	Q6PEY1 	J:164563 	
+MGI:2443399	Tmem131l	transmembrane 131 like	3		negative regulation of canonical Wnt signaling pathway			IBA	PTN000498725 	J:265628 	
+MGI:2443399	Tmem131l	transmembrane 131 like	3		negative regulation of canonical Wnt signaling pathway			ISO	A2VDJ0 	J:164563 	
+MGI:3647046	Tmem170b	transmembrane protein 170B	13		negative regulation of canonical Wnt signaling pathway			IBA	PTN002735717 	J:265628 	
+MGI:3647046	Tmem170b	transmembrane protein 170B	13		negative regulation of canonical Wnt signaling pathway			ISO	Q5T4T1 	J:164563 	
+MGI:2665790	Tnn	tenascin N	1		negative regulation of canonical Wnt signaling pathway involved in osteoblast differentiation			IDA		J:121509 	
+MGI:1341264	Tpbg	trophoblast glycoprotein	9		negative regulation of canonical Wnt signaling pathway			IBA	PTN001222637 	J:265628 	
+MGI:3646425	Tpbgl	trophoblast glycoprotein-like	7		negative regulation of canonical Wnt signaling pathway			IBA	PTN001222637 	J:265628 	
+MGI:1916139	Ubac2	ubiquitin associated domain containing 2	14		negative regulation of canonical Wnt signaling pathway			IMP		J:274568 	
+MGI:1916139	Ubac2	ubiquitin associated domain containing 2	14		negative regulation of canonical Wnt signaling pathway			ISO	Q8NBM4 	J:164563 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14	NOT	negative regulation of canonical Wnt signaling pathway			IDA		J:227392 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway			IDA		J:120773 J:162983 J:219051 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1347521 MGI:98956 	J:107727 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway			IGI	MGI:1888513 MGI:98956 	J:156508 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway			IGI	P27467 	J:120773 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in limb		IMP		J:85368 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway	regulates a function/process that happens in thymus,regulates a function/process that happens in thymocyte		IMP		J:130359 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		negative regulation of canonical Wnt signaling pathway			ISO	P41221 	J:73065 	
+MGI:98958	Wnt5a	wingless-type MMTV integration site family, member 5A	14		positive regulation of heart induction by negative regulation of canonical Wnt signaling pathway			IGI	P48615 	J:184511 	
+MGI:98959	Wnt5b	wingless-type MMTV integration site family, member 5B	6		negative regulation of canonical Wnt signaling pathway			IGI	MGI:98956 	J:97443 	
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11	7		negative regulation of canonical Wnt signaling pathway			IDA		J:130875 	
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11	7		negative regulation of canonical Wnt signaling pathway			ISO	O96014 	J:164563 	
+MGI:101948	Wnt11	wingless-type MMTV integration site family, member 11	7		positive regulation of heart induction by negative regulation of canonical Wnt signaling pathway			IGI	P22725 	J:184511 	
+MGI:1917649	Wwtr1	WW domain containing transcription regulator 1	3		negative regulation of canonical Wnt signaling pathway			ISO	Q9GZV5 	J:164563 	
+MGI:3039616	Znrf3	zinc and ring finger 3	11		negative regulation of canonical Wnt signaling pathway			IBA	PTN002701098 	J:265628 	
+MGI:3039616	Znrf3	zinc and ring finger 3	11		negative regulation of canonical Wnt signaling pathway			ISO	Q9ULT6 	J:164563 	
+

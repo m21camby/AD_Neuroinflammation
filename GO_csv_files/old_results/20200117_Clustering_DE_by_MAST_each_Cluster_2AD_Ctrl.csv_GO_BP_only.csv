@@ -1,0 +1,30 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0099560","synaptic membrane adhesion",31,2,0.01,1,2.1e-05,2.1e-05,0.0645161290322581
+"32","BP","GO:0050770","regulation of axonogenesis",190,2,0.05,4,8e-04,8e-04,0.0105263157894737
+"33","BP","GO:0002693","positive regulation of cellular extravas...",20,1,0,12,0.0049,0.0049,0.05
+"34","BP","GO:0006144","purine nucleobase metabolic process",21,1,0.01,13,0.0052,0.0052,0.0476190476190476
+"35","BP","GO:0050804","modulation of chemical synaptic transmis...",487,2,0.12,14,0.0052,0.0052,0.00410677618069815
+"36","BP","GO:0050858","negative regulation of antigen receptor-...",22,1,0.01,17,0.0054,0.0054,0.0454545454545455
+"38","BP","GO:0051894","positive regulation of focal adhesion as...",25,1,0.01,19,0.0061,0.0061,0.04
+"39","BP","GO:0061099","negative regulation of protein tyrosine ...",26,1,0.01,20,0.0064,0.0064,0.0384615384615385
+"40","BP","GO:1904861","excitatory synapse assembly",28,1,0.01,22,0.0069,0.0069,0.0357142857142857
+"41","BP","GO:0042462","eye photoreceptor cell development",31,1,0.01,26,0.0076,0.0076,0.032258064516129
+"42","BP","GO:0051281","positive regulation of release of seques...",35,1,0.01,33,0.0086,0.0086,0.0285714285714286
+"43","BP","GO:0097106","postsynaptic density organization",35,1,0.01,34,0.0086,0.0086,0.0285714285714286
+"44","BP","GO:0001523","retinoid metabolic process",35,1,0.01,35,0.0086,0.0086,0.0285714285714286
+"45","BP","GO:0070570","regulation of neuron projection regenera...",35,1,0.01,36,0.0086,0.0086,0.0285714285714286
+"46","BP","GO:0050856","regulation of T cell receptor signaling ...",37,1,0.01,37,0.0091,0.0091,0.027027027027027
+"47","BP","GO:0034113","heterotypic cell-cell adhesion",40,1,0.01,44,0.0098,0.0098,0.025
+"48","BP","GO:0001941","postsynaptic membrane organization",44,1,0.01,48,0.0108,0.0108,0.0227272727272727
+"49","BP","GO:0003407","neural retina development",48,1,0.01,54,0.0118,0.0118,0.0208333333333333
+"50","BP","GO:0034308","primary alcohol metabolic process",49,1,0.01,55,0.012,0.012,0.0204081632653061
+"51","BP","GO:0060042","retina morphogenesis in camera-type eye",49,1,0.01,56,0.012,0.012,0.0204081632653061
+"52","BP","GO:0043113","receptor clustering",63,1,0.02,67,0.0154,0.0154,0.0158730158730159
+"53","BP","GO:0050771","negative regulation of axonogenesis",66,1,0.02,70,0.0161,0.0161,0.0151515151515152
+"54","BP","GO:0034754","cellular hormone metabolic process",75,1,0.02,76,0.0183,0.0183,0.0133333333333333
+"55","BP","GO:0007229","integrin-mediated signaling pathway",84,1,0.02,83,0.0205,0.0205,0.0119047619047619
+"56","BP","GO:0010771","negative regulation of cell morphogenesi...",95,1,0.02,89,0.0232,0.0232,0.0105263157894737
+"57","BP","GO:0048593","camera-type eye morphogenesis",104,1,0.03,93,0.0253,0.0253,0.00961538461538462
+"58","BP","GO:0060041","retina development in camera-type eye",127,1,0.03,105,0.0309,0.0309,0.0078740157480315
+"59","BP","GO:0050870","positive regulation of T cell activation",159,1,0.04,114,0.0386,0.0386,0.00628930817610063
+"60","BP","GO:0010977","negative regulation of neuron projection...",166,1,0.04,118,0.0402,0.0402,0.00602409638554217

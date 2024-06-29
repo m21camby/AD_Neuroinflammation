@@ -1,0 +1,30 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0001667","ameboidal-type cell migration",344,2,0.11,1,0.005,0.005,0.00581395348837209
+"32","BP","GO:0033622","integrin activation",20,1,0.01,2,0.0066,0.0066,0.05
+"33","BP","GO:0000413","protein peptidyl-prolyl isomerization",20,1,0.01,3,0.0066,0.0066,0.05
+"34","BP","GO:0002446","neutrophil mediated immunity",20,1,0.01,4,0.0066,0.0066,0.05
+"35","BP","GO:0009617","response to bacterium",410,2,0.14,5,0.007,0.007,0.0048780487804878
+"36","BP","GO:0042119","neutrophil activation",22,1,0.01,6,0.0073,0.0073,0.0454545454545455
+"37","BP","GO:2000310","regulation of NMDA receptor activity",22,1,0.01,7,0.0073,0.0073,0.0454545454545455
+"38","BP","GO:1905523","positive regulation of macrophage migrat...",22,1,0.01,8,0.0073,0.0073,0.0454545454545455
+"39","BP","GO:0033198","response to ATP",23,1,0.01,9,0.0076,0.0076,0.0434782608695652
+"40","BP","GO:0007064","mitotic sister chromatid cohesion",23,1,0.01,10,0.0076,0.0076,0.0434782608695652
+"41","BP","GO:0021801","cerebral cortex radial glia guided migra...",24,1,0.01,11,0.008,0.008,0.0416666666666667
+"42","BP","GO:0001523","retinoid metabolic process",26,1,0.01,14,0.0086,0.0086,0.0384615384615385
+"43","BP","GO:0006929","substrate-dependent cell migration",26,1,0.01,15,0.0086,0.0086,0.0384615384615385
+"44","BP","GO:1900027","regulation of ruffle assembly",27,1,0.01,17,0.009,0.009,0.037037037037037
+"45","BP","GO:0051953","negative regulation of amine transport",28,1,0.01,18,0.0093,0.0093,0.0357142857142857
+"46","BP","GO:0009112","nucleobase metabolic process",30,1,0.01,22,0.01,0.01,0.0333333333333333
+"47","BP","GO:2000816","negative regulation of mitotic sister ch...",35,1,0.01,29,0.0116,0.0116,0.0285714285714286
+"48","BP","GO:1905819","negative regulation of chromosome separa...",36,1,0.01,31,0.0119,0.0119,0.0277777777777778
+"49","BP","GO:0033628","regulation of cell adhesion mediated by ...",36,1,0.01,32,0.0119,0.0119,0.0277777777777778
+"50","BP","GO:0033048","negative regulation of mitotic sister ch...",37,1,0.01,33,0.0123,0.0123,0.027027027027027
+"51","BP","GO:0031670","cellular response to nutrient",37,1,0.01,34,0.0123,0.0123,0.027027027027027
+"52","BP","GO:0070527","platelet aggregation",38,1,0.01,35,0.0126,0.0126,0.0263157894736842
+"53","BP","GO:0033046","negative regulation of sister chromatid ...",39,1,0.01,36,0.0129,0.0129,0.0256410256410256
+"54","BP","GO:0034308","primary alcohol metabolic process",40,1,0.01,38,0.0133,0.0133,0.025
+"55","BP","GO:0051985","negative regulation of chromosome segreg...",41,1,0.01,40,0.0136,0.0136,0.024390243902439
+"57","BP","GO:0045839","negative regulation of mitotic nuclear d...",46,1,0.02,43,0.0152,0.0152,0.0217391304347826
+"58","BP","GO:0007193","adenylate cyclase-inhibiting G protein-c...",51,1,0.02,50,0.0169,0.0169,0.0196078431372549
+"59","BP","GO:0010965","regulation of mitotic sister chromatid s...",51,1,0.02,51,0.0169,0.0169,0.0196078431372549
+"60","BP","GO:0061077","chaperone-mediated protein folding",51,1,0.02,52,0.0169,0.0169,0.0196078431372549

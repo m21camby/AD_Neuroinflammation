@@ -1,0 +1,28 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0007626","locomotory behavior",225,11,2.19,63,1.3e-05,1.3e-05,0.0488888888888889
+"32","BP","GO:0007528","neuromuscular junction development",49,5,0.48,91,0.00011,0.00011,0.102040816326531
+"33","BP","GO:0007612","learning",155,8,1.51,98,0.00014,0.00014,0.0516129032258065
+"34","BP","GO:0070588","calcium ion transmembrane transport",248,10,2.41,101,0.00016,0.00016,0.0403225806451613
+"35","BP","GO:0001964","startle response",30,4,0.29,107,0.00019,0.00019,0.133333333333333
+"36","BP","GO:0007215","glutamate receptor signaling pathway",83,8,0.81,42,0.00029,1.4e-06,0.0963855421686747
+"37","BP","GO:0034765","regulation of ion transmembrane transpor...",412,17,4,36,0.00041,5.4e-07,0.0412621359223301
+"39","BP","GO:0070509","calcium ion import",74,5,0.72,142,0.00076,0.00076,0.0675675675675676
+"40","BP","GO:0009791","post-embryonic development",112,6,1.09,143,0.00078,0.00078,0.0535714285714286
+"41","BP","GO:0050919","negative chemotaxis",43,4,0.42,144,0.00079,0.00079,0.0930232558139535
+"42","BP","GO:0099175","regulation of postsynapse organization",119,6,1.16,152,0.00107,0.00107,0.0504201680672269
+"43","BP","GO:0043010","camera-type eye development",266,9,2.59,154,0.00118,0.00118,0.0338345864661654
+"44","BP","GO:0098742","cell-cell adhesion via plasma-membrane a...",168,9,1.63,81,0.00127,3.9e-05,0.0535714285714286
+"45","BP","GO:0008038","neuron recognition",49,4,0.48,160,0.00129,0.00129,0.0816326530612245
+"46","BP","GO:0045773","positive regulation of axon extension",49,4,0.48,161,0.00129,0.00129,0.0816326530612245
+"47","BP","GO:1900449","regulation of glutamate receptor signali...",49,4,0.48,162,0.00129,0.00129,0.0816326530612245
+"48","BP","GO:0002028","regulation of sodium ion transport",86,5,0.84,169,0.0015,0.0015,0.0581395348837209
+"49","BP","GO:0003148","outflow tract septum morphogenesis",24,3,0.23,170,0.00157,0.00157,0.125
+"50","BP","GO:0006813","potassium ion transport",204,10,1.98,77,0.00157,3.1e-05,0.0490196078431373
+"51","BP","GO:0007605","sensory perception of sound",129,6,1.25,171,0.00163,0.00163,0.0465116279069767
+"52","BP","GO:0098900","regulation of action potential",53,4,0.52,175,0.00173,0.00173,0.0754716981132075
+"53","BP","GO:0007613","memory",131,6,1.27,176,0.00176,0.00176,0.0458015267175573
+"54","BP","GO:0048843","negative regulation of axon extension in...",25,3,0.24,177,0.00177,0.00177,0.12
+"55","BP","GO:0050804","modulation of chemical synaptic transmis...",479,17,4.66,53,0.0019,4.2e-06,0.0354906054279749
+"56","BP","GO:0060384","innervation",26,3,0.25,184,0.00199,0.00199,0.115384615384615
+"57","BP","GO:0016082","synaptic vesicle priming",26,3,0.25,185,0.00199,0.00199,0.115384615384615
+"60","BP","GO:0007411","axon guidance",211,10,2.05,83,0.00206,4.1e-05,0.0473933649289099

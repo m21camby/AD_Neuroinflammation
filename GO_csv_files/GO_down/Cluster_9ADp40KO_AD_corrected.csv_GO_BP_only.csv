@@ -1,0 +1,7 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio","genes"
+"31","BP","GO:0006144","purine nucleobase metabolic process",22,1,0,1,0.0026,0.0026,0.0454545454545455,"Ttr"
+"32","BP","GO:0001523","retinoid metabolic process",32,1,0,2,0.0038,0.0038,0.03125,"Ttr"
+"33","BP","GO:0034308","primary alcohol metabolic process",48,1,0.01,6,0.0057,0.0057,0.0208333333333333,"Ttr"
+"34","BP","GO:0034754","cellular hormone metabolic process",76,1,0.01,8,0.009,0.009,0.0131578947368421,"Ttr"
+"35","BP","GO:0007219","Notch signaling pathway",153,1,0.02,9,0.0182,0.0182,0.0065359477124183,"Maml2"
+"36","BP","GO:0009914","hormone transport",319,1,0.04,12,0.0377,0.0377,0.00313479623824451,"Ttr"

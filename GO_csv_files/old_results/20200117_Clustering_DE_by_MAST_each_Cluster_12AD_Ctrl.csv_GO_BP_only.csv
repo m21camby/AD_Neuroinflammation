@@ -1,0 +1,29 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0050870","positive regulation of T cell activation",136,2,0.06,1,0.0016,0.0016,0.0147058823529412
+"32","BP","GO:0006898","receptor-mediated endocytosis",203,2,0.09,5,0.0036,0.0036,0.00985221674876847
+"33","BP","GO:0006066","alcohol metabolic process",251,2,0.12,11,0.0054,0.0054,0.00796812749003984
+"34","BP","GO:0022412","cellular process involved in reproductio...",297,2,0.14,12,0.0075,0.0075,0.00673400673400673
+"35","BP","GO:0002693","positive regulation of cellular extravas...",20,1,0.01,15,0.0092,0.0092,0.05
+"36","BP","GO:0006144","purine nucleobase metabolic process",20,1,0.01,16,0.0092,0.0092,0.05
+"37","BP","GO:0061036","positive regulation of cartilage develop...",23,1,0.01,19,0.0105,0.0105,0.0434782608695652
+"38","BP","GO:0002683","negative regulation of immune system pro...",359,2,0.17,20,0.0108,0.0108,0.00557103064066852
+"40","BP","GO:0051894","positive regulation of focal adhesion as...",24,1,0.01,22,0.011,0.011,0.0416666666666667
+"41","BP","GO:0061099","negative regulation of protein tyrosine ...",24,1,0.01,23,0.011,0.011,0.0416666666666667
+"42","BP","GO:0035116","embryonic hindlimb morphogenesis",25,1,0.01,24,0.0114,0.0114,0.04
+"43","BP","GO:0002029","desensitization of G protein-coupled rec...",26,1,0.01,25,0.0119,0.0119,0.0384615384615385
+"44","BP","GO:0022401","negative adaptation of signaling pathway",26,1,0.01,26,0.0119,0.0119,0.0384615384615385
+"45","BP","GO:0042462","eye photoreceptor cell development",27,1,0.01,28,0.0124,0.0124,0.037037037037037
+"46","BP","GO:0035136","forelimb morphogenesis",28,1,0.01,31,0.0128,0.0128,0.0357142857142857
+"47","BP","GO:0023058","adaptation of signaling pathway",28,1,0.01,32,0.0128,0.0128,0.0357142857142857
+"48","BP","GO:0048232","male gamete generation",398,2,0.18,33,0.0131,0.0131,0.0050251256281407
+"49","BP","GO:0048011","neurotrophin TRK receptor signaling path...",29,1,0.01,34,0.0133,0.0133,0.0344827586206897
+"50","BP","GO:0001523","retinoid metabolic process",29,1,0.01,35,0.0133,0.0133,0.0344827586206897
+"51","BP","GO:1901890","positive regulation of cell junction ass...",29,1,0.01,36,0.0133,0.0133,0.0344827586206897
+"53","BP","GO:1903393","positive regulation of adherens junction...",30,1,0.01,38,0.0137,0.0137,0.0333333333333333
+"54","BP","GO:0007143","female meiotic nuclear division",30,1,0.01,39,0.0137,0.0137,0.0333333333333333
+"55","BP","GO:0016101","diterpenoid metabolic process",31,1,0.01,40,0.0142,0.0142,0.032258064516129
+"56","BP","GO:0035137","hindlimb morphogenesis",31,1,0.01,41,0.0142,0.0142,0.032258064516129
+"57","BP","GO:1990090","cellular response to nerve growth factor...",33,1,0.02,44,0.0151,0.0151,0.0303030303030303
+"58","BP","GO:1990089","response to nerve growth factor",33,1,0.02,45,0.0151,0.0151,0.0303030303030303
+"59","BP","GO:0051281","positive regulation of release of seques...",33,1,0.02,46,0.0151,0.0151,0.0303030303030303
+"60","BP","GO:0070570","regulation of neuron projection regenera...",34,1,0.02,47,0.0155,0.0155,0.0294117647058824

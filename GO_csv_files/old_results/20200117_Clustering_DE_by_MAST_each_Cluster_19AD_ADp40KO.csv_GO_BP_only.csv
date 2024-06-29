@@ -1,0 +1,11 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0006144","purine nucleobase metabolic process",20,1,0,1,0.0026,0.0026,0.05
+"32","BP","GO:0001523","retinoid metabolic process",31,1,0,2,0.004,0.004,0.032258064516129
+"33","BP","GO:0034308","primary alcohol metabolic process",45,1,0.01,6,0.0058,0.0058,0.0222222222222222
+"34","BP","GO:0034754","cellular hormone metabolic process",69,1,0.01,8,0.0089,0.0089,0.0144927536231884
+"35","BP","GO:0007631","feeding behavior",94,1,0.01,9,0.0121,0.0121,0.0106382978723404
+"36","BP","GO:0007626","locomotory behavior",221,1,0.03,11,0.0284,0.0284,0.00452488687782805
+"37","BP","GO:0009914","hormone transport",298,1,0.04,13,0.0382,0.0382,0.00335570469798658
+"38","BP","GO:0010976","positive regulation of neuron projection...",335,1,0.04,14,0.0429,0.0429,0.00298507462686567
+"39","BP","GO:0045666","positive regulation of neuron differenti...",406,1,0.05,16,0.0518,0.0518,0.00246305418719212
+"40","BP","GO:0031346","positive regulation of cell projection o...",430,1,0.06,19,0.0549,0.0549,0.00232558139534884

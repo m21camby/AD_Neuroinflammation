@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0048018","receptor ligand activity",270,2,0.12,2,0.0062,0.0062,0.00740740740740741
+"2","MF","GO:0034593","phosphatidylinositol bisphosphate phosph...",20,1,0.01,5,0.0092,0.0092,0.05
+"3","MF","GO:0019239","deaminase activity",21,1,0.01,6,0.0096,0.0096,0.0476190476190476
+"4","MF","GO:0016814","hydrolase activity, acting on carbon-nit...",23,1,0.01,7,0.0105,0.0105,0.0434782608695652
+"5","MF","GO:0046983","protein dimerization activity",1156,3,0.53,9,0.0121,0.0121,0.00259515570934256
+"6","MF","GO:0046982","protein heterodimerization activity",464,2,0.21,10,0.0176,0.0176,0.00431034482758621
+"7","MF","GO:0015459","potassium channel regulator activity",41,1,0.02,11,0.0187,0.0187,0.024390243902439
+"8","MF","GO:0005179","hormone activity",59,1,0.03,12,0.0268,0.0268,0.0169491525423729
+"9","MF","GO:0046872","metal ion binding",2974,4,1.37,14,0.0308,0.0308,0.00134498991257566
+"10","MF","GO:0043169","cation binding",3047,4,1.4,15,0.0334,0.0334,0.00131276665572694
+"11","MF","GO:0004620","phospholipase activity",74,1,0.03,16,0.0336,0.0336,0.0135135135135135
+"12","MF","GO:0003725","double-stranded RNA binding",76,1,0.03,17,0.0344,0.0344,0.0131578947368421
+"13","MF","GO:0042562","hormone binding",77,1,0.04,18,0.0349,0.0349,0.012987012987013
+"14","MF","GO:0008081","phosphoric diester hydrolase activity",82,1,0.04,19,0.0371,0.0371,0.0121951219512195
+"15","MF","GO:0016298","lipase activity",91,1,0.04,20,0.0411,0.0411,0.010989010989011
+"16","MF","GO:0098772","molecular function regulator",1301,4,0.6,1,0.0413,0.0015,0.00307455803228286
+"17","MF","GO:0099106","ion channel regulator activity",95,1,0.04,21,0.0429,0.0429,0.0105263157894737
+"18","MF","GO:0016810","hydrolase activity, acting on carbon-nit...",99,1,0.05,22,0.0447,0.0447,0.0101010101010101
+"19","MF","GO:0005267","potassium channel activity",102,1,0.05,23,0.046,0.046,0.00980392156862745
+"20","MF","GO:0016247","channel regulator activity",120,1,0.06,24,0.0539,0.0539,0.00833333333333333
+"21","MF","GO:0047485","protein N-terminus binding",125,1,0.06,25,0.0561,0.0561,0.008
+"22","MF","GO:0044325","ion channel binding",129,1,0.06,26,0.0579,0.0579,0.00775193798449612
+"23","MF","GO:0015079","potassium ion transmembrane transporter ...",135,1,0.06,28,0.0605,0.0605,0.00740740740740741
+"24","MF","GO:0005244","voltage-gated ion channel activity",163,1,0.07,30,0.0726,0.0726,0.00613496932515337
+"25","MF","GO:0022832","voltage-gated channel activity",163,1,0.07,31,0.0726,0.0726,0.00613496932515337
+"26","MF","GO:0005085","guanyl-nucleotide exchange factor activi...",190,1,0.09,32,0.0842,0.0842,0.00526315789473684
+"27","MF","GO:0042578","phosphoric ester hydrolase activity",323,2,0.15,4,0.1138,0.0088,0.00619195046439629
+"28","MF","GO:0005261","cation channel activity",261,1,0.12,35,0.1141,0.1141,0.00383141762452107
+"29","MF","GO:0022839","ion gated channel activity",263,1,0.12,36,0.1149,0.1149,0.00380228136882129
+"30","MF","GO:0022836","gated channel activity",275,1,0.13,37,0.1199,0.1199,0.00363636363636364
+"31","BP","GO:0006629","lipid metabolic process",986,3,0.45,5,0.0077,0.00768,0.00304259634888438
+"32","BP","GO:0046174","polyol catabolic process",20,1,0.01,6,0.0091,0.00912,0.05
+"33","BP","GO:0032959","inositol trisphosphate biosynthetic proc...",21,1,0.01,7,0.0096,0.00957,0.0476190476190476
+"34","BP","GO:0045671","negative regulation of osteoclast differ...",22,1,0.01,8,0.01,0.01003,0.0454545454545455
+"35","BP","GO:0046856","phosphatidylinositol dephosphorylation",24,1,0.01,9,0.0109,0.01094,0.0416666666666667
+"36","BP","GO:0006874","cellular calcium ion homeostasis",368,2,0.17,10,0.0112,0.01119,0.00543478260869565
+"37","BP","GO:0001523","retinoid metabolic process",26,1,0.01,12,0.0118,0.01184,0.0384615384615385
+"38","BP","GO:0055074","calcium ion homeostasis",379,2,0.17,13,0.0118,0.01184,0.00527704485488127
+"39","BP","GO:0072503","cellular divalent inorganic cation homeo...",388,2,0.18,14,0.0124,0.01239,0.00515463917525773
+"40","BP","GO:0016101","diterpenoid metabolic process",28,1,0.01,15,0.0127,0.01275,0.0357142857142857
+"41","BP","GO:0072507","divalent inorganic cation homeostasis",407,2,0.19,16,0.0136,0.01358,0.00491400491400491
+"42","BP","GO:0006721","terpenoid metabolic process",31,1,0.01,17,0.0141,0.01411,0.032258064516129
+"43","BP","GO:0009112","nucleobase metabolic process",31,1,0.01,18,0.0141,0.01411,0.032258064516129
+"44","BP","GO:0043647","inositol phosphate metabolic process",60,2,0.03,2,0.0152,0.00031,0.0333333333333333
+"45","BP","GO:1902692","regulation of neuroblast proliferation",34,1,0.02,20,0.0155,0.01546,0.0294117647058824
+"46","BP","GO:0002762","negative regulation of myeloid leukocyte...",36,1,0.02,21,0.0164,0.01636,0.0277777777777778
+"47","BP","GO:0046839","phospholipid dephosphorylation",36,1,0.02,22,0.0164,0.01636,0.0277777777777778
+"48","BP","GO:0006875","cellular metal ion homeostasis",452,2,0.21,23,0.0166,0.01658,0.00442477876106195
+"49","BP","GO:0034308","primary alcohol metabolic process",42,1,0.02,25,0.0191,0.01907,0.0238095238095238
+"50","BP","GO:0030003","cellular cation homeostasis",508,2,0.23,27,0.0207,0.0207,0.00393700787401575
+"51","BP","GO:0046850","regulation of bone remodeling",46,1,0.02,28,0.0209,0.02087,0.0217391304347826
+"52","BP","GO:0055065","metal ion homeostasis",515,2,0.24,29,0.0212,0.02124,0.00388349514563107
+"53","BP","GO:0032835","glomerulus development",47,1,0.02,30,0.0213,0.02132,0.0212765957446809
+"54","BP","GO:0006873","cellular ion homeostasis",518,2,0.24,32,0.0215,0.02147,0.00386100386100386
+"55","BP","GO:0098662","inorganic cation transmembrane transport",523,2,0.24,33,0.0219,0.02187,0.00382409177820268
+"56","BP","GO:0006720","isoprenoid metabolic process",49,1,0.02,34,0.0222,0.02222,0.0204081632653061
+"57","BP","GO:0098900","regulation of action potential",50,1,0.02,35,0.0227,0.02267,0.02
+"58","BP","GO:0098660","inorganic ion transmembrane transport",564,2,0.26,36,0.0252,0.0252,0.00354609929078014
+"59","BP","GO:0045670","regulation of osteoclast differentiation",56,1,0.03,37,0.0254,0.02536,0.0178571428571429
+"60","BP","GO:0055080","cation homeostasis",577,2,0.26,38,0.0263,0.0263,0.00346620450606586
+"61","CC","GO:0008076","voltage-gated potassium channel complex",70,1,0.03,1,0.031,0.031,0.0142857142857143
+"62","CC","GO:0034705","potassium channel complex",81,1,0.04,2,0.036,0.036,0.0123456790123457
+"63","CC","GO:0031234","extrinsic component of cytoplasmic side ...",86,1,0.04,3,0.038,0.038,0.0116279069767442
+"64","CC","GO:0009898","cytoplasmic side of plasma membrane",141,1,0.06,4,0.062,0.062,0.00709219858156028
+"65","CC","GO:0005615","extracellular space",949,2,0.43,5,0.064,0.064,0.00210748155953635
+"66","CC","GO:0098562","cytoplasmic side of membrane",157,1,0.07,6,0.069,0.069,0.00636942675159236
+"67","CC","GO:0019897","extrinsic component of plasma membrane",163,1,0.07,7,0.071,0.071,0.00613496932515337
+"68","CC","GO:0034703","cation channel complex",200,1,0.09,8,0.087,0.087,0.005
+"69","CC","GO:0044421","extracellular region part",1146,2,0.52,9,0.089,0.089,0.00174520069808028
+"70","CC","GO:0005794","Golgi apparatus",1251,2,0.56,10,0.104,0.104,0.00159872102318145
+"71","CC","GO:0034702","ion channel complex",256,1,0.12,11,0.11,0.11,0.00390625
+"72","CC","GO:1902495","transmembrane transporter complex",268,1,0.12,12,0.115,0.115,0.00373134328358209
+"73","CC","GO:0019898","extrinsic component of membrane",275,1,0.12,13,0.118,0.118,0.00363636363636364
+"74","CC","GO:1990351","transporter complex",275,1,0.12,14,0.118,0.118,0.00363636363636364
+"75","CC","GO:0005576","extracellular region",1459,2,0.66,15,0.135,0.135,0.00137080191912269
+"76","CC","GO:0012505","endomembrane system",3245,3,1.46,16,0.164,0.164,0.000924499229583975
+"77","CC","GO:0098552","side of membrane",428,1,0.19,17,0.178,0.178,0.00233644859813084
+"78","CC","GO:0098797","plasma membrane protein complex",447,1,0.2,18,0.185,0.185,0.00223713646532438
+"79","CC","GO:0043025","neuronal cell body",646,1,0.29,19,0.257,0.257,0.00154798761609907
+"80","CC","GO:0030425","dendrite",654,1,0.29,20,0.26,0.26,0.00152905198776758
+"81","CC","GO:0097447","dendritic tree",657,1,0.3,21,0.261,0.261,0.0015220700152207
+"82","CC","GO:0044297","cell body",723,1,0.33,22,0.284,0.284,0.00138312586445367
+"83","CC","GO:0005730","nucleolus",757,1,0.34,23,0.295,0.295,0.00132100396301189
+"84","CC","GO:0043231","intracellular membrane-bounded organelle",8753,5,3.94,24,0.343,0.343,0.000571232720210214
+"85","CC","GO:0036477","somatodendritic compartment",940,1,0.42,25,0.354,0.354,0.00106382978723404
+"86","CC","GO:0098796","membrane protein complex",972,1,0.44,26,0.364,0.364,0.00102880658436214
+"87","CC","GO:0005887","integral component of plasma membrane",1015,1,0.46,27,0.377,0.377,0.000985221674876847
+"88","CC","GO:0031226","intrinsic component of plasma membrane",1075,1,0.48,28,0.395,0.395,0.000930232558139535
+"89","CC","GO:0044424","intracellular part",11403,6,5.14,29,0.406,0.406,0.000526177321757432
+"90","CC","GO:0005622","intracellular",11403,6,5.14,30,0.406,0.406,0.000526177321757432

@@ -1,0 +1,6 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio","genes"
+"31","BP","GO:2000300","regulation of synaptic vesicle exocytosi...",96,1,0.01,1,0.0062,0.0062,0.0104166666666667,"Nrxn3"
+"32","BP","GO:0007416","synapse assembly",164,1,0.01,12,0.0106,0.0106,0.00609756097560976,"Nrxn3"
+"33","BP","GO:0050808","synapse organization",421,1,0.03,26,0.0272,0.0272,0.00237529691211401,"Nrxn3"
+"34","BP","GO:0001525","angiogenesis",421,1,0.03,27,0.0272,0.0272,0.00237529691211401,"Nrxn3"
+"56","BP","GO:1903305","regulation of regulated secretory pathwa...",163,1,0.01,9,1,0.0105,0.00613496932515337,"Nrxn3"

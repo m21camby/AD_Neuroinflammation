@@ -1,0 +1,22 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0031099","regeneration",118,2,0.09,8,0.0036,0.00358,0.0169491525423729
+"32","BP","GO:0050870","positive regulation of T cell activation",130,2,0.1,10,0.0043,0.00432,0.0153846153846154
+"33","BP","GO:0002685","regulation of leukocyte migration",132,2,0.1,11,0.0045,0.00445,0.0151515151515152
+"34","BP","GO:0008366","axon ensheathment",134,2,0.1,12,0.0046,0.00459,0.0149253731343284
+"35","BP","GO:0034329","cell junction assembly",178,2,0.14,17,0.008,0.00796,0.0112359550561798
+"38","BP","GO:0001822","kidney development",214,2,0.17,23,0.0113,0.01134,0.00934579439252336
+"40","BP","GO:0072001","renal system development",229,2,0.18,32,0.0129,0.01291,0.00873362445414847
+"45","BP","GO:0051271","negative regulation of cellular componen...",249,2,0.19,36,0.0151,0.01514,0.00803212851405622
+"46","BP","GO:0001655","urogenital system development",258,2,0.2,37,0.0162,0.0162,0.00775193798449612
+"48","BP","GO:0055094","response to lipoprotein particle",22,1,0.02,40,0.0169,0.0169,0.0454545454545455
+"49","BP","GO:0061036","positive regulation of cartilage develop...",22,1,0.02,41,0.0169,0.0169,0.0454545454545455
+"50","BP","GO:0035036","sperm-egg recognition",23,1,0.02,42,0.0177,0.01766,0.0434782608695652
+"51","BP","GO:0035116","embryonic hindlimb morphogenesis",23,1,0.02,43,0.0177,0.01766,0.0434782608695652
+"52","BP","GO:0061099","negative regulation of protein tyrosine ...",23,1,0.02,44,0.0177,0.01766,0.0434782608695652
+"53","BP","GO:0022412","cellular process involved in reproductio...",271,2,0.21,45,0.0178,0.01778,0.00738007380073801
+"54","BP","GO:0002253","activation of immune response",275,2,0.21,46,0.0183,0.01828,0.00727272727272727
+"55","BP","GO:0051894","positive regulation of focal adhesion as...",24,1,0.02,47,0.0184,0.01842,0.0416666666666667
+"56","BP","GO:0035136","forelimb morphogenesis",24,1,0.02,48,0.0184,0.01842,0.0416666666666667
+"57","BP","GO:0071402","cellular response to lipoprotein particl...",24,1,0.02,49,0.0184,0.01842,0.0416666666666667
+"59","BP","GO:0002691","regulation of cellular extravasation",25,1,0.02,50,0.0192,0.01918,0.04
+"60","BP","GO:0034110","regulation of homotypic cell-cell adhesi...",25,1,0.02,51,0.0192,0.01918,0.04

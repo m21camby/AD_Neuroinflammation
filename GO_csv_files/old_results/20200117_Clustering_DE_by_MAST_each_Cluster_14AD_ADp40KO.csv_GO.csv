@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0004601","peroxidase activity",38,1,0,1,0.0025,0.0025,0.0263157894736842
+"2","MF","GO:0008144","drug binding",1469,1,0.1,5,0.0964,0.0964,0.00068073519400953
+"3","MF","GO:0036094","small molecule binding",2114,1,0.14,6,0.1388,0.1388,0.000473036896877956
+"4","MF","GO:0005515","protein binding",7329,1,0.48,8,0.4812,0.4812,0.000136444262518761
+"5","MF","GO:0005488","binding",10319,1,0.68,9,0.6775,0.6775,9.69086151758891e-05
+"6","MF","GO:0003674","molecular_function",15231,1,1,10,1,1,6.56555708751888e-05
+"7","MF","GO:0016684","oxidoreductase activity, acting on perox...",42,1,0,2,1,0.0028,0.0238095238095238
+"8","MF","GO:0016491","oxidoreductase activity",599,1,0.04,4,1,0.0393,0.00166944908180301
+"9","MF","GO:0016209","antioxidant activity",63,1,0,3,1,0.0041,0.0158730158730159
+"10","MF","GO:0003824","catalytic activity",4832,1,0.32,7,1,0.3172,0.000206953642384106
+"11","MF","GO:0000030","mannosyltransferase activity",25,0,0,11,1,1,0
+"12","MF","GO:0000049","tRNA binding",52,0,0,12,1,1,0
+"13","MF","GO:0000062","fatty-acyl-CoA binding",23,0,0,13,1,1,0
+"14","MF","GO:0000149","SNARE binding",109,0,0.01,14,1,1,0
+"15","MF","GO:0000166","nucleotide binding",1819,0,0.12,15,1,1,0
+"16","MF","GO:0000175","3'-5'-exoribonuclease activity",27,0,0,16,1,1,0
+"17","MF","GO:0000217","DNA secondary structure binding",23,0,0,17,1,1,0
+"18","MF","GO:0000287","magnesium ion binding",174,0,0.01,18,1,1,0
+"19","MF","GO:0000976","transcription regulatory region sequence...",633,0,0.04,19,1,1,0
+"20","MF","GO:0000977","RNA polymerase II regulatory region sequ...",593,0,0.04,20,1,1,0
+"21","MF","GO:0000978","RNA polymerase II proximal promoter sequ...",414,0,0.03,21,1,1,0
+"22","MF","GO:0000979","RNA polymerase II core promoter sequence...",35,0,0,22,1,1,0
+"23","MF","GO:0000980","RNA polymerase II distal enhancer sequen...",63,0,0,23,1,1,0
+"24","MF","GO:0000981","DNA-binding transcription factor activit...",525,0,0.03,24,1,1,0
+"25","MF","GO:0000987","proximal promoter sequence-specific DNA ...",423,0,0.03,25,1,1,0
+"26","MF","GO:0000993","RNA polymerase II complex binding",36,0,0,26,1,1,0
+"27","MF","GO:0001012","RNA polymerase II regulatory region DNA ...",601,0,0.04,27,1,1,0
+"28","MF","GO:0001046","core promoter sequence-specific DNA bind...",46,0,0,28,1,1,0
+"29","MF","GO:0001047","core promoter binding",54,0,0,29,1,1,0
+"30","MF","GO:0001067","regulatory region nucleic acid binding",734,0,0.05,30,1,1,0
+"31","BP","GO:0000002","mitochondrial genome maintenance",33,0,0,1,1,1,0
+"32","BP","GO:0000003","reproduction",1043,0,0,2,1,1,0
+"33","BP","GO:0000018","regulation of DNA recombination",80,0,0,3,1,1,0
+"34","BP","GO:0000027","ribosomal large subunit assembly",30,0,0,4,1,1,0
+"35","BP","GO:0000038","very long-chain fatty acid metabolic pro...",27,0,0,5,1,1,0
+"36","BP","GO:0000041","transition metal ion transport",74,0,0,6,1,1,0
+"37","BP","GO:0000045","autophagosome assembly",88,0,0,7,1,1,0
+"38","BP","GO:0000070","mitotic sister chromatid segregation",124,0,0,8,1,1,0
+"39","BP","GO:0000075","cell cycle checkpoint",157,0,0,9,1,1,0
+"40","BP","GO:0000077","DNA damage checkpoint",96,0,0,10,1,1,0
+"41","BP","GO:0000079","regulation of cyclin-dependent protein s...",62,0,0,11,1,1,0
+"42","BP","GO:0000082","G1/S transition of mitotic cell cycle",154,0,0,12,1,1,0
+"43","BP","GO:0000086","G2/M transition of mitotic cell cycle",98,0,0,13,1,1,0
+"44","BP","GO:0000096","sulfur amino acid metabolic process",32,0,0,14,1,1,0
+"45","BP","GO:0000122","negative regulation of transcription by ...",691,0,0,15,1,1,0
+"46","BP","GO:0000132","establishment of mitotic spindle orienta...",29,0,0,16,1,1,0
+"47","BP","GO:0000154","rRNA modification",26,0,0,17,1,1,0
+"48","BP","GO:0000165","MAPK cascade",656,0,0,18,1,1,0
+"49","BP","GO:0000184","nuclear-transcribed mRNA catabolic proce...",36,0,0,19,1,1,0
+"50","BP","GO:0000186","activation of MAPKK activity",31,0,0,20,1,1,0
+"51","BP","GO:0000187","activation of MAPK activity",96,0,0,21,1,1,0
+"52","BP","GO:0000209","protein polyubiquitination",170,0,0,22,1,1,0
+"53","BP","GO:0000226","microtubule cytoskeleton organization",513,0,0,23,1,1,0
+"54","BP","GO:0000245","spliceosomal complex assembly",45,0,0,24,1,1,0
+"55","BP","GO:0000266","mitochondrial fission",35,0,0,25,1,1,0
+"56","BP","GO:0000271","polysaccharide biosynthetic process",63,0,0,26,1,1,0
+"57","BP","GO:0000278","mitotic cell cycle",712,0,0,27,1,1,0
+"58","BP","GO:0000280","nuclear division",347,0,0,28,1,1,0
+"59","BP","GO:0000281","mitotic cytokinesis",63,0,0,29,1,1,0
+"60","BP","GO:0000288","nuclear-transcribed mRNA catabolic proce...",49,0,0,30,1,1,0
+"61","CC","GO:0044445","cytosolic part",250,1,0.02,1,0.016,0.016,0.004
+"62","CC","GO:0005615","extracellular space",938,1,0.06,2,0.06,0.06,0.00106609808102345
+"63","CC","GO:0044421","extracellular region part",1134,1,0.07,3,0.073,0.073,0.000881834215167548
+"64","CC","GO:0005576","extracellular region",1446,1,0.09,4,0.093,0.093,0.000691562932226833
+"65","CC","GO:0005829","cytosol",2887,1,0.19,5,0.186,0.186,0.000346380325597506
+"66","CC","GO:0032991","protein-containing complex",4589,1,0.3,6,0.295,0.295,0.000217912399215515
+"67","CC","GO:0044444","cytoplasmic part",7178,1,0.46,7,0.461,0.461,0.000139314572304263
+"68","CC","GO:0005737","cytoplasm",9207,1,0.59,8,0.592,0.592,0.000108613011838818
+"69","CC","GO:0005622","intracellular",11342,1,0.73,9,0.729,0.729,8.81678716275789e-05
+"70","CC","GO:0044424","intracellular part",11342,1,0.73,10,0.729,0.729,8.81678716275789e-05
+"71","CC","GO:0044464","cell part",12640,1,0.81,11,0.813,0.813,7.91139240506329e-05
+"72","CC","GO:0005623","cell",12642,1,0.81,12,0.813,0.813,7.91014080050625e-05
+"73","CC","GO:0005575","cellular_component",15555,1,1,13,1,1,6.42880102860816e-05
+"74","CC","GO:0000118","histone deacetylase complex",58,0,0,14,1,1,0
+"75","CC","GO:0000123","histone acetyltransferase complex",80,0,0.01,15,1,1,0
+"76","CC","GO:0000139","Golgi membrane",224,0,0.01,16,1,1,0
+"77","CC","GO:0000151","ubiquitin ligase complex",262,0,0.02,17,1,1,0
+"78","CC","GO:0000152","nuclear ubiquitin ligase complex",39,0,0,18,1,1,0
+"79","CC","GO:0000178","exosome (RNase complex)",22,0,0,19,1,1,0
+"80","CC","GO:0000228","nuclear chromosome",523,0,0.03,20,1,1,0
+"81","CC","GO:0000242","pericentriolar material",21,0,0,21,1,1,0
+"82","CC","GO:0000307","cyclin-dependent protein kinase holoenzy...",38,0,0,22,1,1,0
+"83","CC","GO:0000313","organellar ribosome",90,0,0.01,23,1,1,0
+"84","CC","GO:0000314","organellar small ribosomal subunit",30,0,0,24,1,1,0
+"85","CC","GO:0000315","organellar large ribosomal subunit",58,0,0,25,1,1,0
+"86","CC","GO:0000323","lytic vacuole",373,0,0.02,26,1,1,0
+"87","CC","GO:0000407","phagophore assembly site",29,0,0,27,1,1,0
+"88","CC","GO:0000428","DNA-directed RNA polymerase complex",98,0,0.01,28,1,1,0
+"89","CC","GO:0000502","proteasome complex",64,0,0,29,1,1,0
+"90","CC","GO:0000775","chromosome, centromeric region",168,0,0.01,30,1,1,0

@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0010771","negative regulation of cell morphogenesi...",94,2,0.02,1,0.00011,0.00011,0.0212765957446809
+"32","BP","GO:0050858","negative regulation of antigen receptor-...",20,1,0,12,0.00391,0.00391,0.05
+"33","BP","GO:0006144","purine nucleobase metabolic process",20,1,0,13,0.00391,0.00391,0.05
+"34","BP","GO:1905809","negative regulation of synapse organizat...",23,1,0,14,0.0045,0.0045,0.0434782608695652
+"35","BP","GO:0051894","positive regulation of focal adhesion as...",24,1,0,16,0.00469,0.00469,0.0416666666666667
+"36","BP","GO:0061099","negative regulation of protein tyrosine ...",25,1,0,19,0.00489,0.00489,0.04
+"37","BP","GO:0001523","retinoid metabolic process",26,1,0.01,20,0.00508,0.00508,0.0384615384615385
+"38","BP","GO:0002691","regulation of cellular extravasation",27,1,0.01,23,0.00528,0.00528,0.037037037037037
+"39","BP","GO:0042462","eye photoreceptor cell development",29,1,0.01,26,0.00567,0.00567,0.0344827586206897
+"40","BP","GO:0030521","androgen receptor signaling pathway",32,1,0.01,34,0.00625,0.00625,0.03125
+"41","BP","GO:2000171","negative regulation of dendrite developm...",33,1,0.01,35,0.00645,0.00645,0.0303030303030303
+"42","BP","GO:0051281","positive regulation of release of seques...",33,1,0.01,36,0.00645,0.00645,0.0303030303030303
+"43","BP","GO:0050856","regulation of T cell receptor signaling ...",34,1,0.01,38,0.00664,0.00664,0.0294117647058824
+"44","BP","GO:0070570","regulation of neuron projection regenera...",35,1,0.01,39,0.00684,0.00684,0.0285714285714286
+"45","BP","GO:0034113","heterotypic cell-cell adhesion",38,1,0.01,40,0.00742,0.00742,0.0263157894736842
+"46","BP","GO:0030850","prostate gland development",43,1,0.01,42,0.00839,0.00839,0.0232558139534884
+"47","BP","GO:0034308","primary alcohol metabolic process",44,1,0.01,44,0.00859,0.00859,0.0227272727272727
+"48","BP","GO:0003407","neural retina development",45,1,0.01,46,0.00878,0.00878,0.0222222222222222
+"49","BP","GO:0060042","retina morphogenesis in camera-type eye",47,1,0.01,49,0.00917,0.00917,0.0212765957446809
+"50","BP","GO:0061001","regulation of dendritic spine morphogene...",50,1,0.01,56,0.00976,0.00976,0.02
+"51","BP","GO:0070936","protein K48-linked ubiquitination",51,1,0.01,58,0.00995,0.00995,0.0196078431372549
+"52","BP","GO:0001541","ovarian follicle development",57,1,0.01,64,0.01112,0.01112,0.0175438596491228
+"53","BP","GO:0043113","receptor clustering",62,1,0.01,69,0.01209,0.01209,0.0161290322580645
+"54","BP","GO:0014068","positive regulation of phosphatidylinosi...",63,1,0.01,70,0.01228,0.01228,0.0158730158730159
+"55","BP","GO:0034754","cellular hormone metabolic process",64,1,0.01,71,0.01248,0.01248,0.015625
+"56","BP","GO:0050771","negative regulation of axonogenesis",66,1,0.01,72,0.01287,0.01287,0.0151515151515152
+"57","BP","GO:0051865","protein autoubiquitination",66,1,0.01,73,0.01287,0.01287,0.0151515151515152
+"58","BP","GO:0007229","integrin-mediated signaling pathway",81,1,0.02,86,0.01577,0.01577,0.0123456790123457
+"59","BP","GO:0014066","regulation of phosphatidylinositol 3-kin...",86,1,0.02,89,0.01674,0.01674,0.0116279069767442
+"60","BP","GO:0010977","negative regulation of neuron projection...",168,2,0.03,2,0.01758,0.00036,0.0119047619047619

@@ -1,0 +1,20 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",44,3,0.07,8,5.4e-05,5.4e-05,0.0681818181818182
+"32","BP","GO:0007411","axon guidance",201,4,0.34,22,0.00033,0.00033,0.0199004975124378
+"33","BP","GO:0099560","synaptic membrane adhesion",31,2,0.05,27,0.00123,0.00123,0.0645161290322581
+"34","BP","GO:0009112","nucleobase metabolic process",31,2,0.05,28,0.00123,0.00123,0.0645161290322581
+"36","BP","GO:0030336","negative regulation of cell migration",228,3,0.38,37,0.00644,0.00644,0.0131578947368421
+"37","BP","GO:0055017","cardiac muscle tissue growth",91,2,0.15,40,0.01019,0.01019,0.021978021978022
+"39","BP","GO:0060419","heart growth",97,2,0.16,44,0.01151,0.01151,0.0206185567010309
+"41","BP","GO:0010769","regulation of cell morphogenesis involve...",314,3,0.53,47,0.01533,0.01533,0.00955414012738853
+"42","BP","GO:0034332","adherens junction organization",116,2,0.2,48,0.01618,0.01618,0.0172413793103448
+"47","BP","GO:0046890","regulation of lipid biosynthetic process",134,2,0.23,53,0.02122,0.02122,0.0149253731343284
+"49","BP","GO:1904064","positive regulation of cation transmembr...",135,2,0.23,54,0.02151,0.02151,0.0148148148148148
+"52","BP","GO:0034767","positive regulation of ion transmembrane...",149,2,0.25,57,0.02585,0.02585,0.0134228187919463
+"53","BP","GO:0042445","hormone metabolic process",151,2,0.25,58,0.0265,0.0265,0.0132450331125828
+"54","BP","GO:0006109","regulation of carbohydrate metabolic pro...",156,2,0.26,59,0.02814,0.02814,0.0128205128205128
+"55","BP","GO:0045666","positive regulation of neuron differenti...",404,3,0.68,60,0.02963,0.02963,0.00742574257425743
+"56","BP","GO:0016051","carbohydrate biosynthetic process",167,2,0.28,62,0.0319,0.0319,0.0119760479041916
+"57","BP","GO:0072521","purine-containing compound metabolic pro...",418,3,0.7,63,0.03232,0.03232,0.00717703349282297
+"58","BP","GO:0014912","negative regulation of smooth muscle cel...",20,1,0.03,65,0.03317,0.03317,0.05
+"59","BP","GO:0042753","positive regulation of circadian rhythm",20,1,0.03,66,0.03317,0.03317,0.05

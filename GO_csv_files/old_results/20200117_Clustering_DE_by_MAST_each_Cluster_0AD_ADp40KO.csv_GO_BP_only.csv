@@ -1,0 +1,17 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0006144","purine nucleobase metabolic process",21,1,0,1,0.0027,0.0027,0.0476190476190476
+"32","BP","GO:0015012","heparan sulfate proteoglycan biosyntheti...",25,1,0,2,0.0032,0.0032,0.04
+"33","BP","GO:0001523","retinoid metabolic process",30,1,0,3,0.0038,0.0038,0.0333333333333333
+"34","BP","GO:0034308","primary alcohol metabolic process",48,1,0.01,9,0.0061,0.0061,0.0208333333333333
+"35","BP","GO:0034754","cellular hormone metabolic process",70,1,0.01,12,0.009,0.009,0.0142857142857143
+"36","BP","GO:0009914","hormone transport",297,1,0.04,17,0.0377,0.0377,0.00336700336700337
+"41","BP","GO:0009100","glycoprotein metabolic process",295,1,0.04,16,1,0.0375,0.00338983050847458
+"42","BP","GO:0009101","glycoprotein biosynthetic process",241,1,0.03,14,1,0.0307,0.004149377593361
+"45","BP","GO:1901615","organic hydroxy compound metabolic proce...",388,1,0.05,18,1,0.0492,0.00257731958762887
+"46","BP","GO:0042445","hormone metabolic process",153,1,0.02,13,1,0.0195,0.0065359477124183
+"49","BP","GO:0030166","proteoglycan biosynthetic process",47,1,0.01,8,1,0.006,0.0212765957446809
+"52","BP","GO:0010817","regulation of hormone levels",426,1,0.05,19,1,0.0539,0.00234741784037559
+"55","BP","GO:0006029","proteoglycan metabolic process",69,1,0.01,11,1,0.0088,0.0144927536231884
+"57","BP","GO:0006720","isoprenoid metabolic process",54,1,0.01,10,1,0.0069,0.0185185185185185
+"59","BP","GO:0006721","terpenoid metabolic process",36,1,0,7,1,0.0046,0.0277777777777778
+"60","BP","GO:0016101","diterpenoid metabolic process",32,1,0,5,1,0.0041,0.03125

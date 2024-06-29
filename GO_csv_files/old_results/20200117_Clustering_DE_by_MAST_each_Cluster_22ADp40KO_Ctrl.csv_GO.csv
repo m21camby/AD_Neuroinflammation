@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0004896","cytokine receptor activity",64,1,0,1,0.0044,0.0044,0.015625
+"2","MF","GO:0005125","cytokine activity",86,1,0.01,2,0.0059,0.0059,0.0116279069767442
+"3","MF","GO:0019955","cytokine binding",86,1,0.01,3,0.0059,0.0059,0.0116279069767442
+"4","MF","GO:0008083","growth factor activity",94,1,0.01,4,0.0065,0.0065,0.0106382978723404
+"5","MF","GO:0005126","cytokine receptor binding",162,1,0.01,5,0.0112,0.0112,0.00617283950617284
+"6","MF","GO:0046982","protein heterodimerization activity",454,1,0.03,8,0.0313,0.0313,0.00220264317180617
+"7","MF","GO:0042803","protein homodimerization activity",749,1,0.05,12,0.0516,0.0516,0.00133511348464619
+"8","MF","GO:0046983","protein dimerization activity",1105,1,0.08,13,0.0761,0.0761,0.000904977375565611
+"9","MF","GO:0042802","identical protein binding",1536,1,0.11,16,0.1057,0.1057,0.000651041666666667
+"10","MF","GO:0003674","molecular_function",14525,1,1,19,1,1,6.88468158347676e-05
+"11","MF","GO:0005488","binding",9916,1,0.68,18,1,0.6827,0.000100847115772489
+"12","MF","GO:0004888","transmembrane signaling receptor activit...",581,1,0.04,9,1,0.04,0.00172117039586919
+"13","MF","GO:0038023","signaling receptor activity",703,1,0.05,10,1,0.0484,0.00142247510668563
+"14","MF","GO:0005102","signaling receptor binding",1161,1,0.08,14,1,0.0799,0.000861326442721792
+"15","MF","GO:0098772","molecular function regulator",1212,1,0.08,15,1,0.0834,0.000825082508250825
+"16","MF","GO:0060089","molecular transducer activity",747,1,0.05,11,1,0.0514,0.00133868808567604
+"17","MF","GO:0030545","receptor regulator activity",257,1,0.02,7,1,0.0177,0.00389105058365759
+"18","MF","GO:0048018","receptor ligand activity",236,1,0.02,6,1,0.0162,0.00423728813559322
+"19","MF","GO:0005515","protein binding",7055,1,0.49,17,1,0.4857,0.000141743444365698
+"20","MF","GO:0000030","mannosyltransferase activity",25,0,0,20,1,1,0
+"21","MF","GO:0000049","tRNA binding",53,0,0,21,1,1,0
+"22","MF","GO:0000062","fatty-acyl-CoA binding",22,0,0,22,1,1,0
+"23","MF","GO:0000149","SNARE binding",107,0,0.01,23,1,1,0
+"24","MF","GO:0000166","nucleotide binding",1757,0,0.12,24,1,1,0
+"25","MF","GO:0000175","3'-5'-exoribonuclease activity",27,0,0,25,1,1,0
+"26","MF","GO:0000217","DNA secondary structure binding",20,0,0,26,1,1,0
+"27","MF","GO:0000287","magnesium ion binding",165,0,0.01,27,1,1,0
+"28","MF","GO:0000976","transcription regulatory region sequence...",618,0,0.04,28,1,1,0
+"29","MF","GO:0000977","RNA polymerase II regulatory region sequ...",580,0,0.04,29,1,1,0
+"30","MF","GO:0000978","RNA polymerase II proximal promoter sequ...",407,0,0.03,30,1,1,0
+"31","BP","GO:0002861","regulation of inflammatory response to a...",20,1,0,1,0.0014,0.0014,0.05
+"32","BP","GO:0002825","regulation of T-helper 1 type immune res...",20,1,0,2,0.0014,0.0014,0.05
+"33","BP","GO:0045672","positive regulation of osteoclast differ...",21,1,0,3,0.0014,0.0014,0.0476190476190476
+"34","BP","GO:0001916","positive regulation of T cell mediated c...",21,1,0,4,0.0014,0.0014,0.0476190476190476
+"35","BP","GO:0032735","positive regulation of interleukin-12 pr...",21,1,0,5,0.0014,0.0014,0.0476190476190476
+"36","BP","GO:0046006","regulation of activated T cell prolifera...",23,1,0,6,0.0016,0.0016,0.0434782608695652
+"37","BP","GO:0034391","regulation of smooth muscle cell apoptot...",24,1,0,8,0.0016,0.0016,0.0416666666666667
+"38","BP","GO:0032816","positive regulation of natural killer ce...",24,1,0,9,0.0016,0.0016,0.0416666666666667
+"39","BP","GO:0002230","positive regulation of defense response ...",24,1,0,10,0.0016,0.0016,0.0416666666666667
+"40","BP","GO:0002369","T cell cytokine production",27,1,0,12,0.0019,0.0019,0.037037037037037
+"41","BP","GO:0046640","regulation of alpha-beta T cell prolifer...",28,1,0,13,0.0019,0.0019,0.0357142857142857
+"42","BP","GO:0042269","regulation of natural killer cell mediat...",28,1,0,14,0.0019,0.0019,0.0357142857142857
+"43","BP","GO:0032653","regulation of interleukin-10 production",30,1,0,17,0.0021,0.0021,0.0333333333333333
+"44","BP","GO:0010661","positive regulation of muscle cell apopt...",30,1,0,18,0.0021,0.0021,0.0333333333333333
+"45","BP","GO:0050829","defense response to Gram-negative bacter...",34,1,0,24,0.0023,0.0023,0.0294117647058824
+"46","BP","GO:0042531","positive regulation of tyrosine phosphor...",35,1,0,26,0.0024,0.0024,0.0285714285714286
+"47","BP","GO:0002833","positive regulation of response to bioti...",37,1,0,31,0.0025,0.0025,0.027027027027027
+"48","BP","GO:0048662","negative regulation of smooth muscle cel...",38,1,0,33,0.0026,0.0026,0.0263157894736842
+"49","BP","GO:0032729","positive regulation of interferon-gamma ...",42,1,0,36,0.0029,0.0029,0.0238095238095238
+"50","BP","GO:0042093","T-helper cell differentiation",44,1,0,37,0.003,0.003,0.0227272727272727
+"51","BP","GO:0046635","positive regulation of alpha-beta T cell...",51,1,0,49,0.0035,0.0035,0.0196078431372549
+"52","BP","GO:0042102","positive regulation of T cell proliferat...",66,1,0,58,0.0045,0.0045,0.0151515151515152
+"53","BP","GO:0032760","positive regulation of tumor necrosis fa...",68,1,0,59,0.0047,0.0047,0.0147058823529412
+"54","BP","GO:0071346","cellular response to interferon-gamma",71,1,0,65,0.0049,0.0049,0.0140845070422535
+"55","BP","GO:0019233","sensory perception of pain",109,1,0.01,88,0.0075,0.0075,0.00917431192660551
+"56","BP","GO:0050728","negative regulation of inflammatory resp...",112,1,0.01,92,0.0077,0.0077,0.00892857142857143
+"57","BP","GO:0050777","negative regulation of immune response",113,1,0.01,93,0.0077,0.0077,0.00884955752212389
+"58","BP","GO:0007050","cell cycle arrest",113,1,0.01,94,0.0077,0.0077,0.00884955752212389
+"59","BP","GO:0009411","response to UV",118,1,0.01,98,0.0081,0.0081,0.00847457627118644
+"60","BP","GO:0071222","cellular response to lipopolysaccharide",118,1,0.01,99,0.0081,0.0081,0.00847457627118644
+"61","CC","GO:0009986","cell surface",616,1,0.04,1,0.042,0.042,0.00162337662337662
+"62","CC","GO:0005615","extracellular space",830,1,0.06,2,0.056,0.056,0.00120481927710843
+"63","CC","GO:0044421","extracellular region part",1014,1,0.07,3,0.068,0.068,0.000986193293885602
+"64","CC","GO:0005576","extracellular region",1314,1,0.09,4,0.089,0.089,0.00076103500761035
+"65","CC","GO:0032991","protein-containing complex",4473,1,0.3,5,0.301,0.301,0.000223563603845294
+"66","CC","GO:0016020","membrane",6216,1,0.42,6,0.419,0.419,0.000160875160875161
+"67","CC","GO:0005737","cytoplasm",8906,1,0.6,7,0.6,0.6,0.000112283853581855
+"68","CC","GO:0005622","intracellular",10973,1,0.74,8,0.74,0.74,9.11327804611319e-05
+"69","CC","GO:0044424","intracellular part",10973,1,0.74,9,0.74,0.74,9.11327804611319e-05
+"70","CC","GO:0044464","cell part",12162,1,0.82,10,0.82,0.82,8.2223318533136e-05
+"71","CC","GO:0005623","cell",12163,1,0.82,11,0.82,0.82,8.22165584148648e-05
+"72","CC","GO:0005575","cellular_component",14838,1,1,12,1,1,6.73945275643618e-05
+"73","CC","GO:0000118","histone deacetylase complex",58,0,0,13,1,1,0
+"74","CC","GO:0000123","histone acetyltransferase complex",80,0,0.01,14,1,1,0
+"75","CC","GO:0000139","Golgi membrane",218,0,0.01,15,1,1,0
+"76","CC","GO:0000151","ubiquitin ligase complex",263,0,0.02,16,1,1,0
+"77","CC","GO:0000152","nuclear ubiquitin ligase complex",38,0,0,17,1,1,0
+"78","CC","GO:0000178","exosome (RNase complex)",22,0,0,18,1,1,0
+"79","CC","GO:0000228","nuclear chromosome",508,0,0.03,19,1,1,0
+"80","CC","GO:0000242","pericentriolar material",21,0,0,20,1,1,0
+"81","CC","GO:0000307","cyclin-dependent protein kinase holoenzy...",36,0,0,21,1,1,0
+"82","CC","GO:0000313","organellar ribosome",90,0,0.01,22,1,1,0
+"83","CC","GO:0000314","organellar small ribosomal subunit",30,0,0,23,1,1,0
+"84","CC","GO:0000315","organellar large ribosomal subunit",58,0,0,24,1,1,0
+"85","CC","GO:0000323","lytic vacuole",361,0,0.02,25,1,1,0
+"86","CC","GO:0000407","phagophore assembly site",29,0,0,26,1,1,0
+"87","CC","GO:0000428","DNA-directed RNA polymerase complex",96,0,0.01,27,1,1,0
+"88","CC","GO:0000502","proteasome complex",61,0,0,28,1,1,0
+"89","CC","GO:0000775","chromosome, centromeric region",163,0,0.01,29,1,1,0
+"90","CC","GO:0000776","kinetochore",111,0,0.01,30,1,1,0

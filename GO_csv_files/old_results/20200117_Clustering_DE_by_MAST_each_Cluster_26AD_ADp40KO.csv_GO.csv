@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0005179","hormone activity",45,1,0.01,1,0.0064,0.0064,0.0222222222222222
+"2","MF","GO:0016836","hydro-lyase activity",46,1,0.01,2,0.0065,0.0065,0.0217391304347826
+"3","MF","GO:0042562","hormone binding",69,1,0.01,4,0.0098,0.0098,0.0144927536231884
+"4","MF","GO:0046982","protein heterodimerization activity",437,1,0.06,8,0.061,0.061,0.0022883295194508
+"5","MF","GO:0008270","zinc ion binding",550,1,0.08,9,0.0765,0.0765,0.00181818181818182
+"6","MF","GO:0046914","transition metal ion binding",721,1,0.1,10,0.0996,0.0996,0.0013869625520111
+"7","MF","GO:0046983","protein dimerization activity",1078,1,0.15,11,0.147,0.147,0.000927643784786642
+"8","MF","GO:0042802","identical protein binding",1507,1,0.21,14,0.2023,0.2023,0.0006635700066357
+"9","MF","GO:0046872","metal ion binding",2790,1,0.4,15,0.3565,0.3565,0.0003584229390681
+"10","MF","GO:0043169","cation binding",2855,1,0.4,16,0.3639,0.3639,0.000350262697022767
+"11","MF","GO:0043167","ion binding",4397,1,0.62,18,0.5263,0.5263,0.000227427791676143
+"12","MF","GO:0005488","binding",9687,2,1.37,17,0.6843,0.4717,0.000206462269020337
+"13","MF","GO:0003674","molecular_function",14104,2,2,21,1,1,0.000141803743618832
+"14","MF","GO:0005102","signaling receptor binding",1117,1,0.16,12,1,0.1521,0.000895255147717099
+"15","MF","GO:0016835","carbon-oxygen lyase activity",56,1,0.01,3,1,0.0079,0.0178571428571429
+"16","MF","GO:0098772","molecular function regulator",1207,1,0.17,13,1,0.1638,0.000828500414250207
+"17","MF","GO:0030545","receptor regulator activity",242,1,0.03,7,1,0.034,0.00413223140495868
+"18","MF","GO:0048018","receptor ligand activity",220,1,0.03,6,1,0.031,0.00454545454545455
+"19","MF","GO:0016829","lyase activity",149,1,0.02,5,1,0.021,0.00671140939597315
+"20","MF","GO:0005515","protein binding",6929,1,0.98,20,1,0.7412,0.000144320969836917
+"21","MF","GO:0003824","catalytic activity",4538,1,0.64,19,1,0.54,0.000220361392684002
+"22","MF","GO:0000030","mannosyltransferase activity",25,0,0,22,1,1,0
+"23","MF","GO:0000049","tRNA binding",53,0,0.01,23,1,1,0
+"24","MF","GO:0000062","fatty-acyl-CoA binding",23,0,0,24,1,1,0
+"25","MF","GO:0000149","SNARE binding",105,0,0.01,25,1,1,0
+"26","MF","GO:0000166","nucleotide binding",1719,0,0.24,26,1,1,0
+"27","MF","GO:0000175","3'-5'-exoribonuclease activity",27,0,0,27,1,1,0
+"28","MF","GO:0000217","DNA secondary structure binding",23,0,0,28,1,1,0
+"29","MF","GO:0000287","magnesium ion binding",163,0,0.02,29,1,1,0
+"30","MF","GO:0000976","transcription regulatory region sequence...",608,0,0.09,30,1,1,0
+"31","BP","GO:0001523","retinoid metabolic process",24,1,0,1,0.0034,0.0034,0.0416666666666667
+"32","BP","GO:0009112","nucleobase metabolic process",30,1,0,3,0.0042,0.0042,0.0333333333333333
+"33","BP","GO:0034308","primary alcohol metabolic process",39,1,0.01,5,0.0055,0.0055,0.0256410256410256
+"34","BP","GO:0034754","cellular hormone metabolic process",53,1,0.01,7,0.0075,0.0075,0.0188679245283019
+"35","BP","GO:0009914","hormone transport",262,1,0.04,10,0.0366,0.0366,0.00381679389312977
+"36","BP","GO:0072521","purine-containing compound metabolic pro...",392,1,0.06,13,0.0545,0.0545,0.00255102040816327
+"37","BP","GO:0006810","transport",3406,1,0.48,19,0.4225,0.4225,0.000293599530240752
+"38","BP","GO:0051234","establishment of localization",3521,1,0.5,20,0.4348,0.4348,0.000284010224368077
+"39","BP","GO:0051179","localization",4603,1,0.65,26,0.5436,0.5436,0.000217249619813165
+"40","BP","GO:0006629","lipid metabolic process",921,1,0.13,16,1,0.1256,0.001085776330076
+"41","BP","GO:0034641","cellular nitrogen compound metabolic pro...",4469,1,0.63,25,1,0.5308,0.000223763705526964
+"42","BP","GO:0046483","heterocycle metabolic process",3967,1,0.56,22,1,0.481,0.000252079657171666
+"43","BP","GO:1901564","organonitrogen compound metabolic proces...",4772,1,0.67,27,1,0.5596,0.000209555741827326
+"44","BP","GO:0071704","organic substance metabolic process",7509,1,1.06,31,1,0.7784,0.000133173525103209
+"45","BP","GO:0006139","nucleobase-containing compound metabolic...",3881,1,0.55,21,1,0.4723,0.00025766555011595
+"46","BP","GO:0044281","small molecule metabolic process",1338,1,0.19,17,1,0.1797,0.000747384155455904
+"47","BP","GO:0042445","hormone metabolic process",125,1,0.02,8,1,0.0175,0.008
+"48","BP","GO:0006066","alcohol metabolic process",236,1,0.03,9,1,0.033,0.00423728813559322
+"49","BP","GO:0044237","cellular metabolic process",7349,1,1.04,30,1,0.7677,0.00013607293509321
+"50","BP","GO:0009987","cellular process",10800,1,1.52,34,1,0.943,9.25925925925926e-05
+"51","BP","GO:0065007","biological regulation",8095,1,1.14,33,1,0.8156,0.000123533045089561
+"52","BP","GO:0008150","biological_process",14188,2,2,35,1,1,0.000140964195094446
+"53","BP","GO:0044238","primary metabolic process",7187,1,1.01,29,1,0.7565,0.000139140114094894
+"54","BP","GO:0065008","regulation of biological quality",3027,1,0.43,18,1,0.3812,0.000330360092500826
+"55","BP","GO:0016101","diterpenoid metabolic process",26,1,0,2,1,0.0037,0.0384615384615385
+"56","BP","GO:0008152","metabolic process",7878,1,1.11,32,1,0.8022,0.000126935770500127
+"57","BP","GO:1901615","organic hydroxy compound metabolic proce...",346,1,0.05,11,1,0.0482,0.00289017341040462
+"58","BP","GO:0006807","nitrogen compound metabolic process",6848,1,0.97,28,1,0.7324,0.000146028037383178
+"59","BP","GO:1901360","organic cyclic compound metabolic proces...",4122,1,0.58,24,1,0.4967,0.000242600679281902
+"60","BP","GO:0006720","isoprenoid metabolic process",46,1,0.01,6,1,0.0065,0.0217391304347826
+"61","CC","GO:0005615","extracellular space",812,1,0.11,1,0.11,0.11,0.00123152709359606
+"62","CC","GO:0044421","extracellular region part",989,1,0.14,2,0.13,0.13,0.00101112234580384
+"63","CC","GO:0005576","extracellular region",1274,1,0.18,3,0.17,0.17,0.000784929356357928
+"64","CC","GO:0032991","protein-containing complex",4407,1,0.61,4,0.52,0.52,0.00022691173133651
+"65","CC","GO:0005575","cellular_component",14387,2,2,5,1,1,0.000139014387989157
+"66","CC","GO:0000118","histone deacetylase complex",56,0,0.01,6,1,1,0
+"67","CC","GO:0000123","histone acetyltransferase complex",80,0,0.01,7,1,1,0
+"68","CC","GO:0000139","Golgi membrane",214,0,0.03,8,1,1,0
+"69","CC","GO:0000151","ubiquitin ligase complex",262,0,0.04,9,1,1,0
+"70","CC","GO:0000152","nuclear ubiquitin ligase complex",38,0,0.01,10,1,1,0
+"71","CC","GO:0000178","exosome (RNase complex)",22,0,0,11,1,1,0
+"72","CC","GO:0000228","nuclear chromosome",482,0,0.07,12,1,1,0
+"73","CC","GO:0000242","pericentriolar material",21,0,0,13,1,1,0
+"74","CC","GO:0000307","cyclin-dependent protein kinase holoenzy...",40,0,0.01,14,1,1,0
+"75","CC","GO:0000313","organellar ribosome",89,0,0.01,15,1,1,0
+"76","CC","GO:0000314","organellar small ribosomal subunit",29,0,0,16,1,1,0
+"77","CC","GO:0000315","organellar large ribosomal subunit",58,0,0.01,17,1,1,0
+"78","CC","GO:0000323","lytic vacuole",359,0,0.05,18,1,1,0
+"79","CC","GO:0000407","phagophore assembly site",29,0,0,19,1,1,0
+"80","CC","GO:0000428","DNA-directed RNA polymerase complex",96,0,0.01,20,1,1,0
+"81","CC","GO:0000502","proteasome complex",62,0,0.01,21,1,1,0
+"82","CC","GO:0000775","chromosome, centromeric region",150,0,0.02,22,1,1,0
+"83","CC","GO:0000776","kinetochore",101,0,0.01,23,1,1,0
+"84","CC","GO:0000777","condensed chromosome kinetochore",21,0,0,24,1,1,0
+"85","CC","GO:0000779","condensed chromosome, centromeric region",32,0,0,25,1,1,0
+"86","CC","GO:0000781","chromosome, telomeric region",101,0,0.01,26,1,1,0
+"87","CC","GO:0000784","nuclear chromosome, telomeric region",71,0,0.01,27,1,1,0
+"88","CC","GO:0000785","chromatin",457,0,0.06,28,1,1,0
+"89","CC","GO:0000786","nucleosome",33,0,0,29,1,1,0
+"90","CC","GO:0000790","nuclear chromatin",311,0,0.04,30,1,1,0

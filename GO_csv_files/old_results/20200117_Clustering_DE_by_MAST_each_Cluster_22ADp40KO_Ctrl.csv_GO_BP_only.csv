@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0002861","regulation of inflammatory response to a...",20,1,0,1,0.0014,0.0014,0.05
+"32","BP","GO:0002825","regulation of T-helper 1 type immune res...",20,1,0,2,0.0014,0.0014,0.05
+"33","BP","GO:0045672","positive regulation of osteoclast differ...",21,1,0,3,0.0014,0.0014,0.0476190476190476
+"34","BP","GO:0001916","positive regulation of T cell mediated c...",21,1,0,4,0.0014,0.0014,0.0476190476190476
+"35","BP","GO:0032735","positive regulation of interleukin-12 pr...",21,1,0,5,0.0014,0.0014,0.0476190476190476
+"36","BP","GO:0046006","regulation of activated T cell prolifera...",23,1,0,6,0.0016,0.0016,0.0434782608695652
+"37","BP","GO:0034391","regulation of smooth muscle cell apoptot...",24,1,0,8,0.0016,0.0016,0.0416666666666667
+"38","BP","GO:0032816","positive regulation of natural killer ce...",24,1,0,9,0.0016,0.0016,0.0416666666666667
+"39","BP","GO:0002230","positive regulation of defense response ...",24,1,0,10,0.0016,0.0016,0.0416666666666667
+"40","BP","GO:0002369","T cell cytokine production",27,1,0,12,0.0019,0.0019,0.037037037037037
+"41","BP","GO:0046640","regulation of alpha-beta T cell prolifer...",28,1,0,13,0.0019,0.0019,0.0357142857142857
+"42","BP","GO:0042269","regulation of natural killer cell mediat...",28,1,0,14,0.0019,0.0019,0.0357142857142857
+"43","BP","GO:0032653","regulation of interleukin-10 production",30,1,0,17,0.0021,0.0021,0.0333333333333333
+"44","BP","GO:0010661","positive regulation of muscle cell apopt...",30,1,0,18,0.0021,0.0021,0.0333333333333333
+"45","BP","GO:0050829","defense response to Gram-negative bacter...",34,1,0,24,0.0023,0.0023,0.0294117647058824
+"46","BP","GO:0042531","positive regulation of tyrosine phosphor...",35,1,0,26,0.0024,0.0024,0.0285714285714286
+"47","BP","GO:0002833","positive regulation of response to bioti...",37,1,0,31,0.0025,0.0025,0.027027027027027
+"48","BP","GO:0048662","negative regulation of smooth muscle cel...",38,1,0,33,0.0026,0.0026,0.0263157894736842
+"49","BP","GO:0032729","positive regulation of interferon-gamma ...",42,1,0,36,0.0029,0.0029,0.0238095238095238
+"50","BP","GO:0042093","T-helper cell differentiation",44,1,0,37,0.003,0.003,0.0227272727272727
+"51","BP","GO:0046635","positive regulation of alpha-beta T cell...",51,1,0,49,0.0035,0.0035,0.0196078431372549
+"52","BP","GO:0042102","positive regulation of T cell proliferat...",66,1,0,58,0.0045,0.0045,0.0151515151515152
+"53","BP","GO:0032760","positive regulation of tumor necrosis fa...",68,1,0,59,0.0047,0.0047,0.0147058823529412
+"54","BP","GO:0071346","cellular response to interferon-gamma",71,1,0,65,0.0049,0.0049,0.0140845070422535
+"55","BP","GO:0019233","sensory perception of pain",109,1,0.01,88,0.0075,0.0075,0.00917431192660551
+"56","BP","GO:0050728","negative regulation of inflammatory resp...",112,1,0.01,92,0.0077,0.0077,0.00892857142857143
+"57","BP","GO:0050777","negative regulation of immune response",113,1,0.01,93,0.0077,0.0077,0.00884955752212389
+"58","BP","GO:0007050","cell cycle arrest",113,1,0.01,94,0.0077,0.0077,0.00884955752212389
+"59","BP","GO:0009411","response to UV",118,1,0.01,98,0.0081,0.0081,0.00847457627118644
+"60","BP","GO:0071222","cellular response to lipopolysaccharide",118,1,0.01,99,0.0081,0.0081,0.00847457627118644

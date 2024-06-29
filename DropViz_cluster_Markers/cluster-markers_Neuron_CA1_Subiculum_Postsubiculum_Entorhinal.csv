@@ -1,0 +1,3 @@
+"gene","target.u","comparison.u","target.sum","comparison.sum","log.target.u","log.comparison.u","pval","fc","fc.disp","target.sum.L","target.sum.R","target.sum.per.100k","target.sum.L.per.100k","target.sum.R.per.100k","fc.thresh","pval.thresh","amt.thresh","user.selected","expr.pass"
+"Fibcd1",0.000382237064353126,9.71569459189603e-06,25167,2132,3.66356164612965,0.693147180559945,0,2.9704144655697,19.5,24857,25478,40.6300208858681,40.1295517606399,41.1321044276294,TRUE,TRUE,TRUE,FALSE,TRUE
+"Ndst3",0.000129881985042486,1.25267073598448e-05,7387,2740,2.63905732961526,0.693147180559945,0,1.94591014905531,7,7219,7556,11.9256949292291,11.654472951686,12.1985313233051,TRUE,TRUE,TRUE,FALSE,TRUE

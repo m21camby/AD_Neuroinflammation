@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0050770","regulation of axonogenesis",182,2,0.09,2,0.0032,0.0032,0.010989010989011
+"32","BP","GO:0007271","synaptic transmission, cholinergic",20,1,0.01,6,0.0096,0.0096,0.05
+"33","BP","GO:0021533","cell differentiation in hindbrain",20,1,0.01,7,0.0096,0.0096,0.05
+"34","BP","GO:0048266","behavioral response to pain",20,1,0.01,8,0.0096,0.0096,0.05
+"35","BP","GO:0007274","neuromuscular synaptic transmission",21,1,0.01,10,0.0101,0.0101,0.0476190476190476
+"36","BP","GO:0021522","spinal cord motor neuron differentiation",21,1,0.01,11,0.0101,0.0101,0.0476190476190476
+"37","BP","GO:0055083","monovalent inorganic anion homeostasis",21,1,0.01,12,0.0101,0.0101,0.0476190476190476
+"38","BP","GO:0060004","reflex",21,1,0.01,13,0.0101,0.0101,0.0476190476190476
+"39","BP","GO:0098901","regulation of cardiac muscle cell action...",21,1,0.01,14,0.0101,0.0101,0.0476190476190476
+"40","BP","GO:0048670","regulation of collateral sprouting",22,1,0.01,15,0.0106,0.0106,0.0454545454545455
+"41","BP","GO:0007214","gamma-aminobutyric acid signaling pathwa...",24,1,0.01,18,0.0115,0.0115,0.0416666666666667
+"42","BP","GO:0021697","cerebellar cortex formation",24,1,0.01,19,0.0115,0.0115,0.0416666666666667
+"43","BP","GO:0021515","cell differentiation in spinal cord",25,1,0.01,20,0.012,0.012,0.04
+"44","BP","GO:0035850","epithelial cell differentiation involved...",26,1,0.01,22,0.0125,0.0125,0.0384615384615385
+"45","BP","GO:0046885","regulation of hormone biosynthetic proce...",26,1,0.01,23,0.0125,0.0125,0.0384615384615385
+"46","BP","GO:0042391","regulation of membrane potential",370,2,0.18,24,0.0125,0.0125,0.00540540540540541
+"47","BP","GO:0015695","organic cation transport",27,1,0.01,25,0.013,0.013,0.037037037037037
+"48","BP","GO:1904646","cellular response to amyloid-beta",28,1,0.01,26,0.0134,0.0134,0.0357142857142857
+"49","BP","GO:0048103","somatic stem cell division",28,1,0.01,27,0.0134,0.0134,0.0357142857142857
+"50","BP","GO:0021680","cerebellar Purkinje cell layer developme...",28,1,0.01,28,0.0134,0.0134,0.0357142857142857
+"51","BP","GO:0000096","sulfur amino acid metabolic process",28,1,0.01,29,0.0134,0.0134,0.0357142857142857
+"52","BP","GO:0007026","negative regulation of microtubule depol...",29,1,0.01,31,0.0139,0.0139,0.0344827586206897
+"53","BP","GO:0021517","ventral spinal cord development",30,1,0.01,33,0.0144,0.0144,0.0333333333333333
+"54","BP","GO:1901385","regulation of voltage-gated calcium chan...",30,1,0.01,34,0.0144,0.0144,0.0333333333333333
+"55","BP","GO:0048668","collateral sprouting",30,1,0.01,35,0.0144,0.0144,0.0333333333333333
+"56","BP","GO:0044275","cellular carbohydrate catabolic process",30,1,0.01,36,0.0144,0.0144,0.0333333333333333
+"57","BP","GO:0050808","synapse organization",406,2,0.2,38,0.0149,0.0149,0.00492610837438424
+"58","BP","GO:1904645","response to amyloid-beta",32,1,0.02,39,0.0153,0.0153,0.03125
+"59","BP","GO:0031114","regulation of microtubule depolymerizati...",32,1,0.02,40,0.0153,0.0153,0.03125
+"60","BP","GO:0086004","regulation of cardiac muscle cell contra...",32,1,0.02,41,0.0153,0.0153,0.03125

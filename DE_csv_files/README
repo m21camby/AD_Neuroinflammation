@@ -1,0 +1,25 @@
+# in the beginning, AD and ADp40KO has been swapped so I renamed DE files
+
+
+# create directory
+mkdir DE_AD_Ctrl
+mkdir DE_ADp40KO_Ctrl
+mkdir DE_ADp40KO_AD
+
+# move files to directory
+
+mv *AD_Ctrl.csv DE_ADp40KO_Ctrl/
+mv *AD_Ctrl_top20.csv DE_ADp40KO_Ctrl/
+mv *ADp40KO_Ctrl.csv DE_AD_Ctrl/
+mv *ADp40KO_Ctrl_top20.csv DE_AD_Ctrl/
+mv *AD_ADp40KO.csv DE_ADp40KO_AD/
+mv *AD_ADp40KO_top20.csv DE_ADp40KO_AD/
+
+
+# rename files
+find . -name '*AD_ADp40KO*' -exec bash -c 'mv $0 ${0/AD_ADp40KO/ADp40KO_AD_corrected}' {} \;
+
+find . -name '*AD_Ctrl*' -exec bash -c 'mv $0 ${0/AD_Ctrl/ADp40KO_Ctrl_corrected}' {} \;
+
+find . -name '*ADp40KO_Ctrl*' -exec bash -c 'mv $0 ${0/ADp40KO_Ctrl/AD_Ctrl_corrected}' {} \;
+

@@ -1,0 +1,7 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio","genes"
+"31","BP","GO:0060292","long-term synaptic depression",29,1,0,1,0.0043,0.0043,0.0344827586206897,"Sorcs3"
+"32","BP","GO:0007613","memory",121,1,0.02,3,0.0178,0.0178,0.00826446280991736,"Sorcs3"
+"33","BP","GO:0007612","learning",142,1,0.02,4,0.0209,0.0209,0.00704225352112676,"Sorcs3"
+"34","BP","GO:0007611","learning or memory",234,1,0.03,6,0.0344,0.0344,0.00427350427350427,"Sorcs3"
+"35","BP","GO:0050890","cognition",260,1,0.04,7,0.0381,0.0381,0.00384615384615385,"Sorcs3"
+"47","BP","GO:0048167","regulation of synaptic plasticity",193,1,0.03,5,1,0.0284,0.00518134715025907,"Sorcs3"

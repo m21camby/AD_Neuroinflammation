@@ -1,0 +1,23 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0061036","positive regulation of cartilage develop...",20,1,0,1,0.0015,0.0015,0.05
+"32","BP","GO:0035116","embryonic hindlimb morphogenesis",24,1,0,2,0.0018,0.0018,0.0416666666666667
+"33","BP","GO:0035136","forelimb morphogenesis",25,1,0,3,0.0018,0.0018,0.04
+"34","BP","GO:0046638","positive regulation of alpha-beta T cell...",25,1,0,4,0.0018,0.0018,0.04
+"35","BP","GO:0032330","regulation of chondrocyte differentiatio...",32,1,0,6,0.0023,0.0023,0.03125
+"36","BP","GO:0017145","stem cell division",38,1,0,7,0.0028,0.0028,0.0263157894736842
+"37","BP","GO:0009880","embryonic pattern specification",45,1,0,10,0.0033,0.0033,0.0222222222222222
+"38","BP","GO:0045600","positive regulation of fat cell differen...",49,1,0,12,0.0036,0.0036,0.0204081632653061
+"39","BP","GO:0042733","embryonic digit morphogenesis",55,1,0,13,0.004,0.004,0.0181818181818182
+"40","BP","GO:0045638","negative regulation of myeloid cell diff...",65,1,0,16,0.0048,0.0048,0.0153846153846154
+"41","BP","GO:0001823","mesonephros development",76,1,0.01,19,0.0056,0.0056,0.0131578947368421
+"42","BP","GO:0045778","positive regulation of ossification",88,1,0.01,21,0.0064,0.0064,0.0113636363636364
+"43","BP","GO:0009952","anterior/posterior pattern specification",139,1,0.01,35,0.0102,0.0102,0.00719424460431655
+"44","BP","GO:0007281","germ cell development",196,1,0.01,49,0.0143,0.0143,0.00510204081632653
+"45","BP","GO:0034504","protein localization to nucleus",233,1,0.02,55,0.017,0.017,0.00429184549356223
+"46","BP","GO:0003002","regionalization",239,1,0.02,56,0.0175,0.0175,0.00418410041841004
+"47","BP","GO:0022412","cellular process involved in reproductio...",263,1,0.02,59,0.0192,0.0192,0.00380228136882129
+"48","BP","GO:0007283","spermatogenesis",336,1,0.02,69,0.0246,0.0246,0.00297619047619048
+"49","BP","GO:0048232","male gamete generation",352,1,0.03,71,0.0258,0.0258,0.00284090909090909
+"50","BP","GO:0007276","gamete generation",456,1,0.03,77,0.0334,0.0334,0.00219298245614035
+"51","BP","GO:0003006","developmental process involved in reprod...",483,1,0.04,79,0.0353,0.0353,0.0020703933747412
+"52","BP","GO:0008285","negative regulation of cell proliferatio...",496,1,0.04,80,0.0363,0.0363,0.00201612903225806

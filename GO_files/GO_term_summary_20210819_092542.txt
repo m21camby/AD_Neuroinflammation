@@ -1,0 +1,23 @@
+MGI Gene/Marker ID	Symbol	Name	Chr	Qualifier	Annotated Term	Context	Proteoform	Evidence	Inferred From	Reference(s)
+MGI:88180	Bmp4	bone morphogenetic protein 4	14		negative regulation of oligodendrocyte differentiation			ISO	RGD:2213 	J:155856 	
+MGI:88276	Ctnnb1	catenin (cadherin associated protein), beta 1	9		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in forebrain,regulates the differentiation of oligodendrocyte|regulates a function/process that happens in spinal cord,regulates the differentiation of oligodendrocyte		IMP	MGI:1858008 	J:152576 	
+MGI:1923691	Daam2	dishevelled associated activator of morphogenesis 2	17		negative regulation of oligodendrocyte differentiation			IBA	PTN002906240 	J:265628 	
+MGI:1923691	Daam2	dishevelled associated activator of morphogenesis 2	17		negative regulation of oligodendrocyte differentiation			IDA		J:221126 	
+MGI:94901	Dlx1	distal-less homeobox 1	2		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in cerebral cortex,regulates the differentiation of oligodendrocyte		IGI	MGI:94902 	J:132162 	
+MGI:94901	Dlx1	distal-less homeobox 1	2		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in corpus striatum		IGI	MGI:94902 	J:196218 	
+MGI:94902	Dlx2	distal-less homeobox 2	2		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in cerebral cortex,regulates the differentiation of oligodendrocyte		IGI	MGI:94901 	J:132162 	
+MGI:94902	Dlx2	distal-less homeobox 2	2		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in corpus striatum		IGI	MGI:94901 	J:196218 	
+MGI:94925	Drd3	dopamine receptor D3	16		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in telencephalon,regulates the differentiation of oligodendrocyte		IDA		J:48510 	
+MGI:1927070	Dusp10	dual specificity phosphatase 10	1		negative regulation of oligodendrocyte differentiation			ISO	RGD:1310844 	J:155856 	
+MGI:104853	Hes1	hes family bHLH transcription factor 1	16		negative regulation of oligodendrocyte differentiation			IDA		J:82774 	
+MGI:104853	Hes1	hes family bHLH transcription factor 1	16		negative regulation of oligodendrocyte differentiation			ISO	RGD:62081 	J:155856 	
+MGI:104876	Hes5	hes family bHLH transcription factor 5	4		negative regulation of oligodendrocyte differentiation			IDA		J:82774 	
+MGI:104876	Hes5	hes family bHLH transcription factor 5	4		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in brain,regulates the differentiation of oligodendrocyte		IMP	MGI:2149674 	J:119556 	
+MGI:96397	Id2	inhibitor of DNA binding 2	12		negative regulation of oligodendrocyte differentiation	regulates the differentiation of oligodendrocyte		IMP	MGI:2384134 	J:107684 	
+MGI:99414	Id4	inhibitor of DNA binding 4	13		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in corpus callosum,regulates the differentiation of oligodendrocyte|regulates a function/process that happens in brain subventricular zone,regulates the differentiation of oligodendrocyte		IMP	MGI:3579084 	J:156121 	
+MGI:1915522	Lingo1	leucine rich repeat and Ig domain containing 1	9		negative regulation of oligodendrocyte differentiation	regulates the differentiation of oligodendrocyte		IMP		J:99078 	
+MGI:97306	Nf1	neurofibromin 1	11		negative regulation of oligodendrocyte differentiation	regulates a function/process that happens in telencephalon,regulates the differentiation of oligodendrocyte		IMP	MGI:1857444 	J:98766 	
+MGI:97363	Notch1	notch 1	2		negative regulation of oligodendrocyte differentiation			IDA		J:82774 	
+MGI:1927664	Sirt2	sirtuin 2	7		negative regulation of oligodendrocyte differentiation			ISO	RGD:621481 	J:155856 	
+MGI:1923457	Tmem98	transmembrane protein 98	11		negative regulation of oligodendrocyte differentiation			IMP		J:267268 	
+

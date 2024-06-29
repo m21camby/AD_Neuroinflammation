@@ -1,0 +1,30 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0043113","receptor clustering",62,2,0.02,1,1e-04,1e-04,0.032258064516129
+"32","BP","GO:0010977","negative regulation of neuron projection...",163,2,0.04,3,7e-04,7e-04,0.0122699386503067
+"33","BP","GO:0050770","regulation of axonogenesis",184,2,0.05,7,0.00089,0.00089,0.0108695652173913
+"34","BP","GO:0071900","regulation of protein serine/threonine k...",379,2,0.1,24,0.00374,0.00374,0.00527704485488127
+"35","BP","GO:0010894","negative regulation of steroid biosynthe...",20,1,0.01,33,0.00536,0.00536,0.05
+"36","BP","GO:0051043","regulation of membrane protein ectodomai...",20,1,0.01,34,0.00536,0.00536,0.05
+"37","BP","GO:0097062","dendritic spine maintenance",20,1,0.01,35,0.00536,0.00536,0.05
+"38","BP","GO:0032462","regulation of protein homooligomerizatio...",21,1,0.01,37,0.00562,0.00562,0.0476190476190476
+"39","BP","GO:1901626","regulation of postsynaptic membrane orga...",21,1,0.01,38,0.00562,0.00562,0.0476190476190476
+"40","BP","GO:0050858","negative regulation of antigen receptor-...",21,1,0.01,39,0.00562,0.00562,0.0476190476190476
+"41","BP","GO:0002693","positive regulation of cellular extravas...",22,1,0.01,41,0.00589,0.00589,0.0454545454545455
+"42","BP","GO:0010874","regulation of cholesterol efflux",22,1,0.01,42,0.00589,0.00589,0.0454545454545455
+"43","BP","GO:0032770","positive regulation of monooxygenase act...",22,1,0.01,43,0.00589,0.00589,0.0454545454545455
+"44","BP","GO:0019068","virion assembly",22,1,0.01,44,0.00589,0.00589,0.0454545454545455
+"45","BP","GO:1905809","negative regulation of synapse organizat...",22,1,0.01,45,0.00589,0.00589,0.0454545454545455
+"46","BP","GO:0008340","determination of adult lifespan",23,1,0.01,48,0.00616,0.00616,0.0434782608695652
+"47","BP","GO:0007263","nitric oxide mediated signal transductio...",23,1,0.01,49,0.00616,0.00616,0.0434782608695652
+"48","BP","GO:0032801","receptor catabolic process",23,1,0.01,50,0.00616,0.00616,0.0434782608695652
+"49","BP","GO:0032376","positive regulation of cholesterol trans...",23,1,0.01,51,0.00616,0.00616,0.0434782608695652
+"50","BP","GO:0055094","response to lipoprotein particle",24,1,0.01,54,0.00643,0.00643,0.0416666666666667
+"51","BP","GO:0044788","modulation by host of viral process",24,1,0.01,55,0.00643,0.00643,0.0416666666666667
+"52","BP","GO:0090181","regulation of cholesterol metabolic proc...",24,1,0.01,56,0.00643,0.00643,0.0416666666666667
+"53","BP","GO:1902003","regulation of amyloid-beta formation",24,1,0.01,57,0.00643,0.00643,0.0416666666666667
+"54","BP","GO:0061099","negative regulation of protein tyrosine ...",25,1,0.01,61,0.00669,0.00669,0.04
+"55","BP","GO:0070328","triglyceride homeostasis",25,1,0.01,62,0.00669,0.00669,0.04
+"56","BP","GO:0051894","positive regulation of focal adhesion as...",25,1,0.01,63,0.00669,0.00669,0.04
+"57","BP","GO:0002021","response to dietary excess",25,1,0.01,64,0.00669,0.00669,0.04
+"59","BP","GO:0045940","positive regulation of steroid metabolic...",26,1,0.01,68,0.00696,0.00696,0.0384615384615385
+"60","BP","GO:0071402","cellular response to lipoprotein particl...",26,1,0.01,69,0.00696,0.00696,0.0384615384615385

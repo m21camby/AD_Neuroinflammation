@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0044325","ion channel binding",124,9,1.02,12,8.4e-07,8.4e-07,0.0725806451612903
+"2","MF","GO:0008066","glutamate receptor activity",26,5,0.21,13,2e-06,2e-06,0.192307692307692
+"3","MF","GO:0005509","calcium ion binding",474,15,3.91,17,8.2e-06,8.2e-06,0.0316455696202532
+"4","MF","GO:0030165","PDZ domain binding",110,7,0.91,23,3.4e-05,3.4e-05,0.0636363636363636
+"5","MF","GO:0045499","chemorepellent activity",26,4,0.21,26,5.7e-05,5.7e-05,0.153846153846154
+"6","MF","GO:0005516","calmodulin binding",167,8,1.38,30,7.2e-05,7.2e-05,0.0479041916167665
+"7","MF","GO:0005231","excitatory extracellular ligand-gated io...",29,4,0.24,33,8.9e-05,8.9e-05,0.137931034482759
+"8","MF","GO:0005267","potassium channel activity",104,8,0.86,15,0.00012,2.3e-06,0.0769230769230769
+"9","MF","GO:0046872","metal ion binding",2927,49,24.14,11,0.00015,1.7e-07,0.0167406901264093
+"10","MF","GO:0005272","sodium channel activity",36,4,0.3,37,0.00021,0.00021,0.111111111111111
+"11","MF","GO:0099094","ligand-gated cation channel activity",79,5,0.65,40,0.00049,0.00049,0.0632911392405063
+"12","MF","GO:1904315","transmitter-gated ion channel activity i...",46,4,0.38,41,0.00055,0.00055,0.0869565217391304
+"13","MF","GO:0008081","phosphoric diester hydrolase activity",82,5,0.68,42,0.00058,0.00058,0.0609756097560976
+"14","MF","GO:0005244","voltage-gated ion channel activity",167,11,1.38,8,0.00067,1.3e-07,0.0658682634730539
+"15","MF","GO:0045296","cadherin binding",50,4,0.41,45,0.00076,0.00076,0.08
+"16","MF","GO:0008266","poly(U) RNA binding",25,3,0.21,47,0.0011,0.0011,0.12
+"17","MF","GO:0050839","cell adhesion molecule binding",198,10,1.63,16,0.00121,5.5e-06,0.0505050505050505
+"18","MF","GO:0017080","sodium channel regulator activity",26,3,0.21,50,0.00124,0.00124,0.115384615384615
+"19","MF","GO:0098632","cell-cell adhesion mediator activity",26,3,0.21,51,0.00124,0.00124,0.115384615384615
+"20","MF","GO:0042803","protein homodimerization activity",773,15,6.38,53,0.00173,0.00173,0.019404915912031
+"21","MF","GO:0043394","proteoglycan binding",30,3,0.25,55,0.00189,0.00189,0.1
+"22","MF","GO:0008201","heparin binding",116,5,0.96,58,0.00272,0.00272,0.0431034482758621
+"23","MF","GO:0005249","voltage-gated potassium channel activity",72,4,0.59,59,0.00294,0.00294,0.0555555555555556
+"24","MF","GO:0008146","sulfotransferase activity",41,3,0.34,61,0.00464,0.00464,0.0731707317073171
+"25","MF","GO:0005245","voltage-gated calcium channel activity",45,3,0.37,66,0.00604,0.00604,0.0666666666666667
+"26","MF","GO:0004714","transmembrane receptor protein tyrosine ...",51,3,0.42,68,0.00855,0.00855,0.0588235294117647
+"27","MF","GO:0042165","neurotransmitter binding",52,3,0.43,70,0.00902,0.00902,0.0576923076923077
+"28","MF","GO:0008092","cytoskeletal protein binding",857,14,7.07,72,0.01098,0.01098,0.0163360560093349
+"29","MF","GO:0050998","nitric-oxide synthase binding",20,2,0.16,74,0.01163,0.01163,0.1
+"30","MF","GO:0046982","protein heterodimerization activity",455,9,3.75,75,0.01303,0.01303,0.0197802197802198
+"31","BP","GO:0007215","glutamate receptor signaling pathway",83,7,0.69,56,5.5e-06,5.5e-06,0.0843373493975904
+"32","BP","GO:0050804","modulation of chemical synaptic transmis...",468,18,3.87,26,1.7e-05,5.6e-08,0.0384615384615385
+"33","BP","GO:2001259","positive regulation of cation channel ac...",66,6,0.55,64,1.7e-05,1.7e-05,0.0909090909090909
+"34","BP","GO:0007157","heterophilic cell-cell adhesion via plas...",42,5,0.35,70,2.4e-05,2.4e-05,0.119047619047619
+"35","BP","GO:0051965","positive regulation of synapse assembly",71,6,0.59,73,2.6e-05,2.6e-05,0.0845070422535211
+"36","BP","GO:0030166","proteoglycan biosynthetic process",48,5,0.4,85,4.6e-05,4.6e-05,0.104166666666667
+"37","BP","GO:0098901","regulation of cardiac muscle cell action...",25,4,0.21,88,4.9e-05,4.9e-05,0.16
+"38","BP","GO:0007156","homophilic cell adhesion via plasma memb...",86,6,0.71,100,7.8e-05,7.8e-05,0.0697674418604651
+"39","BP","GO:0007416","synapse assembly",160,12,1.32,15,0.00012,8.3e-09,0.075
+"40","BP","GO:0032959","inositol trisphosphate biosynthetic proc...",20,3,0.17,137,0.00057,0.00057,0.15
+"41","BP","GO:0045165","cell fate commitment",181,7,1.5,143,0.00077,0.00077,0.0386740331491713
+"42","BP","GO:0048843","negative regulation of axon extension in...",24,3,0.2,147,0.00099,0.00099,0.125
+"43","BP","GO:0016339","calcium-dependent cell-cell adhesion via...",25,3,0.21,153,0.00111,0.00111,0.12
+"44","BP","GO:0035249","synaptic transmission, glutamatergic",95,5,0.79,155,0.00115,0.00115,0.0526315789473684
+"45","BP","GO:0098900","regulation of action potential",52,7,0.43,34,0.00128,2.2e-07,0.134615384615385
+"46","BP","GO:0031644","regulation of neurological system proces...",151,6,1.25,161,0.0016,0.0016,0.0397350993377483
+"47","BP","GO:0099537","trans-synaptic signaling",630,25,5.21,3,0.00171,5.1e-11,0.0396825396825397
+"48","BP","GO:0048168","regulation of neuronal synaptic plastici...",62,4,0.51,164,0.00172,0.00172,0.0645161290322581
+"49","BP","GO:0043113","receptor clustering",62,4,0.51,165,0.00172,0.00172,0.0645161290322581
+"50","BP","GO:0042391","regulation of membrane potential",396,17,3.28,21,0.00177,2.8e-08,0.0429292929292929
+"51","BP","GO:0048738","cardiac muscle tissue development",211,7,1.75,167,0.00186,0.00186,0.033175355450237
+"52","BP","GO:0001964","startle response",30,3,0.25,168,0.00191,0.00191,0.1
+"53","BP","GO:0044331","cell-cell adhesion mediated by cadherin",30,3,0.25,169,0.00191,0.00191,0.1
+"54","BP","GO:0021537","telencephalon development",214,7,1.77,172,0.00202,0.00202,0.0327102803738318
+"55","BP","GO:0099560","synaptic membrane adhesion",31,3,0.26,175,0.0021,0.0021,0.0967741935483871
+"56","BP","GO:0017156","calcium ion regulated exocytosis",161,6,1.33,177,0.00221,0.00221,0.0372670807453416
+"57","BP","GO:0071805","potassium ion transmembrane transport",163,6,1.35,178,0.00235,0.00235,0.0368098159509202
+"58","BP","GO:0031175","neuron projection development",969,25,8.02,35,0.00248,3e-07,0.0257997936016512
+"59","BP","GO:0050906","detection of stimulus involved in sensor...",70,4,0.58,183,0.00269,0.00269,0.0571428571428571
+"60","BP","GO:1901385","regulation of voltage-gated calcium chan...",34,3,0.28,184,0.00275,0.00275,0.0882352941176471
+"61","CC","GO:0098978","glutamatergic synapse",486,26,3.87,3,7.8e-15,7.8e-15,0.0534979423868313
+"62","CC","GO:0099061","integral component of postsynaptic densi...",70,11,0.56,22,7.4e-12,7.4e-12,0.157142857142857
+"63","CC","GO:0030425","dendrite",652,29,5.19,4,4.2e-08,2.1e-14,0.044478527607362
+"64","CC","GO:0098982","GABA-ergic synapse",102,9,0.81,43,1.2e-07,1.2e-07,0.0882352941176471
+"65","CC","GO:0043025","neuronal cell body",648,20,5.15,44,1.8e-07,1.8e-07,0.0308641975308642
+"66","CC","GO:0008076","voltage-gated potassium channel complex",70,7,0.56,51,1.3e-06,1.3e-06,0.1
+"67","CC","GO:0030054","cell junction",982,27,7.81,38,4.7e-06,1e-08,0.0274949083503055
+"68","CC","GO:0043197","dendritic spine",182,9,1.45,56,1.5e-05,1.5e-05,0.0494505494505494
+"69","CC","GO:0009986","cell surface",638,16,5.07,63,4.5e-05,4.5e-05,0.0250783699059561
+"70","CC","GO:0032281","AMPA glutamate receptor complex",30,4,0.24,65,8.9e-05,8.9e-05,0.133333333333333
+"71","CC","GO:0098688","parallel fiber to Purkinje cell synapse",32,4,0.25,67,0.00012,0.00012,0.125
+"72","CC","GO:0030315","T-tubule",64,5,0.51,68,0.00015,0.00015,0.078125
+"73","CC","GO:0099056","integral component of presynaptic membra...",105,6,0.84,71,0.00019,0.00019,0.0571428571428571
+"74","CC","GO:0043195","terminal bouton",74,5,0.59,74,3e-04,3e-04,0.0675675675675676
+"75","CC","GO:0032590","dendrite membrane",43,4,0.34,76,0.00037,0.00037,0.0930232558139535
+"76","CC","GO:0031594","neuromuscular junction",85,5,0.68,77,0.00058,0.00058,0.0588235294117647
+"77","CC","GO:0016342","catenin complex",22,3,0.17,78,0.00068,0.00068,0.136363636363636
+"78","CC","GO:0008328","ionotropic glutamate receptor complex",54,7,0.43,45,8e-04,2.2e-07,0.12962962962963
+"79","CC","GO:0014704","intercalated disc",57,4,0.45,79,0.00109,0.00109,0.0701754385964912
+"80","CC","GO:0030672","synaptic vesicle membrane",104,5,0.83,81,0.00144,0.00144,0.0480769230769231
+"81","CC","GO:0014069","postsynaptic density",372,19,2.96,32,0.00161,1.1e-10,0.0510752688172043
+"82","CC","GO:0098685","Schaffer collateral - CA1 synapse",110,5,0.87,83,0.00184,0.00184,0.0454545454545455
+"83","CC","GO:0043198","dendritic shaft",66,4,0.52,84,0.00188,0.00188,0.0606060606060606
+"84","CC","GO:0042734","presynaptic membrane",181,10,1.44,53,0.00268,1.8e-06,0.0552486187845304
+"85","CC","GO:0005891","voltage-gated calcium channel complex",36,3,0.29,85,0.00289,0.00289,0.0833333333333333
+"86","CC","GO:0044304","main axon",80,4,0.64,87,0.00378,0.00378,0.05
+"87","CC","GO:0099055","integral component of postsynaptic membr...",159,15,1.26,12,0.00401,2.1e-12,0.0943396226415094
+"88","CC","GO:0005901","caveola",84,4,0.67,90,0.0045,0.0045,0.0476190476190476
+"89","CC","GO:0098686","hippocampal mossy fiber to CA3 synapse",47,3,0.37,92,0.00617,0.00617,0.0638297872340425
+"90","CC","GO:0099634","postsynaptic specialization membrane",126,14,1,10,0.00782,1.2e-12,0.111111111111111

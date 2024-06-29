@@ -1,0 +1,8 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio","genes"
+"31","BP","GO:0000381","regulation of alternative mRNA splicing,...",59,1,0.01,1,0.0081,0.0081,0.0169491525423729,"Malat1"
+"32","BP","GO:0008360","regulation of cell shape",135,1,0.02,6,0.0186,0.0186,0.00740740740740741,"Arhgap15"
+"34","BP","GO:0050807","regulation of synapse organization",242,1,0.03,12,0.0332,0.0332,0.00413223140495868,"Malat1"
+"35","BP","GO:0050803","regulation of synapse structure or activ...",250,1,0.03,13,0.0343,0.0343,0.004,"Malat1"
+"36","BP","GO:0043087","regulation of GTPase activity",265,1,0.04,14,0.0363,0.0363,0.00377358490566038,"Arhgap15"
+"38","BP","GO:0050808","synapse organization",404,1,0.06,17,0.0551,0.0551,0.00247524752475248,"Malat1"
+"39","BP","GO:0022604","regulation of cell morphogenesis",474,1,0.07,19,0.0644,0.0644,0.00210970464135021,"Arhgap15"

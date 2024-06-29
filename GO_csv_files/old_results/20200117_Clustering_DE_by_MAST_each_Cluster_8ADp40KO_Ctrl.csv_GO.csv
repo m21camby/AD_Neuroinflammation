@@ -1,0 +1,91 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"1","MF","GO:0005516","calmodulin binding",162,2,0.08,1,0.0025,0.0025,0.0123456790123457
+"2","MF","GO:0017080","sodium channel regulator activity",25,1,0.01,2,0.0121,0.0121,0.04
+"3","MF","GO:0008047","enzyme activator activity",395,2,0.19,3,0.0143,0.0143,0.00506329113924051
+"4","MF","GO:0048487","beta-tubulin binding",41,1,0.02,4,0.0197,0.0197,0.024390243902439
+"5","MF","GO:0005245","voltage-gated calcium channel activity",45,1,0.02,5,0.0216,0.0216,0.0222222222222222
+"6","MF","GO:0015318","inorganic molecular entity transmembrane...",593,2,0.29,6,0.0309,0.0309,0.00337268128161889
+"7","MF","GO:0030295","protein kinase activator activity",66,1,0.03,7,0.0316,0.0316,0.0151515151515152
+"8","MF","GO:0019905","syntaxin binding",71,1,0.03,8,0.0339,0.0339,0.0140845070422535
+"9","MF","GO:0019209","kinase activator activity",72,1,0.03,9,0.0344,0.0344,0.0138888888888889
+"10","MF","GO:0015075","ion transmembrane transporter activity",637,2,0.31,10,0.0352,0.0352,0.00313971742543171
+"11","MF","GO:0008083","growth factor activity",90,1,0.04,11,0.0429,0.0429,0.0111111111111111
+"12","MF","GO:0052689","carboxylic ester hydrolase activity",94,1,0.05,12,0.0447,0.0447,0.0106382978723404
+"13","MF","GO:0015103","inorganic anion transmembrane transporte...",97,1,0.05,13,0.0461,0.0461,0.0103092783505155
+"14","MF","GO:0030234","enzyme regulator activity",760,2,0.37,14,0.0487,0.0487,0.00263157894736842
+"15","MF","GO:0005262","calcium channel activity",103,1,0.05,15,0.0489,0.0489,0.00970873786407767
+"16","MF","GO:0022857","transmembrane transporter activity",770,2,0.37,16,0.0499,0.0499,0.0025974025974026
+"17","MF","GO:0000149","SNARE binding",108,1,0.05,17,0.0512,0.0512,0.00925925925925926
+"18","MF","GO:0016247","channel regulator activity",109,1,0.05,18,0.0517,0.0517,0.00917431192660551
+"19","MF","GO:0003774","motor activity",114,1,0.06,19,0.054,0.054,0.0087719298245614
+"20","MF","GO:0022843","voltage-gated cation channel activity",116,1,0.06,20,0.0549,0.0549,0.00862068965517241
+"21","MF","GO:0044325","ion channel binding",117,1,0.06,21,0.0554,0.0554,0.00854700854700855
+"22","MF","GO:0015085","calcium ion transmembrane transporter ac...",119,1,0.06,22,0.0563,0.0563,0.00840336134453781
+"23","MF","GO:0008092","cytoskeletal protein binding",846,2,0.41,23,0.0592,0.0592,0.00236406619385343
+"24","MF","GO:0005215","transporter activity",848,2,0.41,24,0.0595,0.0595,0.00235849056603774
+"25","MF","GO:0019887","protein kinase regulator activity",145,1,0.07,25,0.0683,0.0683,0.00689655172413793
+"26","MF","GO:0022832","voltage-gated channel activity",154,1,0.07,26,0.0724,0.0724,0.00649350649350649
+"27","MF","GO:0005244","voltage-gated ion channel activity",154,1,0.07,27,0.0724,0.0724,0.00649350649350649
+"28","MF","GO:0051015","actin filament binding",171,1,0.08,28,0.0801,0.0801,0.00584795321637427
+"29","MF","GO:0015291","secondary active transmembrane transport...",173,1,0.08,29,0.081,0.081,0.00578034682080925
+"30","MF","GO:0019207","kinase regulator activity",174,1,0.08,30,0.0814,0.0814,0.00574712643678161
+"31","BP","GO:0050770","regulation of axonogenesis",182,2,0.09,2,0.0032,0.0032,0.010989010989011
+"32","BP","GO:0007271","synaptic transmission, cholinergic",20,1,0.01,6,0.0096,0.0096,0.05
+"33","BP","GO:0021533","cell differentiation in hindbrain",20,1,0.01,7,0.0096,0.0096,0.05
+"34","BP","GO:0048266","behavioral response to pain",20,1,0.01,8,0.0096,0.0096,0.05
+"35","BP","GO:0007274","neuromuscular synaptic transmission",21,1,0.01,10,0.0101,0.0101,0.0476190476190476
+"36","BP","GO:0021522","spinal cord motor neuron differentiation",21,1,0.01,11,0.0101,0.0101,0.0476190476190476
+"37","BP","GO:0055083","monovalent inorganic anion homeostasis",21,1,0.01,12,0.0101,0.0101,0.0476190476190476
+"38","BP","GO:0060004","reflex",21,1,0.01,13,0.0101,0.0101,0.0476190476190476
+"39","BP","GO:0098901","regulation of cardiac muscle cell action...",21,1,0.01,14,0.0101,0.0101,0.0476190476190476
+"40","BP","GO:0048670","regulation of collateral sprouting",22,1,0.01,15,0.0106,0.0106,0.0454545454545455
+"41","BP","GO:0007214","gamma-aminobutyric acid signaling pathwa...",24,1,0.01,18,0.0115,0.0115,0.0416666666666667
+"42","BP","GO:0021697","cerebellar cortex formation",24,1,0.01,19,0.0115,0.0115,0.0416666666666667
+"43","BP","GO:0021515","cell differentiation in spinal cord",25,1,0.01,20,0.012,0.012,0.04
+"44","BP","GO:0035850","epithelial cell differentiation involved...",26,1,0.01,22,0.0125,0.0125,0.0384615384615385
+"45","BP","GO:0046885","regulation of hormone biosynthetic proce...",26,1,0.01,23,0.0125,0.0125,0.0384615384615385
+"46","BP","GO:0042391","regulation of membrane potential",370,2,0.18,24,0.0125,0.0125,0.00540540540540541
+"47","BP","GO:0015695","organic cation transport",27,1,0.01,25,0.013,0.013,0.037037037037037
+"48","BP","GO:1904646","cellular response to amyloid-beta",28,1,0.01,26,0.0134,0.0134,0.0357142857142857
+"49","BP","GO:0048103","somatic stem cell division",28,1,0.01,27,0.0134,0.0134,0.0357142857142857
+"50","BP","GO:0021680","cerebellar Purkinje cell layer developme...",28,1,0.01,28,0.0134,0.0134,0.0357142857142857
+"51","BP","GO:0000096","sulfur amino acid metabolic process",28,1,0.01,29,0.0134,0.0134,0.0357142857142857
+"52","BP","GO:0007026","negative regulation of microtubule depol...",29,1,0.01,31,0.0139,0.0139,0.0344827586206897
+"53","BP","GO:0021517","ventral spinal cord development",30,1,0.01,33,0.0144,0.0144,0.0333333333333333
+"54","BP","GO:1901385","regulation of voltage-gated calcium chan...",30,1,0.01,34,0.0144,0.0144,0.0333333333333333
+"55","BP","GO:0048668","collateral sprouting",30,1,0.01,35,0.0144,0.0144,0.0333333333333333
+"56","BP","GO:0044275","cellular carbohydrate catabolic process",30,1,0.01,36,0.0144,0.0144,0.0333333333333333
+"57","BP","GO:0050808","synapse organization",406,2,0.2,38,0.0149,0.0149,0.00492610837438424
+"58","BP","GO:1904645","response to amyloid-beta",32,1,0.02,39,0.0153,0.0153,0.03125
+"59","BP","GO:0031114","regulation of microtubule depolymerizati...",32,1,0.02,40,0.0153,0.0153,0.03125
+"60","BP","GO:0086004","regulation of cardiac muscle cell contra...",32,1,0.02,41,0.0153,0.0153,0.03125
+"61","CC","GO:0099059","integral component of presynaptic active...",23,1,0.01,1,0.012,0.012,0.0434782608695652
+"62","CC","GO:0045334","clathrin-coated endocytic vesicle",24,1,0.01,2,0.013,0.013,0.0416666666666667
+"63","CC","GO:0098945","intrinsic component of presynaptic activ...",28,1,0.02,3,0.015,0.015,0.0357142857142857
+"64","CC","GO:0005911","cell-cell junction",392,2,0.21,4,0.018,0.018,0.00510204081632653
+"65","CC","GO:0005891","voltage-gated calcium channel complex",35,1,0.02,5,0.019,0.019,0.0285714285714286
+"66","CC","GO:0048787","presynaptic active zone membrane",43,1,0.02,6,0.023,0.023,0.0232558139534884
+"67","CC","GO:0016328","lateral plasma membrane",45,1,0.02,7,0.024,0.024,0.0222222222222222
+"68","CC","GO:0016459","myosin complex",47,1,0.03,8,0.025,0.025,0.0212765957446809
+"69","CC","GO:0071944","cell periphery",3663,5,1.99,9,0.027,0.027,0.00136500136500137
+"70","CC","GO:0034704","calcium channel complex",52,1,0.03,10,0.028,0.028,0.0192307692307692
+"71","CC","GO:0005576","extracellular region",1327,3,0.72,11,0.029,0.029,0.00226073850791258
+"72","CC","GO:0014704","intercalated disc",55,1,0.03,12,0.029,0.029,0.0181818181818182
+"73","CC","GO:0044291","cell-cell contact zone",76,1,0.04,13,0.041,0.041,0.0131578947368421
+"74","CC","GO:0030425","dendrite",638,2,0.35,14,0.044,0.044,0.00313479623824451
+"75","CC","GO:0030864","cortical actin cytoskeleton",83,1,0.05,15,0.044,0.044,0.0120481927710843
+"76","CC","GO:0097447","dendritic tree",641,2,0.35,16,0.044,0.044,0.0031201248049922
+"77","CC","GO:0030136","clathrin-coated vesicle",84,1,0.05,17,0.045,0.045,0.0119047619047619
+"78","CC","GO:0048786","presynaptic active zone",87,1,0.05,18,0.046,0.046,0.0114942528735632
+"79","CC","GO:0030175","filopodium",87,1,0.05,19,0.046,0.046,0.0114942528735632
+"80","CC","GO:0005903","brush border",100,1,0.05,20,0.053,0.053,0.01
+"81","CC","GO:0099056","integral component of presynaptic membra...",102,1,0.06,21,0.054,0.054,0.00980392156862745
+"82","CC","GO:0097458","neuron part",1702,3,0.92,22,0.055,0.055,0.00176263219741481
+"83","CC","GO:0030863","cortical cytoskeleton",112,1,0.06,23,0.059,0.059,0.00892857142857143
+"84","CC","GO:0043204","perikaryon",114,1,0.06,24,0.06,0.06,0.0087719298245614
+"85","CC","GO:0098889","intrinsic component of presynaptic membr...",114,1,0.06,25,0.06,0.06,0.0087719298245614
+"86","CC","GO:0098862","cluster of actin-based cell projections",148,1,0.08,26,0.078,0.078,0.00675675675675676
+"87","CC","GO:0030139","endocytic vesicle",156,1,0.08,27,0.082,0.082,0.00641025641025641
+"88","CC","GO:0044459","plasma membrane part",1996,3,1.08,28,0.082,0.082,0.00150300601202405
+"89","CC","GO:0036477","somatodendritic compartment",914,2,0.5,29,0.084,0.084,0.00218818380743982
+"90","CC","GO:0030135","coated vesicle",162,1,0.09,30,0.085,0.085,0.00617283950617284

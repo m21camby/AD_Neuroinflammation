@@ -1,0 +1,31 @@
+"","category","GO.ID","Term","Annotated","Significant","Expected","Rank in Fisher.classic","Fisher.elim","Fisher.classic","gene_ratio"
+"31","BP","GO:0051651","maintenance of location in cell",76,2,0.02,1,0.00022,0.00022,0.0263157894736842
+"32","BP","GO:1902904","negative regulation of supramolecular fi...",113,2,0.04,3,0.00048,0.00048,0.0176991150442478
+"33","BP","GO:0006874","cellular calcium ion homeostasis",303,2,0.1,8,0.00343,0.00343,0.0066006600660066
+"34","BP","GO:0032535","regulation of cellular component size",308,2,0.1,9,0.00354,0.00354,0.00649350649350649
+"35","BP","GO:0006979","response to oxidative stress",314,2,0.1,11,0.00367,0.00367,0.00636942675159236
+"36","BP","GO:0042176","regulation of protein catabolic process",329,2,0.11,17,0.00403,0.00403,0.0060790273556231
+"37","BP","GO:0043254","regulation of protein complex assembly",355,2,0.11,21,0.00468,0.00468,0.00563380281690141
+"38","BP","GO:0055094","response to lipoprotein particle",20,1,0.01,27,0.00641,0.00641,0.05
+"39","BP","GO:0055075","potassium ion homeostasis",20,1,0.01,28,0.00641,0.00641,0.05
+"40","BP","GO:0071827","plasma lipoprotein particle organization",20,1,0.01,29,0.00641,0.00641,0.05
+"41","BP","GO:1905809","negative regulation of synapse organizat...",20,1,0.01,30,0.00641,0.00641,0.05
+"42","BP","GO:0097062","dendritic spine maintenance",20,1,0.01,31,0.00641,0.00641,0.05
+"43","BP","GO:0140115","export across plasma membrane",20,1,0.01,32,0.00641,0.00641,0.05
+"44","BP","GO:0097242","amyloid-beta clearance",21,1,0.01,37,0.00673,0.00673,0.0476190476190476
+"45","BP","GO:0044788","modulation by host of viral process",21,1,0.01,38,0.00673,0.00673,0.0476190476190476
+"46","BP","GO:0071402","cellular response to lipoprotein particl...",22,1,0.01,39,0.00705,0.00705,0.0454545454545455
+"47","BP","GO:0042311","vasodilation",22,1,0.01,40,0.00705,0.00705,0.0454545454545455
+"48","BP","GO:0043537","negative regulation of blood vessel endo...",22,1,0.01,41,0.00705,0.00705,0.0454545454545455
+"49","BP","GO:0019068","virion assembly",22,1,0.01,42,0.00705,0.00705,0.0454545454545455
+"50","BP","GO:0090181","regulation of cholesterol metabolic proc...",22,1,0.01,43,0.00705,0.00705,0.0454545454545455
+"51","BP","GO:0050999","regulation of nitric-oxide synthase acti...",22,1,0.01,44,0.00705,0.00705,0.0454545454545455
+"52","BP","GO:0043086","negative regulation of catalytic activit...",441,2,0.14,45,0.00716,0.00716,0.00453514739229025
+"53","BP","GO:0030195","negative regulation of blood coagulation",23,1,0.01,47,0.00737,0.00737,0.0434782608695652
+"54","BP","GO:1902003","regulation of amyloid-beta formation",23,1,0.01,48,0.00737,0.00737,0.0434782608695652
+"55","BP","GO:0032801","receptor catabolic process",23,1,0.01,49,0.00737,0.00737,0.0434782608695652
+"56","BP","GO:0019934","cGMP-mediated signaling",24,1,0.01,52,0.00769,0.00769,0.0416666666666667
+"57","BP","GO:0055078","sodium ion homeostasis",24,1,0.01,53,0.00769,0.00769,0.0416666666666667
+"58","BP","GO:0035640","exploration behavior",24,1,0.01,54,0.00769,0.00769,0.0416666666666667
+"59","BP","GO:0051150","regulation of smooth muscle cell differe...",25,1,0.01,58,0.008,0.008,0.04
+"60","BP","GO:0010543","regulation of platelet activation",25,1,0.01,59,0.008,0.008,0.04
