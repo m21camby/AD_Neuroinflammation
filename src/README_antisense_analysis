@@ -1,0 +1,201 @@
+
+##############################
+# antisense reads analysis
+############################## 
+# written by SJK 13, Jan, 2020
+# This dir is for analyzing high fraction of antisense reads in single nucleus in premrna mapping 
+# I tried SP064_028 data set 
+
+######################
+# 15. Jan. 2020
+# grep AN:Z also contains TX:Z so I do grep again with TX:Z
+
+
+####################################################
+# 1. extract AN:Z which stands for antisense tags
+# https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/output/bam
+####################################################
+# extract BAM file from premrna 
+
+# location: SP064_028_premrna
+samtools view possorted_genome_bam.bam | grep --color=auto --color=auto -E 'AN:Z' > antisense_SP064_028_premrna.bam &
+
+# location: SP064_028_exon
+samtools view possorted_genome_bam.bam | grep --color=auto --color=auto --color=auto -E 'AN:Z' > antisense_SP064_028_exon.bam & 
+
+# above grep contain also aligned reads which tag is TX:Z (15. Jan. 2020) 
+grep -v 'TX:Z' antisense_SP064_028_premrna.bam > antisense_SP064_028_premrna_remove_TXZ.bam
+
+##########################################################
+# 2. extract only ID and extract fastqs with those IDs 
+########################################################## 
+cut -f1 antisense_SP064_028_premrna.bam > antisense_SP064_028_premrna_fastqID.txt &
+
+cut -f1 antisense_SP064_028_exon.bam > antisense_SP064_028_exon_fastqID.txt &
+
+# remove TXZ
+cut -f1 antisense_SP064_028_premrna_remove_TXZ.bam > antisense_SP064_028_premrna_remove_TXZ_fastqID.txt &
+
+###########################################################
+# 3. extract fastq by ID 
+###########################################################
+# https://www.biostars.org/p/45816/
+
+# first source bbmap guix profile
+source /data/rajewsky/home/skim/bbmap_bbduk/.guix-profile/etc/profile
+
+# bbmap filterbyname used for extracting fastqs
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_I1_001.fastq.gz out=antisense_SP064_028_S7_L001_I1_001.fastq.gz names=antisense_SP064_028_premrna_fastqID.txt include=t &
+
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_R1_001.fastq.gz out=antisense_SP064_028_S7_L001_R1_001.fastq.gz names=antisense_SP064_028_premrna_fastqID.txt include=t &
+
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_R2_001.fastq.gz out=antisense_SP064_028_S7_L001_R2_001.fastq.gz names=antisense_SP064_028_premrna_fastqID.txt include=t &
+
+Reads Processed:    158368094 	
+Bases Processed:    15520073212 	
+Reads Out:          70033698
+Bases Out:          6863302404
+ 
+# remove TXZ
+
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_I1_001.fastq.gz out=antisense_SP064_028_TXZ_S7_L001_I1_001.fastq.gz names=antisense_SP064_028_premrna_remove_TXZ_fastqID.txt include=t &
+
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_R1_001.fastq.gz out=antisense_SP064_028_TXZ_S7_L001_R1_001.fastq.gz names=antisense_SP064_028_premrna_remove_TXZ_fastqID.txt include=t &
+
+filterbyname.sh in=/data/remote/rajewsky/sequencing/mouse/191218_K00302_0148_BHFVK3BBXY/HFVK3BBXY/SP064_028/SP064_028_S7_R2_001.fastq.gz out=antisense_SP064_028_TXZ_S7_L001_R2_001.fastq.gz names=antisense_SP064_028_premrna_remove_TXZ_fastqID.txt include=t &
+
+Reads Processed:    158368094
+Bases Processed:    15520073212
+Reads Out:          59454376
+Bases Out:          5826528848
+
+
+###################################################
+# cellranger count for exon reference
+###################################################
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=antisense_SP064_028 --fastqs=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/HFVK3BBXY/antisense_SP064_028 --sample=antisense_SP064_028 --transcriptome=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/GRCm38-3.1.0_mrna --chemistry=SC3Pv3 --localcores=24 --localmem=200
+
+# remove TXZ
+/data/rajewsky/shared_bins/cellranger-3.1.0/cellranger count --id=antisense_SP064_028_TXZ --fastqs=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/HFVK3BBXY/antisense_SP064_028_TXZ --sample=antisense_SP064_028_TXZ --transcriptome=/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/GRCm38-3.1.0_mrna --chemistry=SC3Pv3 --localcores=24 --localmem=200
+
+# above cellranger create errors
+# ref: https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/troubleshooting
+# RuntimeError: /data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028 is not a pipestance directory
+
+
+###############################################
+# Drop-seq pipeline
+############################################### 
+# first add chr to gtf file and create index
+awk 'OFS="\t" {if (NR > 5) $1="chr"$1; print}' /data/rajewsky/annotation/GRCm38/Mus_musculus.GRCm38.98.gtf > Mus_musculus.GRCm38.98_prefix_chr.gtf &
+
+ref: https://www.biostars.org/p/357401/
+
+
+# error in refflat file generation
+# it says program expect 18 elements while my GTF file is 19 elements
+# However, I have no idea as I checked od -c and shellcheck.net 
+Exception in thread "main" picard.PicardException: Unexpected number of elements found when parsing file /data/rajewsky/annotation/GRCm38/Mus_musculus.GRCm38.98_prefix_chr_2nd.gtf: 19.  Expected a maximum of 18 elements per line:chr1	havana	transcript	3073253	3074322	.	+	.	gene_id	"ENSMUSG00000102693";	gene_version	"1";	transcript_id	"ENSMUST00000193812";	transcript_version	"1";	gene_name	"4933401J01Rik";	gene_source	"havana";	gene_biotype	"TEC";	transcript_name	"4933401J01Rik-201";	transcript_source	"havana";	transcript_biotype	"TEC";	tag	"basic";	transcript_support_level	"NA";
+
+ref: https://github.com/broadinstitute/picard/blob/master/src/main/java/picard/util/AbstractInputParser.java
+# I will map to another GTF for this file
+
+# extract BAM file for gn:Z:Gm26699 gene
+samtools view my_clean_antisense_SP064_028_TXZ.bam | grep -E 'gn:Z:Gm26699' > my_clean_antisense_SP064_028_TXZ_Gm26699.bam &
+
+
+################################################
+# Check 10 reads to compare drop-seq vs 10X
+################################################ 
+
+I extract 11 reads by NR:
+
+5000000, 10000000, 15000000, .... 55000000
+
+# Extract from 10X BAM file
+samtools view possorted_genome_bam.bam | sed -n -e 5000000p -e 10000000p -e 15000000p -e 20000000p -e 25000000p -e 30000000p -e 35000000p -e 40000000p -e 45000000p -e 50000000p -e 55000000p > BAM_files_10_samples_10xcellragner_normal_gtf.txt &
+
+# Extract from Drop-seq BAM file
+# in here, only 10 reads were extracted and K00302:148:HFVK3BBXY:6:1127:2483:1086 are not exist
+samtools view my_clean_antisense_SP064_028_TXZ.bam |grep -e K00302:148:HFVK3BBXY:6:2119:9323:41880 -e K00302:148:HFVK3BBXY:8:1211:12581:34969 -e K00302:148:HFVK3BBXY:8:1123:2382:28375 -e K00302:148:HFVK3BBXY:6:1127:2483:1086 -e K00302:148:HFVK3BBXY:7:2213:12033:6484 -e K00302:148:HFVK3BBXY:5:1106:10896:10809 -e K00302:148:HFVK3BBXY:8:2105:4827:6343 -e K00302:148:HFVK3BBXY:8:1103:28351:29554 -e K00302:148:HFVK3BBXY:8:2208:1600:11794 -e K00302:148:HFVK3BBXY:8:1209:19948:6941 -e K00302:148:HFVK3BBXY:6:2201:31497:24525 > BAM_files_10_samples_drop_seq_pipe.txt &
+
+
+################################################
+# Created mm10.chrom size file without chr 
+################################################
+
+sed 's/^chr\|%$//g' mm10.chrom.sizes > mm10.chrom.sizes_without_chr
+
+
+
+###################################################
+# extract Rps27 or Eif1 gene
+###################################################
+# extract only Rps27 gene (This didn't work out)
+grep -E 'Rps27' antisense_SP064_028_premrna_remove_TXZ.bam > antisense_SP064_028_premrna_remove_TXZ_Rps27.bam
+# extract only Eif1 gene
+grep -E 'ENSMUST00000049385' antisense_SP064_028_premrna_remove_TXZ.bam > antisense_SP064_028_premrna_remove_TXZ_Eif1.bam &
+
+
+################################################
+# convert pdf to jpg of UCSC genome browser file
+################################################
+
+convert 20200130_UCSC_Browser_Eif1_gene.pdf 20200130_UCSC_Browser_Eif1_gene.jpg
+convert 20200130_UCSC_Browser_Rps27_gene.pdf 20200130_UCSC_Browser_Rps27_gene.jpg
+
+################################################
+# Start from Extract BAM file to BigWig file 
+# 31 Jan 2020 recommended by 10X Juan
+################################################
+
+# extract BAM header file
+samtools view -H /data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_028_premrna/outs/possorted_genome_bam.bam > SP064_028_header.sam &
+
+# extract BAM file with header
+# ref: http://seqanswers.com/forums/showthread.php?t=16337
+
+samtools view /data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/SP064_028_premrna/outs/possorted_genome_bam.bam | grep -E "AN:Z" | grep -v "TX:Z" | cat SP064_028_header.sam - | samtools view -Sb - > antisense_SP064_028_premrna_remove_TXZ_with_header.bam &
+
+
+################################################
+# Eif1 gene mapped to exon in normal gtf
+# 2 Feb 2020 advised by Nikos
+################################################
+# Extract BAM file of Eif1 gene in normal gtf and check where they are mapped in premrna BAM file
+
+
+(/data/rajewsky/home/skim/Microglia_Heppner/201912_10X_9sets/antisense_analysis/antisense_SP064_028_TXZ/outs)
+samtools view possorted_genome_bam.bam |grep -E "ENSMUST00000049385" > possorted_genome_bam_ENSMUST00000049385.bam &
+ 
+# extract ID from Eif1 gene
+cat possorted_genome_bam_ENSMUST00000049385.bam |cut -f1 > possorted_genome_bam_ENSMUST00000049385_ID.txt
+
+# subset premrna BAM file from Eif1 gene from normal gtf (takes ages, ~1 week)
+samtools view antisense_SP064_028_premrna_remove_TXZ_with_header.bam | grep -f antisense_SP064_028_TXZ/outs/possorted_genome_bam_ENSMUST00000049385_ID.txt > antisense_SP064_028_premrna_remove_TXZ_with_header_ENSMUST00000049385_subet.bam &
+
+# another way (much shorter ~ 1 hr)
+samtools view antisense_SP064_028_premrna_remove_TXZ_with_header.bam | fgrep -f antisense_SP064_028_TXZ/outs/possorted_genome_bam_ENSMUST00000049385_ID.txt > antisense_SP064_028_premrna_remove_TXZ_with_header_ENSMUST00000049385_subet_2nd_fgrep.bam &
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

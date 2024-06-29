@@ -1,0 +1,33 @@
+
+#################################
+# How to extract unmapped reads?
+#################################
+The flag identifying an un-mapped read is the number 4.
+But if you only took the BAM entries with a 4 in column 2 you would miss some unaligned reads. 
+This is because BAM flags are additive. 
+For example, if a read is paired (flag = 1) and unmapped (flag = 4), the flag in the BAM file would be 5 (1 + 4 = 5).
+The -f argument to samtools view takes a flag and will return all of the entries that contain that flag in SAM format.
+The command below uses samtools to identify all unmapped reads, pipes those SAM entries to the Unix utility cut.
+
+ref: https://kb.10xgenomics.com/hc/en-us/articles/360004689632-How-do-I-identify-the-unmapped-reads-in-my-Cell-Ranger-or-Long-Ranger-output-
+
+###############################
+# bowtie2 vs STAR for circRNAs
+###############################
+Bowtie2 will not distinguish between exons and introns as it will not look at annotations while aligning the reads.
+If you really want to find splice junctions then you're better off with STAR
+
+ref: https://www.biostars.org/p/120399/
+
+You can see that STAR accuracy is slightly better than Bowtie2, but not as good as BWA's. STAR advantage is very high speed.
+To map DNA data you would need to prohibit splicing with:
+--alignIntronMax 1 --alignMatesGapMax <MaxInsertSize-2*ReadLength>.
+
+ref: https://groups.google.com/g/rna-star/c/a5cZf7CateQ
+
+
+samtools view -f 4 ../SP064_022_premrna/outs/possorted_genome_bam.bam | cut -f1 > SP064_022_premrna_unmapped_reads_list.txt
+
+
+samtools view -f 4 ../SP064_022_premrna/outs/possorted_genome_bam.bam > SP064_022_premrna_unmapped_reads.txt
+
