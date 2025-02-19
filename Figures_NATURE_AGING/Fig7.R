@@ -23,6 +23,52 @@ load(file = "/nfs/team292/sk27/tmp/20200210_figures_for_meeting_report_cleaned_S
 # Fig 7.A
 # --------------------------------------- #
 
+data9set_cleaned_MG.SO <- subset(data9set_cleaned.SO, subset = seurat_clusters %in% c(3, 8))
+
+# combine meta data and UMAP
+data9set_cleaned.meta.data <- data9set_cleaned.SO@meta.data
+data9set_cleaned_MG_umap <- as.data.frame(data9set_cleaned.SO@reductions$umap@cell.embeddings)
+data9set_cleaned_MG_umap.df <- cbind(data9set_cleaned.meta.data, data9set_cleaned_MG_umap)
+
+# Mark Microglia cluster
+data9set_cleaned_MG_umap.df$MG <- ifelse(data9set_cleaned_MG_umap.df$seurat_clusters %in% c(3, 8), "MG", "others")
+
+# subset Microglia cluster
+data9set_cleaned_sub_MG_umap.df <- data9set_cleaned_MG_umap.df[data9set_cleaned_MG_umap.df$MG %in% "MG", ]
+
+# Microglia whole UMAP
+g1 <- ggplot(data9set_cleaned_MG_umap.df, aes(x = UMAP_1, y = UMAP_2)) + geom_point(color = "gray", size = 0.1) + 
+  geom_point(data = data9set_cleaned_MG_umap.df[data9set_cleaned_MG_umap.df$MG %in% "MG", ], aes(x = UMAP_1, y = UMAP_2), color = "#99CC00", size = 0.1) + 
+  theme_classic() + 
+  theme(legend.position = "none", 
+        axis.line = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) + labs(title = NULL)  
+
+g1
+ggsave(filename = "~/MDC/Final_revisions/Fig7_A_whole.pdf",
+       plot = g1,
+       scale = 1, width = 10, height = 10, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+
+
+
+g2 <- ggplot(data9set_cleaned_sub_MG_umap.df, aes(x = UMAP_1, y = UMAP_2, color = seurat_clusters)) + geom_point(size = 0.1) + 
+  scale_color_manual(values=c("#E69F00", "#56B4E9"), label = paste0("cluster ", c(3, 8))) + 
+  theme_classic() + 
+  theme(axis.title = element_text(color = "black", size =15),axis.text = element_text(color = "black", size =12), legend.title = element_blank(), legend.position = c(0.8, 0.2)) + scale_x_continuous(limits = c(-5,5)) + scale_y_continuous(limits = c(18, 28))  + 
+  guides(color = guide_legend(override.aes = list(size = 6), label.theme = element_text(size = 15)))
+g2
+ggsave(filename = "~/MDC/Final_revisions/Fig7_A_sub.pdf",
+       plot = g2,
+       scale = 1, width = 7, height = 7, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+
+
+
 
 # --------------------------------------- #
 # Fig 7.B
@@ -338,5 +384,246 @@ ggsave(filename = "~/MDC/Final_revisions/Fig7_D_no_label.png",
 
 ggsave(filename = "~/MDC/Final_revisions/Fig7_D_no_label.pdf",
        plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = cairo_pdf,       
+       dpi = 300)
+       
+
+# -------------------- #
+# From Maria email
+# both phagocytosis genes (A) and myelin genes (B).
+# We included Picalm and Ptk2b (which is not significant) now as they make sense, but we weren’t sure about Gm, which one is that?
+# significant and non-significant, could you change that?
+# -------------------- #
+
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+library(viridis)
+library(tidyr)
+library(grid)
+library(ggrepel)
+library(biomaRt)
+library(scales)
+
+ensembl=useMart("ensembl")
+listDatasets(ensembl)
+mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl", host = "https://may2024.archive.ensembl.org/")
+##human <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://may2024.archive.ensembl.org/") 
+#mouse = useEnsembl("ensembl","mmusculus_gene_ensembl", mirror = "useast")
+#human = useEnsembl("ensembl","hsapiens_gene_ensembl", mirror = "useast")
+human <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "https://dec2021.archive.ensembl.org/") 
+mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl", host = "https://dec2021.archive.ensembl.org/")
+
+# load Microglia AD vs ADp40KO
+AD_ADp40KO <- read.csv("~/MDC/Microglia_AD_ADp40KO.csv", row.names = 1)
+
+# Depp genes
+Depp <- read.csv("~/MDC/41586_2023_6120_MOESM3_ESM_tab.csv", row.names = 1)
+Depp$gene <- rownames(Depp)
+Depp_genes <- Depp[(Depp$avg_log2FC > 0.25 & Depp$p_val_adj < 0.01), ]$gene
+Depp_genes2 <- Depp[(Depp$avg_log2FC < -0.25 & Depp$p_val_adj < 0.01), ]$gene
+
+Depp_genes <- c(Depp_genes, Depp_genes2)
+
+# Phagocytosis genes
+Human_genes <- c("CLU", "APOJ", "TREM2", "SORL1", "CR1", "CD33", "PLCG2", "MS4A4A", "MS4A6A", "PILRA", "FERMT2",
+                 "PTK2B", "CASS4", "ABI3", "BIN1", 'CD2AP', 'RIN3', 'RABEP1', 'APBB3', 
+                 'ZKSCAN1', 'TP53INP1', 'ZYX', 'AP4E1', 'AP4M1', 'SPPL2A', 'GRN', 'PICALM', 'ABCA7', 'APOE')
+
+AD_mouse_genes = getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = Human_genes , mart = human, attributesL = c("mgi_symbol"), martL = mouse, uniqueRows=T)
+AD_mouse_genes <- AD_mouse_genes[!AD_mouse_genes$MGI.symbol %in% c("Ms4a4c", "Ms4a4b", "Ms4a4d", "Ms4a6c", "Ms4a6b", "Ms4a6d", "Siglecf"), ]
+write.csv(AD_mouse_genes, "/nfs/team292/sk27/tmp/AD_Neuroinflammation/human_genes_to_mouse_conversion_Ekaterina.csv")
+
+AD_mouse_genes <- read.csv( "/nfs/team292/sk27/tmp/AD_Neuroinflammation/human_genes_to_mouse_conversion_Ekaterina.csv")
+
+
+
+# Myelin genes from Depp
+# Plus
+AD_ADp40KO_plus.df <- AD_ADp40KO[which(AD_ADp40KO$logFC > 0 & AD_ADp40KO$FDR < 0.05  & AD_ADp40KO$gene %in% Depp_genes),]
+# Minus
+AD_ADp40KO_minus.df <- AD_ADp40KO[which(AD_ADp40KO$logFC < 0 & AD_ADp40KO$FDR < 0.05 & AD_ADp40KO$gene %in% Depp_genes),]
+# Il12b gene
+AD_ADp40KO_Il12b.df <-  AD_ADp40KO[AD_ADp40KO$gene == "Il12b", ]
+
+# plus
+AD_ADp40KO_plus2.df <- AD_ADp40KO[which(AD_ADp40KO$logFC > 0 & AD_ADp40KO$FDR > 0.05  & AD_ADp40KO$gene %in% Depp_genes),]
+# Minus
+AD_ADp40KO_minus2.df <- AD_ADp40KO[which(AD_ADp40KO$logFC < 0 & AD_ADp40KO$FDR > 0.05 & AD_ADp40KO$gene %in% Depp_genes),]
+
+
+
+# Myelin and amyloid genes from Depp
+g1 <- ggplot(AD_ADp40KO) + geom_point(aes(x = logFC, y = -log10(FDR)), color = "gray", alpha = 0.5, shape = 1, size = 1) +
+  geom_point(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", alpha = 1, shape = 1, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", alpha = 1, shape = 1, size = 2.5) + 
+  geom_point(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), color = "#f72585", alpha = 1, shape = 19, size = 2.5) +
+  
+  ggtitle("AD vs ADp40KO in Microglia (Depp genes)") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,15), oob = squish) + xlim(-1, 1) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 20, family = "helvetica"), 
+        axis.text = element_text(size = 20, color = "black", family = "helvetica")) + 
+  geom_text_repel(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus.df$gene, force = 10, family= "helvetica", size = 5) + 
+  #geom_text_repel(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus2.df$gene, force = 10) + 
+  geom_text_repel(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus.df$gene, nudge_y = 1, family= "helvetica", size = 5) +
+  #geom_text_repel(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus2.df$gene, nudge_y = 1) + 
+  geom_text_repel(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_Il12b.df$gene, nudge_y = 1, family= "helvetica", size = 5)  
+
+g1
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_myelin_volcanoplot.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_myelin_volcanoplot.pdf",
+       plot = g1,
        scale = 1, width = 6.5, height = 6, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+
+g1 <- ggplot(AD_ADp40KO) + geom_point(aes(x = logFC, y = -log10(FDR)), color = "gray", alpha = 0.5, shape = 1, size = 1) +
+  geom_point(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", alpha = 1, shape = 1, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", alpha = 1, shape = 1, size = 2.5) + 
+  geom_point(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), color = "#f72585", alpha = 1, shape = 19, size = 2.5) +
+  
+  ggtitle("AD vs ADp40KO in Microglia (Depp genes)") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,15), oob = squish) + xlim(-0.5, 0.5) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 20, family = "helvetica"), 
+        axis.text = element_text(size = 20, color = "black", family = "helvetica")) + 
+  geom_text_repel(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus.df$gene, force = 10, family= "helvetica", size = 5) + 
+  geom_text_repel(data = AD_ADp40KO_plus2.df[AD_ADp40KO_plus2.df$logFC > 0.18, ], aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus2.df[AD_ADp40KO_plus2.df$logFC > 0.18, ]$gene, force = 10, family= "helvetica", size = 5) + 
+  geom_text_repel(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus.df$gene, nudge_y = 1, family= "helvetica", size = 5) +
+  geom_text_repel(data = AD_ADp40KO_minus2.df[AD_ADp40KO_minus2.df$logFC < -0.18, ], aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus2.df[AD_ADp40KO_minus2.df$logFC < -0.18, ]$gene, nudge_y = 1, family= "helvetica", size = 5) + 
+  geom_text_repel(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_Il12b.df$gene, nudge_y = 1, family= "helvetica", size = 5)
+
+g1
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_myelin_volcanoplot_more_genes_0.5.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_myelin_volcanoplot_more_genes_1.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_myelin_volcanoplot_more_genes_1.pdf",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+# Phagocytosis genes
+Phagocytosis <- AD_mouse_genes$MGI.symbol
+
+#AD_ADp40KO_plus.df <- AD_ADp40KO[which(AD_ADp40KO$gene %in% Phagocytosis),]
+
+AD_ADp40KO_plus.df <- AD_ADp40KO[which(AD_ADp40KO$logFC > 0 & AD_ADp40KO$FDR < 0.05  & AD_ADp40KO$gene %in% Phagocytosis),]
+# Minus
+AD_ADp40KO_minus.df <- AD_ADp40KO[which(AD_ADp40KO$logFC < 0 & AD_ADp40KO$FDR < 0.05 & AD_ADp40KO$gene %in% Phagocytosis),]
+# Il12b gene
+AD_ADp40KO_Il12b.df <-  AD_ADp40KO[AD_ADp40KO$gene == "Il12b", ]
+# plus
+AD_ADp40KO_plus2.df <- AD_ADp40KO[which(AD_ADp40KO$logFC > 0 & AD_ADp40KO$FDR > 0.05  & AD_ADp40KO$gene %in% Phagocytosis),]
+# Minus
+AD_ADp40KO_minus2.df <- AD_ADp40KO[which(AD_ADp40KO$logFC < 0 & AD_ADp40KO$FDR > 0.05 & AD_ADp40KO$gene %in% Phagocytosis),]
+
+
+g1 <- ggplot(AD_ADp40KO) + geom_point(aes(x = logFC, y = -log10(FDR)), color = "gray", alpha = 0.5, shape = 1, size = 1) +
+  geom_point(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", alpha = 1, shape = 1, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", alpha = 1, shape = 1, size = 2.5) + 
+  geom_point(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), color = "#f72585", alpha = 1, shape = 19, size = 2.5) +
+  
+  ggtitle("AD vs ADp40KO in Microglia (Phagocytosis genes)") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,15)) + xlim(-0.5, 0.5) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 20, family = "helvetica"), 
+        axis.text = element_text(size = 20, color = "black", family = "helvetica")) + 
+  geom_text_repel(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus.df$gene, force = 10, family= "helvetica", size = 5) + 
+  #geom_text_repel(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus2.df$gene, force = 10) + 
+  geom_text_repel(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus.df$gene, nudge_y = 1, family= "helvetica", size = 5) +
+  #geom_text_repel(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus2.df$gene, nudge_y = 1) + 
+  geom_text_repel(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_Il12b.df$gene, nudge_y = 1, family= "helvetica", size = 5)
+
+g1
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_phagocytosis_volcanoplot.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_phagocytosis_volcanoplot.pdf",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+g1 <- ggplot(AD_ADp40KO) + geom_point(aes(x = logFC, y = -log10(FDR)), color = "gray", alpha = 0.5, shape = 1, size = 1) +
+  geom_point(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", shape = 19, size = 2.5) +
+  geom_point(data = AD_ADp40KO_plus2.df, aes(x = logFC, y = -log10(FDR)), color = "#d00000", alpha = 1, shape = 1, size = 2.5) +
+  geom_point(data = AD_ADp40KO_minus2.df, aes(x = logFC, y = -log10(FDR)), color = "#023e8a", alpha = 1, shape = 1, size = 2.5) + 
+  geom_point(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), color = "#f72585", alpha = 1, shape = 19, size = 2.5) +
+  
+  ggtitle("AD vs ADp40KO in Microglia (Phagocytosis genes)") + 
+  theme_classic() + 
+  xlab("log2 fold change") + 
+  ylab("-log10(adjusted p-value)") +
+  scale_y_continuous(expand = c(0,0), limits = c(0,15)) + xlim(-0.5, 0.5) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18, hjust = 0.5, family = "helvetica"),
+        axis.title = element_text(size = 20, family = "helvetica"), 
+        axis.text = element_text(size = 20, color = "black", family = "helvetica")) + 
+  geom_text_repel(data = AD_ADp40KO_plus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus.df$gene, force = 10, family= "helvetica") + 
+  geom_text_repel(data = AD_ADp40KO_plus2.df[AD_ADp40KO_plus2.df$logFC > 0.1, ], aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_plus2.df[AD_ADp40KO_plus2.df$logFC > 0.1, ]$gene, force = 10, family= "helvetica", size = 5) + 
+  geom_text_repel(data = AD_ADp40KO_minus.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus.df$gene, nudge_y = 1, family= "helvetica", size = 5) +
+  geom_text_repel(data = AD_ADp40KO_minus2.df[AD_ADp40KO_minus2.df$logFC < -0.1, ], aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_minus2.df[AD_ADp40KO_minus2.df$logFC < -0.1, ]$gene, nudge_y = 1, family= "helvetica", size = 5) + 
+  geom_text_repel(data = AD_ADp40KO_Il12b.df, aes(x = logFC, y = -log10(FDR)), label = AD_ADp40KO_Il12b.df$gene, nudge_y = 1, family= "helvetica", size = 5)
+
+
+g1
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_phagocytosis_volcanoplot_more_genes_1.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_phagocytosis_volcanoplot_more_genes_0.5.png",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = "png",
+       dpi = 300)
+
+ggsave(filename = "~/MDC/Microglia_AD_ADp40KO_phagocytosis_volcanoplot_more_genes_1.pdf",
+       plot = g1,
+       scale = 1, width = 6.5, height = 6, units = "in", device = cairo_pdf,
+       dpi = 300)
+
+
+
+
+
+       
+       
+       
+       
        dpi = 300)
